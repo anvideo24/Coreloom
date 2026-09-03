@@ -4,7 +4,7 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, clientCompanies, projects } from "@/lib/db/schema";
-import { normalizeClientName, normalizeProjectRegistration } from "@/lib/domain/clients-projects";
+import { normalizeClientName, normalizeProjectProgressUpdate, normalizeProjectRegistration } from "@/lib/domain/clients-projects";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 export async function listFounderClientsAndProjects(authUserId: string) {
@@ -94,4 +94,41 @@ export async function createFounderProject(input: {
     eventType: "project.created",
     payload: { projectId: created.id, clientCompanyId: client.id },
   });
+}
+
+export async function updateFounderProjectProgress(input: {
+  actorUserId: string;
+  projectId: string;
+  status: string;
+  progressPercent: string;
+}) {
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
+  const database = createDatabase();
+  const update = normalizeProjectProgressUpdate(input);
+  const [project] = await database
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(
+      eq(projects.id, update.projectId),
+      eq(projects.workspaceId, workspace.id),
+      isNull(projects.deletedAt),
+    ))
+    .limit(1);
+
+  if (!project) throw new Error("Project was not found");
+
+  const [saved] = await database
+    .update(projects)
+    .set({ status: update.status, progressPercent: update.progressPercent, updatedAt: new Date() })
+    .where(eq(projects.id, project.id))
+    .returning();
+
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "project.progress_updated",
+    payload: { projectId: project.id, status: update.status, progressPercent: update.progressPercent },
+  });
+
+  return saved;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeClientName, normalizeProjectRegistration, projectStatuses } from "@/lib/domain/clients-projects";
+import { normalizeClientName, normalizeProjectProgressUpdate, normalizeProjectRegistration, projectStatuses } from "@/lib/domain/clients-projects";
 
 describe("client registration", () => {
   it("stores a trimmed client name", () => {
@@ -34,5 +34,15 @@ describe("project registration", () => {
 
   it("exposes only the supported project states", () => {
     expect(projectStatuses).toEqual(["planned", "active", "on_hold", "complete"]);
+  });
+});
+
+describe("project progress update", () => {
+  it("keeps the target project, status, and current progress together", () => {
+    expect(normalizeProjectProgressUpdate({
+      projectId: "project-1",
+      status: "on_hold",
+      progressPercent: "60",
+    })).toEqual({ projectId: "project-1", status: "on_hold", progressPercent: 60 });
   });
 });

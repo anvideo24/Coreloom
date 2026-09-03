@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 
-import { createClientAction, createProjectAction } from "@/app/(private)/clients-projects/actions";
+import { createClientAction, createProjectAction, updateProjectProgressAction } from "@/app/(private)/clients-projects/actions";
 import { founderSession } from "@/lib/auth/session";
 import { listFounderClientsAndProjects } from "@/lib/clients-projects/repository";
 import { projectStatuses } from "@/lib/domain/clients-projects";
@@ -52,7 +52,12 @@ export default async function ClientsProjectsPage() {
         {projects.length === 0 ? <p className="empty-state">등록된 프로젝트가 없습니다. 고객사를 등록한 뒤 첫 프로젝트를 추가하세요.</p> : projects.map((project) => (
           <article className="project-row" key={project.id}>
             <div><p>{project.clientName}</p><h3>{project.name}</h3></div>
-            <span className="project-status">{statusLabels[project.status]}</span>
+            <form action={updateProjectProgressAction} className="project-update-form">
+              <input name="projectId" type="hidden" value={project.id} />
+              <label>상태<select defaultValue={project.status} name="status">{projectStatuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select></label>
+              <label>진행률<input defaultValue={project.progressPercent} max="100" min="0" name="progressPercent" type="number" required /></label>
+              <button className="auth-submit" type="submit">저장</button>
+            </form>
             <div className="project-progress"><strong>{project.progressPercent}%</strong><div aria-label={`진행률 ${project.progressPercent}%`} className="progress-track"><span style={{ width: `${project.progressPercent}%` }} /></div></div>
           </article>
         ))}

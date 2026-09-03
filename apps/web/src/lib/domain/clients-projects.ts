@@ -29,3 +29,20 @@ export function normalizeProjectRegistration(input: {
 
   return { clientId, name, status: input.status as ProjectStatus, progressPercent };
 }
+
+export function normalizeProjectProgressUpdate(input: {
+  projectId: string;
+  status: string;
+  progressPercent: string;
+}): { projectId: string; status: ProjectStatus; progressPercent: number } {
+  const projectId = input.projectId.trim();
+  const progressPercent = Number(input.progressPercent);
+
+  if (!projectId) throw new Error("Project is required");
+  if (!projectStatuses.includes(input.status as ProjectStatus)) throw new Error("Unsupported project status");
+  if (!Number.isInteger(progressPercent) || progressPercent < 0 || progressPercent > 100) {
+    throw new Error("Progress must be between 0 and 100");
+  }
+
+  return { projectId, status: input.status as ProjectStatus, progressPercent };
+}
