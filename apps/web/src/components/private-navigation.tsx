@@ -13,6 +13,7 @@ const navigationItems = [
   { href: "/tasks", label: "업무" },
   { href: "/timeline", label: "근거 기록" },
   { href: "/proposals", label: "AI 제안" },
+  { href: "/admin/manual", label: "운영 매뉴얼" },
 ];
 
 export function PrivateNavigation() {

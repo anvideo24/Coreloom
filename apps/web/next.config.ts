@@ -13,6 +13,9 @@ const nextConfig: NextConfig = {
     machineName: hostname(),
     extraOrigins: process.env.CORELOOM_DEV_ORIGINS,
   }),
+  outputFileTracingIncludes: {
+    "/admin/manual/**": ["../../manual/**/*.md"],
+  },
 };
 
 export default nextConfig;

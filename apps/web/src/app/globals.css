@@ -211,3 +211,16 @@ body {
 }
 
 @media print { .quote-print-actions { display: none; }.quote-print-shell { background: var(--surface); padding: 0; }.quote-document { border: 0; max-width: none; padding: 0; } }
+
+.manual-meta { color: var(--muted); line-height: 1.6; margin: var(--space-5) 0 0; }
+.manual-menu { display: flex; flex-wrap: wrap; gap: var(--space-5); margin-top: var(--space-5); }
+.manual-menu a { color: var(--ink); font-weight: 700; text-decoration: none; }
+.manual-menu a[aria-current="page"], .manual-menu a:hover { color: var(--accent); }
+.manual-document { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); display: grid; gap: var(--space-5); margin-top: var(--space-7); padding: var(--space-7) var(--space-5); }
+.manual-document h2, .manual-document h3, .manual-document h4 { letter-spacing: -0.02em; margin: 0; }
+.manual-document p, .manual-document li, .manual-document blockquote { color: var(--ink); line-height: 1.7; margin: 0; }
+.manual-document ul, .manual-document ol { margin: 0; padding-left: 1.25rem; }
+.manual-document a { color: var(--accent); font-weight: 700; }
+.manual-document pre, .manual-document code { font-family: var(--font-geist-mono), ui-monospace, monospace; }
+.manual-document pre { background: var(--canvas); border-radius: var(--radius-control); overflow: auto; padding: var(--space-5); }
+.manual-document blockquote { border-left: 3px solid var(--line); color: var(--muted); padding-left: var(--space-5); }
