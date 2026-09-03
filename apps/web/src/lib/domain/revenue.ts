@@ -169,10 +169,40 @@ export function sortLedgerRows(rows: RevenueLedgerRow[]) {
   });
 }
 
-export function summarizeLedger(rows: RevenueLedgerRow[]) {
+export function summarizeLedger(rows: RevenueLedgerRow[], refundedTotal = 0) {
   return {
     confirmedAmount: rows.filter((row) => row.status === "confirmed").reduce((sum, row) => sum + row.amount, 0),
     scheduledAmount: rows.filter((row) => row.status === "scheduled").reduce((sum, row) => sum + row.amount, 0),
+    refundedAmount: refundedTotal,
     unclassifiedCount: rows.filter((row) => row.unclassified).length,
   };
+}
+
+function parseRefundAmount(value: string) {
+  const amount = Number(value);
+  if (!Number.isInteger(amount) || amount <= 0) throw new Error("Refund amount must be a positive integer");
+  return amount;
+}
+
+export function normalizeRefund(input: {
+  amount: string;
+  refundedOn: string;
+  reason: string;
+  originalAmount: number;
+  existingRefundTotal: number;
+  status: string;
+  approved: boolean;
+}): { amount: number; refundedOn: string; reason: string } {
+  if (!input.approved) throw new Error("Representative approval is required");
+  if (input.status !== "confirmed") throw new Error("Only confirmed revenue can be refunded");
+  const amount = parseRefundAmount(input.amount);
+  const refundedOn = input.refundedOn.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(refundedOn)) throw new Error("Refund date is required");
+  const reason = input.reason.trim();
+  if (!reason) throw new Error("Refund reason is required");
+  if (reason.length > 500) throw new Error("Refund reason is too long");
+  if (input.existingRefundTotal + amount > input.originalAmount) {
+    throw new Error("Refund total cannot exceed the original amount");
+  }
+  return { amount, refundedOn, reason };
 }

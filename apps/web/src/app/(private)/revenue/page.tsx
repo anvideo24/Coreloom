@@ -19,7 +19,7 @@ export default async function RevenuePage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / REVENUE</p>
           <h1>매출 원장</h1>
-          <p>고객사 프로젝트 청구와 앱·구독 매출을 한 목록에서 봅니다. 금액은 통화·발생일·정산일·확정 상태를 함께 가지며, 연결하지 못한 건은 미분류로 표시합니다. 비용은 비용 원장에서 따로 봅니다. 결제 채널 자동 수집, 환불, 세금계산서는 이 기능에 포함되지 않습니다.</p>
+          <p>고객사 프로젝트 청구와 앱·구독 매출을 한 목록에서 봅니다. 금액은 통화·발생일·정산일·확정 상태를 함께 가지며, 연결하지 못한 건은 미분류로 표시합니다. 확정된 매출에 대해 환불을 등록하면 원래 금액을 덮어쓰지 않고 별도 환불 이력으로 남깁니다. 비용은 비용 원장에서 따로 봅니다. 결제 채널 자동 수집과 세금계산서는 이 기능에 포함되지 않습니다.</p>
         </div>
       </header>
       <section className="registration-grid" aria-label="등록">
@@ -65,7 +65,7 @@ export default async function RevenuePage() {
           <p className="empty-state">표시할 매출이 없습니다. 청구 입금 또는 앱·구독 매출을 등록하면 이 목록에 모입니다. 합계 0원은 만들지 않습니다.</p>
         ) : (
           <>
-            <p className="form-help">확정 {summary.confirmedAmount.toLocaleString("ko-KR")}원 · 예정 {summary.scheduledAmount.toLocaleString("ko-KR")}원 · {UNCLASSIFIED_LABEL} {summary.unclassifiedCount}건</p>
+            <p className="form-help">확정 {summary.confirmedAmount.toLocaleString("ko-KR")}원 · 예정 {summary.scheduledAmount.toLocaleString("ko-KR")}원{summary.refundedAmount > 0 ? ` · 환불 ${summary.refundedAmount.toLocaleString("ko-KR")}원` : ""} · {UNCLASSIFIED_LABEL} {summary.unclassifiedCount}건</p>
             {rows.map((row) => (
               <a className="quote-row" href={row.href} key={row.id}>
                 <div>

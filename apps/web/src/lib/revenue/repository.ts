@@ -3,12 +3,13 @@ import "server-only";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, billings, clientCompanies, contracts, contractVersions, projects, revenueEntries, ventures } from "@/lib/db/schema";
+import { auditEvents, billings, clientCompanies, contracts, contractVersions, projects, revenueEntries, revenueRefunds, ventures } from "@/lib/db/schema";
 import { billingKindLabels } from "@/lib/domain/billings";
 import {
   confirmRevenueEntry,
   ledgerRowFromBilling,
   ledgerRowFromRevenueEntry,
+  normalizeRefund,
   normalizeRevenueEntry,
   normalizeVentureRegistration,
   sortLedgerRows,
@@ -101,11 +102,18 @@ export async function listFounderRevenueLedger(authUserId: string) {
     ...entryRows.map((row) => ledgerRowFromRevenueEntry(row)),
   ]);
 
+  const refundRows = await database.select({
+    amount: revenueRefunds.amount,
+  }).from(revenueRefunds)
+    .innerJoin(revenueEntries, eq(revenueRefunds.revenueEntryId, revenueEntries.id))
+    .where(eq(revenueEntries.workspaceId, workspace.id));
+  const refundedTotal = refundRows.reduce((sum, row) => sum + row.amount, 0);
+
   return {
     ventures: ventureRows,
     projects: projectRows,
     rows,
-    summary: summarizeLedger(rows),
+    summary: summarizeLedger(rows, refundedTotal),
   };
 }
 
@@ -131,7 +139,19 @@ export async function getFounderRevenueEntryDetail(authUserId: string, entryId: 
     .leftJoin(clientCompanies, eq(revenueEntries.clientCompanyId, clientCompanies.id))
     .where(and(eq(revenueEntries.id, entryId), eq(revenueEntries.workspaceId, workspace.id), isNull(revenueEntries.deletedAt)))
     .limit(1);
-  return entry ?? null;
+  if (!entry) return null;
+
+  const refunds = await database.select({
+    id: revenueRefunds.id,
+    amount: revenueRefunds.amount,
+    refundedOn: revenueRefunds.refundedOn,
+    reason: revenueRefunds.reason,
+    createdAt: revenueRefunds.createdAt,
+  }).from(revenueRefunds)
+    .where(eq(revenueRefunds.revenueEntryId, entry.id))
+    .orderBy(desc(revenueRefunds.createdAt));
+
+  return { ...entry, refunds, refundedTotal: refunds.reduce((sum, row) => sum + row.amount, 0) };
 }
 
 export async function createFounderVenture(input: { actorUserId: string; name: string; kind: string }) {
@@ -239,4 +259,51 @@ export async function confirmFounderRevenueEntry(input: { actorUserId: string; e
     payload: { revenueEntryId: entry.id, amount: entry.amount },
   });
   return { entryId: entry.id };
+}
+
+export async function refundFounderRevenueEntry(input: {
+  actorUserId: string;
+  entryId: string;
+  amount: string;
+  refundedOn: string;
+  reason: string;
+  approved: boolean;
+}) {
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "revenue");
+  const database = createDatabase();
+  const [entry] = await database.select().from(revenueEntries)
+    .where(and(eq(revenueEntries.id, input.entryId), eq(revenueEntries.workspaceId, workspace.id), isNull(revenueEntries.deletedAt)))
+    .limit(1);
+  if (!entry) throw new Error("Revenue entry was not found");
+
+  const existingRefunds = await database.select({ amount: revenueRefunds.amount }).from(revenueRefunds)
+    .where(eq(revenueRefunds.revenueEntryId, entry.id));
+  const existingRefundTotal = existingRefunds.reduce((sum, row) => sum + row.amount, 0);
+
+  const refund = normalizeRefund({
+    amount: input.amount,
+    refundedOn: input.refundedOn,
+    reason: input.reason,
+    originalAmount: entry.amount,
+    existingRefundTotal,
+    status: entry.status,
+    approved: input.approved,
+  });
+
+  const [created] = await database.insert(revenueRefunds).values({
+    workspaceId: workspace.id,
+    revenueEntryId: entry.id,
+    amount: refund.amount,
+    refundedOn: refund.refundedOn,
+    reason: refund.reason,
+  }).returning({ id: revenueRefunds.id });
+
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "revenue_entry.refunded",
+    payload: { revenueEntryId: entry.id, refundId: created.id, amount: refund.amount },
+  });
+
+  return { entryId: entry.id, refundId: created.id };
 }

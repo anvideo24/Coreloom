@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { confirmRevenueEntryAction } from "@/app/(private)/revenue/actions";
+import { confirmRevenueEntryAction, refundRevenueEntryAction } from "@/app/(private)/revenue/actions";
 import { founderSession } from "@/lib/auth/session";
 import { ledgerRowFromRevenueEntry, revenueEntryStatusLabels, UNCLASSIFIED_LABEL } from "@/lib/domain/revenue";
 import { getFounderRevenueEntryDetail } from "@/lib/revenue/repository";
@@ -56,6 +56,43 @@ export default async function RevenueEntryDetailPage({ params }: { params: Promi
           <p>이 매출은 확정되어 금액을 바꾸지 않습니다.</p>
         </section>
       )}
+      {entry.status === "confirmed" ? (
+        <section className="quote-editor-card">
+          <p className="setup-code">환불 등록</p>
+          <p className="form-help">확정된 매출에 대해서만 환불합니다. 원래 금액({entry.amount.toLocaleString("ko-KR")}원)을 덮어쓰지 않고 별도 이력으로 남기며, 환불 합계는 원래 금액을 넘을 수 없습니다.{entry.refundedTotal > 0 ? ` 기존 환불 합계 ${entry.refundedTotal.toLocaleString("ko-KR")}원.` : ""}</p>
+          <form action={refundRevenueEntryAction} className="quote-form">
+            <input name="entryId" type="hidden" value={entry.id} />
+            <label>환불 금액 (원)<input max={entry.amount - entry.refundedTotal} min={1} name="amount" required step={1} type="number" /></label>
+            <label>환불일<input name="refundedOn" required type="date" /></label>
+            <label className="quote-form-full">환불 사유<textarea name="reason" required /></label>
+            <label className="quote-email-approval quote-form-full">
+              <input name="approved" required type="checkbox" value="true" />
+              환불 내용을 확인했고, 대표로서 이 환불을 등록합니다. 등록된 환불은 덮어쓰지 않습니다.
+            </label>
+            <button className="auth-submit" type="submit">환불 등록</button>
+          </form>
+        </section>
+      ) : null}
+      {entry.refunds.length > 0 ? (
+        <section className="quote-list" aria-label="환불 이력">
+          <div className="list-heading">
+            <div>
+              <p className="setup-code">환불</p>
+              <h2>환불 이력</h2>
+            </div>
+            <span>{entry.refundedTotal.toLocaleString("ko-KR")}원</span>
+          </div>
+          {entry.refunds.map((refund) => (
+            <article className="quote-row" key={refund.id}>
+              <div>
+                <p>{refund.refundedOn} · {refund.reason}</p>
+                <h3>{refund.amount.toLocaleString("ko-KR")}원</h3>
+              </div>
+              <strong>{refund.amount.toLocaleString("ko-KR")}원</strong>
+            </article>
+          ))}
+        </section>
+      ) : null}
     </main>
   );
 }

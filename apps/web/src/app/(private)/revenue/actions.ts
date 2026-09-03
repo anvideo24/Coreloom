@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { founderSession } from "@/lib/auth/session";
-import { confirmFounderRevenueEntry, createFounderRevenueEntry, createFounderVenture } from "@/lib/revenue/repository";
+import { confirmFounderRevenueEntry, createFounderRevenueEntry, createFounderVenture, refundFounderRevenueEntry } from "@/lib/revenue/repository";
 
 function value(formData: FormData, key: string) {
   const item = formData.get(key);
@@ -53,5 +53,22 @@ export async function confirmRevenueEntryAction(formData: FormData) {
   });
   revalidatePath(`/revenue/${entryId}`);
   revalidatePath("/revenue");
+  redirect(`/revenue/${entryId}`);
+}
+
+export async function refundRevenueEntryAction(formData: FormData) {
+  const founder = await requireFounder();
+  const entryId = value(formData, "entryId");
+  await refundFounderRevenueEntry({
+    actorUserId: founder.id,
+    entryId,
+    amount: value(formData, "amount"),
+    refundedOn: value(formData, "refundedOn"),
+    reason: value(formData, "reason"),
+    approved: value(formData, "approved") === "true",
+  });
+  revalidatePath(`/revenue/${entryId}`);
+  revalidatePath("/revenue");
+  revalidatePath("/dashboard");
   redirect(`/revenue/${entryId}`);
 }

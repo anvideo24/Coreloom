@@ -4,6 +4,7 @@ import {
   confirmRevenueEntry,
   ledgerRowFromBilling,
   ledgerRowFromRevenueEntry,
+  normalizeRefund,
   normalizeRevenueEntry,
   normalizeVentureRegistration,
   sortLedgerRows,
@@ -84,6 +85,42 @@ describe("revenue entries", () => {
   });
 });
 
+describe("revenue refunds", () => {
+  const base = {
+    amount: "3000",
+    refundedOn: "2026-09-05",
+    reason: " 고객 요청 ",
+    originalAmount: 10000,
+    existingRefundTotal: 0,
+    status: "confirmed",
+    approved: true,
+  };
+
+  it("registers a refund on a confirmed entry with representative approval", () => {
+    expect(normalizeRefund(base)).toEqual({ amount: 3000, refundedOn: "2026-09-05", reason: "고객 요청" });
+  });
+
+  it("rejects without approval, on unconfirmed entries, or exceeding the original amount", () => {
+    expect(() => normalizeRefund({ ...base, approved: false })).toThrow("Representative approval is required");
+    expect(() => normalizeRefund({ ...base, status: "scheduled" })).toThrow("Only confirmed revenue can be refunded");
+    expect(() => normalizeRefund({ ...base, amount: "11000" })).toThrow("Refund total cannot exceed the original amount");
+    expect(() => normalizeRefund({ ...base, existingRefundTotal: 8000, amount: "3000" })).toThrow("Refund total cannot exceed the original amount");
+  });
+
+  it("rejects a missing reason or invalid date", () => {
+    expect(() => normalizeRefund({ ...base, reason: " " })).toThrow("Refund reason is required");
+    expect(() => normalizeRefund({ ...base, refundedOn: "09-05" })).toThrow("Refund date is required");
+  });
+
+  it("allows partial refunds that sum up to the original amount", () => {
+    expect(normalizeRefund({ ...base, existingRefundTotal: 7000, amount: "3000" })).toEqual({
+      amount: 3000,
+      refundedOn: "2026-09-05",
+      reason: "고객 요청",
+    });
+  });
+});
+
 describe("revenue ledger", () => {
   it("maps a deposited billing and an unclassified entry into one newest-first ledger", () => {
     const billing = ledgerRowFromBilling({
@@ -127,7 +164,9 @@ describe("revenue ledger", () => {
     expect(summarizeLedger([billing, unclassified])).toEqual({
       confirmedAmount: 3000,
       scheduledAmount: 5000,
+      refundedAmount: 0,
       unclassifiedCount: 1,
     });
+    expect(summarizeLedger([billing, unclassified], 1000)).toMatchObject({ refundedAmount: 1000 });
   });
 });

@@ -433,6 +433,24 @@ export const revenueEntries = pgTable(
   ],
 );
 
+export const revenueRefunds = pgTable(
+  "revenue_refunds",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    revenueEntryId: uuid("revenue_entry_id").notNull().references(() => revenueEntries.id),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull().default("KRW"),
+    refundedOn: date("refunded_on", { mode: "string" }).notNull(),
+    reason: text("reason").notNull(),
+    createdAt,
+  },
+  (table) => [
+    index("revenue_refunds_entry_created_at_idx").on(table.revenueEntryId, desc(table.createdAt)),
+    index("revenue_refunds_workspace_created_at_idx").on(table.workspaceId, desc(table.createdAt)),
+  ],
+);
+
 export const expenseEntries = pgTable(
   "expense_entries",
   {
