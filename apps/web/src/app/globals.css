@@ -1,8 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --canvas: #f2f5f0;
+  --surface: #ffffff;
+  --ink: #16251f;
+  --muted: #5d6d64;
+  --line: #ced8d0;
+  --accent: #0b684c;
+  --accent-ink: #ffffff;
+  --danger: #a33232;
+  --space-3: 0.75rem;
+  --space-5: 1.25rem;
+  --space-7: 1.75rem;
+  --space-10: 2.5rem;
+  --radius-card: 1rem;
+  --radius-control: 0.625rem;
+  --control-height: 3rem;
+  --background: var(--canvas);
+  --foreground: var(--ink);
 }
 
 @theme inline {
@@ -12,15 +27,90 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+.auth-shell,
+.dashboard-shell {
+  align-items: center;
+  background: var(--canvas);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+  padding: var(--space-5);
+}
+
+.auth-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-card);
+  box-shadow: 0 1rem 3rem rgb(22 37 31 / 8%);
+  max-width: 28rem;
+  padding: var(--space-10);
+  width: 100%;
+}
+
+.auth-eyebrow {
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin: 0 0 var(--space-3);
+}
+
+.auth-card h1,
+.dashboard-shell h1 {
+  font-size: clamp(2rem, 6vw, 3rem);
+  letter-spacing: -0.04em;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.auth-intro,
+.auth-help,
+.dashboard-shell > p:last-child {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.auth-intro { margin: var(--space-5) 0 var(--space-7); }
+.auth-help { font-size: 0.875rem; margin: var(--space-5) 0 0; }
+
+.auth-form { display: grid; gap: var(--space-3); }
+.auth-label { font-size: 0.875rem; font-weight: 700; }
+
+.auth-input,
+.auth-submit {
+  border-radius: var(--radius-control);
+  min-height: var(--control-height);
+}
+
+.auth-input {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font: inherit;
+  padding: 0 var(--space-3);
+}
+
+.auth-input:focus-visible,
+.auth-submit:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 55%); outline-offset: 2px; }
+
+.auth-submit {
+  background: var(--accent);
+  border: 0;
+  color: var(--accent-ink);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  margin-top: var(--space-3);
+}
+
+.auth-submit:disabled { cursor: wait; opacity: 0.65; }
+.auth-error { color: var(--danger); font-size: 0.875rem; margin: 0; }
+
+.dashboard-shell { align-items: flex-start; flex-direction: column; gap: var(--space-5); margin: 0 auto; max-width: 50rem; }
+.dashboard-shell > p { margin: 0; max-width: 42rem; }
