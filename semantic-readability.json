@@ -1,0 +1,18 @@
+{
+  "schema": "semantic-readability/v1",
+  "artifact": "apps/web/src/app/(private)/company-setup/page.tsx",
+  "units": [
+    {
+      "id": "company-setup-progress",
+      "atomic_text": "0%",
+      "intentional_split": false,
+      "fragments": [
+        {
+          "text": "0%",
+          "line": 1,
+          "container": "progress-card"
+        }
+      ]
+    }
+  ]
+}
