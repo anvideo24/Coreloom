@@ -11,6 +11,7 @@ export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "f
 export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]);
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
 export const clientContactRelationStatus = pgEnum("client_contact_relation_status", ["active", "inactive"]);
+export const rechoEvidenceKind = pgEnum("recho_evidence_kind", ["email", "call", "meeting"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -284,5 +285,29 @@ export const tasks = pgTable(
   (table) => [
     index("tasks_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
     index("tasks_project_created_at_idx").on(table.projectId, desc(table.createdAt)),
+  ],
+);
+
+export const rechoEvidence = pgTable(
+  "recho_evidence",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    kind: rechoEvidenceKind("kind").notNull(),
+    title: text("title").notNull(),
+    originalIdentifier: text("original_identifier").notNull(),
+    originalUrl: text("original_url"),
+    occurredOn: date("occurred_on", { mode: "string" }).notNull(),
+    occurredTime: text("occurred_time").notNull(),
+    linkReason: text("link_reason").notNull(),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    uniqueIndex("recho_evidence_project_original_idx").on(table.projectId, table.originalIdentifier),
+    index("recho_evidence_workspace_occurred_on_idx").on(table.workspaceId, desc(table.occurredOn)),
   ],
 );

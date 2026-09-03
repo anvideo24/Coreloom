@@ -8,6 +8,7 @@ const navigationItems = [
   { href: "/contracts", label: "계약" },
   { href: "/billings", label: "청구" },
   { href: "/tasks", label: "업무" },
+  { href: "/timeline", label: "근거 기록" },
 ];
 
 export function PrivateNavigation() {

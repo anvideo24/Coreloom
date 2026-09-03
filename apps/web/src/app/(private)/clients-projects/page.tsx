@@ -22,7 +22,7 @@ export default async function ClientsProjectsPage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / CLIENTS & PROJECTS</p>
           <h1>고객사와 프로젝트</h1>
-          <p>고객사를 먼저 등록한 뒤 담당자와 프로젝트를 연결하세요. 진행률은 현재 판단 기준이며, 업무와 기한은 업무·일정에서 이어서 등록합니다. Recho 연결은 다음 기능에서 이어집니다.</p>
+          <p>고객사를 먼저 등록한 뒤 담당자와 프로젝트를 연결하세요. 진행률은 현재 판단 기준이며, 업무와 기한은 업무·일정에서 이어서 등록합니다. Recho 메일·통화·회의는 근거 기록에서 프로젝트에 연결합니다.</p>
         </div>
       </header>
 
