@@ -1,0 +1,17 @@
+{
+  "name": "Coreloom Web",
+  "install": "cd apps/web && npm ci",
+  "terminals": [
+    {
+      "name": "web-dev",
+      "command": "cd apps/web && npm run dev",
+      "description": "Next.js development server for the Coreloom web app (http://localhost:3000). Public pages and the local onboarding flow at /setup work without secrets; /dashboard and other private routes need NEON_AUTH_* and DATABASE_URL configured (via /setup or environment secrets)."
+    }
+  ],
+  "ports": [
+    {
+      "name": "web",
+      "port": 3000
+    }
+  ]
+}
