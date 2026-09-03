@@ -3,11 +3,9 @@ import { redirect } from "next/navigation";
 import { createClientAction, createClientContactAction, createProjectAction, updateProjectProgressAction } from "@/app/(private)/clients-projects/actions";
 import { founderSession } from "@/lib/auth/session";
 import { listFounderClientsAndProjects } from "@/lib/clients-projects/repository";
-import { contactRelationStatusLabels, contactRelationStatuses, projectStatuses } from "@/lib/domain/clients-projects";
+import { contactRelationStatusLabels, contactRelationStatuses, projectStatusLabels, projectStatuses } from "@/lib/domain/clients-projects";
 
 export const dynamic = "force-dynamic";
-
-const statusLabels = { planned: "예정", active: "진행 중", on_hold: "보류", complete: "완료" } as const;
 
 export default async function ClientsProjectsPage() {
   const session = await founderSession();
@@ -22,7 +20,7 @@ export default async function ClientsProjectsPage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / CLIENTS & PROJECTS</p>
           <h1>고객사와 프로젝트</h1>
-          <p>고객사를 먼저 등록한 뒤 담당자와 프로젝트를 연결하세요. 진행률은 현재 판단 기준이며, 업무와 기한은 업무·일정에서 이어서 등록합니다. Recho 메일·통화·회의는 근거 기록에서 프로젝트에 연결합니다.</p>
+          <p>고객사를 먼저 등록한 뒤 담당자와 프로젝트를 연결하세요. 프로젝트 이름을 열면 업무·견적·계약·청구·문서와 Recho 근거를 한 화면에서 봅니다. 진행률은 현재 판단 기준이며, Recho API 동기화는 포함하지 않습니다.</p>
         </div>
       </header>
 
@@ -52,7 +50,7 @@ export default async function ClientsProjectsPage() {
           {clients.length === 0 ? <p className="form-help">먼저 고객사를 등록하면 프로젝트를 연결할 수 있습니다.</p> : <>
             <label>고객사<select name="clientId" required>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</select></label>
             <label>프로젝트명<input name="name" placeholder="예: 브랜드 사이트 구축" required /></label>
-            <label>상태<select defaultValue="planned" name="status">{projectStatuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select></label>
+            <label>상태<select defaultValue="planned" name="status">{projectStatuses.map((status) => <option key={status} value={status}>{projectStatusLabels[status]}</option>)}</select></label>
             <label>진행률<input defaultValue="0" max="100" min="0" name="progressPercent" type="number" required /></label>
             <button className="auth-submit" type="submit">프로젝트 저장</button>
           </>}
@@ -76,10 +74,10 @@ export default async function ClientsProjectsPage() {
         <div className="list-heading"><div><p className="setup-code">등록 현황</p><h2>진행 중인 프로젝트</h2></div><span>{projects.length}개</span></div>
         {projects.length === 0 ? <p className="empty-state">등록된 프로젝트가 없습니다. 고객사를 등록한 뒤 첫 프로젝트를 추가하세요.</p> : projects.map((project) => (
           <article className="project-row" key={project.id}>
-            <div><p>{project.clientName}</p><h3>{project.name}</h3></div>
+            <div><p>{project.clientName}</p><h3><a href={`/clients-projects/${project.id}`}>{project.name}</a></h3></div>
             <form action={updateProjectProgressAction} className="project-update-form">
               <input name="projectId" type="hidden" value={project.id} />
-              <label>상태<select defaultValue={project.status} name="status">{projectStatuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}</select></label>
+              <label>상태<select defaultValue={project.status} name="status">{projectStatuses.map((status) => <option key={status} value={status}>{projectStatusLabels[status]}</option>)}</select></label>
               <label>진행률<input defaultValue={project.progressPercent} max="100" min="0" name="progressPercent" type="number" required /></label>
               <button className="auth-submit" type="submit">저장</button>
             </form>

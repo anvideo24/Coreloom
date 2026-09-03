@@ -150,7 +150,7 @@ export function buildFounderDashboard(input: {
   );
   const activeProjects = take(
     input.projects.filter((item) => item.status !== "complete").map((item) => ({
-      href: "/clients-projects",
+      href: `/clients-projects/${item.id}`,
       title: item.name,
       detail: `${item.clientName} · ${item.status === "active" ? "진행 중" : item.status === "on_hold" ? "보류" : "예정"} · ${item.progressPercent}%`,
     })),

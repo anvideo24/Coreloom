@@ -92,7 +92,7 @@ describe("founder dashboard summary", () => {
       documentCount: 4,
       revenue: { confirmedAmount: 3000, scheduledAmount: 1000, unclassifiedCount: 1 },
     });
-    expect(dashboard.activeProjects.map((item) => item.title)).toEqual(["진행 프로젝트"]);
+    expect(dashboard.activeProjects.map((item) => item.href)).toEqual(["/clients-projects/pr1"]);
     expect(dashboard.schedule.map((item) => item.title)).toEqual(["지난 업무", "다음 주 업무"]);
     expect(dashboard.schedule[0].detail).toContain("지남");
     expect(dashboard.recentDecisions[0].href).toBe("/proposals/d1");

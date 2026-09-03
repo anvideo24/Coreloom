@@ -4,6 +4,13 @@ export const contactRelationStatuses = ["active", "inactive"] as const;
 export type ProjectStatus = (typeof projectStatuses)[number];
 export type ContactRelationStatus = (typeof contactRelationStatuses)[number];
 
+export const projectStatusLabels: Record<ProjectStatus, string> = {
+  planned: "예정",
+  active: "진행 중",
+  on_hold: "보류",
+  complete: "완료",
+};
+
 export const contactRelationStatusLabels: Record<ContactRelationStatus, string> = {
   active: "활성",
   inactive: "비활성",

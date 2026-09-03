@@ -50,11 +50,14 @@ export async function createProjectAction(formData: FormData) {
 
 export async function updateProjectProgressAction(formData: FormData) {
   const founder = await authorizedFounder();
+  const projectId = value(formData, "projectId");
   await updateFounderProjectProgress({
     actorUserId: founder.id,
-    projectId: value(formData, "projectId"),
+    projectId,
     status: value(formData, "status"),
     progressPercent: value(formData, "progressPercent"),
   });
   revalidatePath("/clients-projects");
+  revalidatePath(`/clients-projects/${projectId}`);
+  revalidatePath("/dashboard");
 }
