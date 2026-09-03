@@ -14,6 +14,8 @@ export const clientContactRelationStatus = pgEnum("client_contact_relation_statu
 export const rechoEvidenceKind = pgEnum("recho_evidence_kind", ["email", "call", "meeting"]);
 export const aiProposalKind = pgEnum("ai_proposal_kind", ["agreement", "next_action", "risk"]);
 export const aiProposalStatus = pgEnum("ai_proposal_status", ["proposed", "confirmed", "rejected"]);
+export const ventureKind = pgEnum("venture_kind", ["app", "subscription"]);
+export const revenueEntryStatus = pgEnum("revenue_entry_status", ["scheduled", "confirmed"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -334,5 +336,46 @@ export const aiProposals = pgTable(
   (table) => [
     index("ai_proposals_workspace_created_at_idx").on(table.workspaceId, desc(table.createdAt)),
     index("ai_proposals_evidence_created_at_idx").on(table.evidenceId, desc(table.createdAt)),
+  ],
+);
+
+export const ventures = pgTable(
+  "ventures",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    name: text("name").notNull(),
+    kind: ventureKind("kind").notNull(),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    uniqueIndex("ventures_workspace_name_idx").on(table.workspaceId, table.name),
+    index("ventures_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+  ],
+);
+
+export const revenueEntries = pgTable(
+  "revenue_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    ventureId: uuid("venture_id").references(() => ventures.id),
+    clientCompanyId: uuid("client_company_id").references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull().default("KRW"),
+    occurredOn: date("occurred_on", { mode: "string" }).notNull(),
+    settlementDate: date("settlement_date", { mode: "string" }).notNull(),
+    status: revenueEntryStatus("status").notNull().default("scheduled"),
+    note: text("note"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("revenue_entries_workspace_occurred_on_idx").on(table.workspaceId, desc(table.occurredOn)),
   ],
 );
