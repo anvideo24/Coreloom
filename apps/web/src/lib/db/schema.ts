@@ -7,8 +7,9 @@ export const projectStatus = pgEnum("project_status", ["planned", "active", "on_
 export const quoteEmailDeliveryStatus = pgEnum("quote_email_delivery_status", ["pending", "accepted", "failed"]);
 export const contractStatus = pgEnum("contract_status", ["draft", "original_recorded", "executed"]);
 export const contractExecutionMethod = pgEnum("contract_execution_method", ["stamped_original"]);
-export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "final"]);
+export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "final", "recurring"]);
 export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]);
+export const billingRecurringInterval = pgEnum("billing_recurring_interval", ["monthly"]);
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
 export const clientContactRelationStatus = pgEnum("client_contact_relation_status", ["active", "inactive"]);
 export const rechoEvidenceKind = pgEnum("recho_evidence_kind", ["email", "call", "meeting"]);
@@ -245,6 +246,31 @@ export const contractVersions = pgTable(
   ],
 );
 
+export const billingRecurringSeries = pgTable(
+  "billing_recurring_series",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    contractId: uuid("contract_id").notNull().references(() => contracts.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull().default("KRW"),
+    interval: billingRecurringInterval("interval").notNull().default("monthly"),
+    startDate: date("start_date", { mode: "string" }).notNull(),
+    endDate: date("end_date", { mode: "string" }).notNull(),
+    dueOffsetDays: integer("due_offset_days").notNull().default(0),
+    note: text("note"),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("billing_recurring_series_workspace_start_idx").on(table.workspaceId, table.startDate),
+    index("billing_recurring_series_contract_created_at_idx").on(table.contractId, desc(table.createdAt)),
+  ],
+);
+
 export const billings = pgTable(
   "billings",
   {
@@ -253,6 +279,7 @@ export const billings = pgTable(
     contractId: uuid("contract_id").notNull().references(() => contracts.id),
     clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
     projectId: uuid("project_id").references(() => projects.id),
+    seriesId: uuid("series_id").references(() => billingRecurringSeries.id),
     kind: billingKind("kind").notNull(),
     amount: integer("amount").notNull(),
     currency: text("currency").notNull().default("KRW"),
@@ -268,6 +295,7 @@ export const billings = pgTable(
   (table) => [
     index("billings_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
     index("billings_contract_created_at_idx").on(table.contractId, desc(table.createdAt)),
+    uniqueIndex("billings_series_billing_date_idx").on(table.seriesId, table.billingDate),
   ],
 );
 

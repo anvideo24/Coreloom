@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { founderSession } from "@/lib/auth/session";
-import { confirmFounderBillingDeposit, createFounderBilling, sendFounderBillingEmail } from "@/lib/billings/repository";
+import { confirmFounderBillingDeposit, createFounderBilling, createFounderRecurringSeries, sendFounderBillingEmail } from "@/lib/billings/repository";
 import { normalizeQuoteEmailDraft } from "@/lib/domain/quote-email";
 
 function value(formData: FormData, key: string) {
@@ -32,6 +32,24 @@ export async function createBillingAction(formData: FormData) {
   revalidatePath("/billings");
   revalidatePath("/contracts");
   redirect(`/billings/${result.billingId}`);
+}
+
+export async function createRecurringSeriesAction(formData: FormData) {
+  const founder = await requireFounder();
+  const result = await createFounderRecurringSeries({
+    actorUserId: founder.id,
+    contractId: value(formData, "contractId"),
+    amount: value(formData, "amount"),
+    startDate: value(formData, "startDate"),
+    endDate: value(formData, "endDate"),
+    dueOffsetDays: value(formData, "dueOffsetDays"),
+    note: value(formData, "note"),
+    approved: value(formData, "approved") === "true",
+  });
+  revalidatePath("/billings");
+  revalidatePath("/contracts");
+  revalidatePath("/revenue");
+  redirect(`/billings/series/${result.seriesId}`);
 }
 
 export async function confirmBillingDepositAction(formData: FormData) {

@@ -3,13 +3,14 @@ import "server-only";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, billingEmailDeliveries, billings, clientCompanies, contracts, contractVersions } from "@/lib/db/schema";
+import { auditEvents, billingEmailDeliveries, billingRecurringSeries, billings, clientCompanies, contracts, contractVersions } from "@/lib/db/schema";
 import {
   assertExecutedContractForBilling,
   billingKindLabels,
   calculateBillingInvoiceAmounts,
   confirmBillingDeposit,
   normalizeBillingDraft,
+  normalizeRecurringSeriesDraft,
 } from "@/lib/domain/billings";
 import { billingEmailConfigured, deliverBillingEmail } from "@/lib/billings/email";
 import { createBillingPdf } from "@/lib/billings/pdf";
@@ -29,6 +30,7 @@ export async function listFounderBillings(authUserId: string) {
   const rows = await database.select({
     id: billings.id,
     contractId: billings.contractId,
+    seriesId: billings.seriesId,
     kind: billings.kind,
     amount: billings.amount,
     currency: billings.currency,
@@ -78,7 +80,35 @@ export async function listFounderBillings(authUserId: string) {
     return row.status === "executed";
   });
 
-  return { billings: items, executableContracts };
+  const seriesRows = await database.select({
+    id: billingRecurringSeries.id,
+    contractId: billingRecurringSeries.contractId,
+    amount: billingRecurringSeries.amount,
+    currency: billingRecurringSeries.currency,
+    startDate: billingRecurringSeries.startDate,
+    endDate: billingRecurringSeries.endDate,
+    dueOffsetDays: billingRecurringSeries.dueOffsetDays,
+    clientName: clientCompanies.name,
+    createdAt: billingRecurringSeries.createdAt,
+  }).from(billingRecurringSeries)
+    .innerJoin(clientCompanies, eq(billingRecurringSeries.clientCompanyId, clientCompanies.id))
+    .innerJoin(contracts, eq(billingRecurringSeries.contractId, contracts.id))
+    .where(and(eq(billingRecurringSeries.workspaceId, workspace.id), isNull(billingRecurringSeries.deletedAt), isNull(contracts.deletedAt), isNull(clientCompanies.deletedAt)))
+    .orderBy(desc(billingRecurringSeries.createdAt));
+
+  const occurrenceCountBySeries = new Map<string, number>();
+  for (const row of items) {
+    if (!row.seriesId) continue;
+    occurrenceCountBySeries.set(row.seriesId, (occurrenceCountBySeries.get(row.seriesId) ?? 0) + 1);
+  }
+
+  const series = seriesRows.map((row) => ({
+    ...row,
+    contractTitle: latestTitleByContract.get(row.contractId) ?? "",
+    occurrenceCount: occurrenceCountBySeries.get(row.id) ?? 0,
+  }));
+
+  return { billings: items, executableContracts, series };
 }
 
 export async function getFounderBillingDetail(authUserId: string, billingId: string) {
@@ -87,6 +117,7 @@ export async function getFounderBillingDetail(authUserId: string, billingId: str
   const [billing] = await database.select({
     id: billings.id,
     contractId: billings.contractId,
+    seriesId: billings.seriesId,
     kind: billings.kind,
     amount: billings.amount,
     currency: billings.currency,
@@ -142,6 +173,98 @@ export async function createFounderBilling(input: {
     payload: { billingId: created.id, contractId: contract.id, kind: draft.kind, amount: draft.amount },
   });
   return { billingId: created.id };
+}
+
+export async function createFounderRecurringSeries(input: {
+  actorUserId: string;
+  contractId: string;
+  amount: string;
+  startDate: string;
+  endDate: string;
+  dueOffsetDays: string;
+  note?: string;
+  approved: boolean;
+}) {
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "billings");
+  const database = createDatabase();
+  const [contract] = await database.select({
+    id: contracts.id,
+    clientCompanyId: contracts.clientCompanyId,
+    projectId: contracts.projectId,
+  }).from(contracts)
+    .where(and(eq(contracts.id, input.contractId), eq(contracts.workspaceId, workspace.id), isNull(contracts.deletedAt)))
+    .limit(1);
+  if (!contract) throw new Error("Contract was not found");
+  const version = await latestContractVersion(database, contract.id);
+  if (!version) throw new Error("Contract version was not found");
+  assertExecutedContractForBilling(version.status);
+  const draft = normalizeRecurringSeriesDraft(input);
+  const [created] = await database.insert(billingRecurringSeries).values({
+    workspaceId: workspace.id,
+    contractId: contract.id,
+    clientCompanyId: contract.clientCompanyId,
+    projectId: contract.projectId,
+    amount: draft.amount,
+    currency: draft.currency,
+    interval: draft.interval,
+    startDate: draft.startDate,
+    endDate: draft.endDate,
+    dueOffsetDays: draft.dueOffsetDays,
+    note: draft.note,
+  }).returning({ id: billingRecurringSeries.id });
+  const createdBillings = await database.insert(billings).values(draft.occurrences.map((occurrence) => ({
+    workspaceId: workspace.id,
+    contractId: contract.id,
+    clientCompanyId: contract.clientCompanyId,
+    projectId: contract.projectId,
+    seriesId: created.id,
+    ...occurrence,
+  }))).returning({ id: billings.id, billingDate: billings.billingDate });
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "billing.recurring_series_created",
+    payload: {
+      seriesId: created.id,
+      contractId: contract.id,
+      amount: draft.amount,
+      occurrenceCount: createdBillings.length,
+      billingIds: createdBillings.map((row) => row.id),
+    },
+  });
+  return { seriesId: created.id, billingIds: createdBillings.map((row) => row.id) };
+}
+
+export async function getFounderRecurringSeriesDetail(authUserId: string, seriesId: string) {
+  const workspace = await ensureFounderWorkspace(authUserId, "billings");
+  const database = createDatabase();
+  const [series] = await database.select({
+    id: billingRecurringSeries.id,
+    contractId: billingRecurringSeries.contractId,
+    amount: billingRecurringSeries.amount,
+    currency: billingRecurringSeries.currency,
+    interval: billingRecurringSeries.interval,
+    startDate: billingRecurringSeries.startDate,
+    endDate: billingRecurringSeries.endDate,
+    dueOffsetDays: billingRecurringSeries.dueOffsetDays,
+    note: billingRecurringSeries.note,
+    clientName: clientCompanies.name,
+  }).from(billingRecurringSeries)
+    .innerJoin(clientCompanies, eq(billingRecurringSeries.clientCompanyId, clientCompanies.id))
+    .where(and(eq(billingRecurringSeries.id, seriesId), eq(billingRecurringSeries.workspaceId, workspace.id), isNull(billingRecurringSeries.deletedAt)))
+    .limit(1);
+  if (!series) return null;
+  const version = await latestContractVersion(database, series.contractId);
+  const occurrences = await database.select({
+    id: billings.id,
+    billingDate: billings.billingDate,
+    dueDate: billings.dueDate,
+    amount: billings.amount,
+    status: billings.status,
+  }).from(billings)
+    .where(and(eq(billings.seriesId, series.id), eq(billings.workspaceId, workspace.id), isNull(billings.deletedAt)))
+    .orderBy(billings.billingDate);
+  return { series, contractTitle: version?.title ?? "반복 청구", occurrences };
 }
 
 export async function confirmFounderBillingDeposit(input: { actorUserId: string; billingId: string; approved: boolean }) {

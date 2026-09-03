@@ -99,6 +99,13 @@
       "when": 1788434016384,
       "tag": "0013_adorable_thunderbolt",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788434276125,
+      "tag": "0014_white_rhino",
+      "breakpoints": true
     }
   ]
 }

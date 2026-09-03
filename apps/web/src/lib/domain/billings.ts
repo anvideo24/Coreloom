@@ -1,14 +1,20 @@
 export const BILLING_CURRENCY = "KRW";
 export const billingKinds = ["down_payment", "interim", "final"] as const;
+export const recurringBillingKind = "recurring" as const;
+export const allBillingKinds = [...billingKinds, recurringBillingKind] as const;
 export const billingStatuses = ["scheduled", "deposited"] as const;
+export const RECURRING_INTERVAL = "monthly" as const;
+export const MAX_RECURRING_OCCURRENCES = 24;
 
-export type BillingKind = (typeof billingKinds)[number];
+export type BillingKind = (typeof allBillingKinds)[number];
 export type BillingStatus = (typeof billingStatuses)[number];
+export type RecurringInterval = typeof RECURRING_INTERVAL;
 
 export const billingKindLabels: Record<BillingKind, string> = {
   down_payment: "착수금",
   interim: "중도금",
   final: "잔금",
+  recurring: "반복 청구",
 };
 
 export const billingStatusLabels: Record<BillingStatus, string> = {
@@ -36,12 +42,12 @@ export function normalizeBillingDraft(input: {
   dueDate: string;
   note?: string;
 }) {
-  if (!billingKinds.includes(input.kind as BillingKind)) throw new Error("Unsupported billing kind");
+  if (!billingKinds.includes(input.kind as (typeof billingKinds)[number])) throw new Error("Unsupported billing kind");
   const billingDate = parseIsoDate(input.billingDate, "Billing date is required");
   const dueDate = parseIsoDate(input.dueDate, "Due date is required");
   if (dueDate < billingDate) throw new Error("Due date cannot be earlier than billing date");
   return {
-    kind: input.kind as BillingKind,
+    kind: input.kind as (typeof billingKinds)[number],
     amount: parseAmount(input.amount),
     currency: BILLING_CURRENCY,
     billingDate,
@@ -69,4 +75,74 @@ export function calculateBillingInvoiceAmounts(amount: number) {
 
 export function billingPdfDownloadPath(billingId: string) {
   return `/billings/${billingId}/download`;
+}
+
+function formatIsoDate(year: number, month: number, day: number) {
+  return `${String(year).padStart(4, "0")}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+}
+
+export function addCalendarMonths(isoDate: string, months: number) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1 + months, 1));
+  const lastDay = new Date(Date.UTC(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, 0)).getUTCDate();
+  return formatIsoDate(shifted.getUTCFullYear(), shifted.getUTCMonth() + 1, Math.min(day, lastDay));
+}
+
+export function addCalendarDays(isoDate: string, days: number) {
+  const date = new Date(`${isoDate}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
+
+export function buildMonthlyBillingDates(startDate: string, endDate: string) {
+  const dates: string[] = [];
+  let monthOffset = 0;
+  while (true) {
+    const current = addCalendarMonths(startDate, monthOffset);
+    if (current > endDate) break;
+    dates.push(current);
+    if (dates.length > MAX_RECURRING_OCCURRENCES) throw new Error("Recurring series cannot exceed 24 months");
+    monthOffset += 1;
+    if (monthOffset > MAX_RECURRING_OCCURRENCES + 1) throw new Error("Recurring series cannot exceed 24 months");
+  }
+  if (dates.length === 0) throw new Error("Recurring series needs at least one billing date");
+  return dates;
+}
+
+export function normalizeRecurringSeriesDraft(input: {
+  amount: string;
+  startDate: string;
+  endDate: string;
+  dueOffsetDays: string;
+  note?: string;
+  approved: boolean;
+}) {
+  if (!input.approved) throw new Error("Representative approval is required");
+  const startDate = parseIsoDate(input.startDate, "Start date is required");
+  const endDate = parseIsoDate(input.endDate, "End date is required");
+  if (endDate < startDate) throw new Error("End date cannot be earlier than start date");
+  const dueOffsetRaw = input.dueOffsetDays.trim();
+  if (!/^\d+$/.test(dueOffsetRaw)) throw new Error("Due offset days must be a whole number");
+  const dueOffsetDays = Number(dueOffsetRaw);
+  if (dueOffsetDays > 31) throw new Error("Due offset days cannot exceed 31");
+  const amount = parseAmount(input.amount);
+  const note = input.note?.trim() || null;
+  const billingDates = buildMonthlyBillingDates(startDate, endDate);
+  return {
+    amount,
+    currency: BILLING_CURRENCY,
+    interval: RECURRING_INTERVAL,
+    startDate,
+    endDate,
+    dueOffsetDays,
+    note,
+    occurrences: billingDates.map((billingDate) => ({
+      kind: recurringBillingKind,
+      amount,
+      currency: BILLING_CURRENCY,
+      billingDate,
+      dueDate: addCalendarDays(billingDate, dueOffsetDays),
+      note,
+    })),
+  };
 }
