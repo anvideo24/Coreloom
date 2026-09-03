@@ -1,0 +1,102 @@
+import { describe, expect, it } from "vitest";
+
+import { buildFounderDashboard, calendarDateInTimeZone } from "@/lib/domain/dashboard";
+
+const empty = {
+  quotes: [],
+  contracts: [],
+  billings: [],
+  pendingProposals: [],
+  projects: [],
+  revenue: { confirmedAmount: 0, scheduledAmount: 0, unclassifiedCount: 0 },
+  tasks: [],
+  recentDecisions: [],
+  documentCount: 0,
+};
+
+describe("founder dashboard date", () => {
+  it("uses the Seoul calendar date", () => {
+    expect(calendarDateInTimeZone(new Date("2026-09-03T15:30:00.000Z"))).toBe("2026-09-04");
+    expect(calendarDateInTimeZone(new Date("2026-09-03T14:59:00.000Z"))).toBe("2026-09-03");
+  });
+});
+
+describe("founder dashboard summary", () => {
+  it("puts company setup progress and missing evidence first", () => {
+    const dashboard = buildFounderDashboard({
+      ...empty,
+      today: "2026-09-03",
+      setupItems: [
+        { id: "1", title: "사업자등록 신청 준비", status: "in_progress", evidenceReference: null },
+        { id: "2", title: "사업자등록증 보관", status: "complete", evidenceReference: "회사 문서함/등록증" },
+        { id: "3", title: "공동사업 여부 확인", status: "not_applicable", evidenceReference: null },
+      ],
+    });
+    expect(dashboard.setupProgress).toBe(67);
+    expect(dashboard.openSetupItems).toEqual([
+      { href: "/company-setup", title: "사업자등록 신청 준비", detail: "진행 중" },
+    ]);
+    expect(dashboard.evidenceGaps).toEqual([
+      { href: "/company-setup", title: "사업자등록 신청 준비", detail: "증빙 위치 없음" },
+    ]);
+  });
+
+  it("lists unsent quotes, unexecuted contracts, due billings, and pending proposals", () => {
+    const dashboard = buildFounderDashboard({
+      ...empty,
+      today: "2026-09-03",
+      setupItems: [],
+      quotes: [
+        { quoteId: "q1", versionId: "v2", versionNumber: 2, title: "유지보수", clientName: "고객A", totalAmount: 3000, emailRequested: false },
+        { quoteId: "q2", versionId: "v1", versionNumber: 1, title: "이미 보낸 견적", clientName: "고객B", totalAmount: 1000, emailRequested: true },
+      ],
+      contracts: [
+        { contractId: "c1", title: "날인 대기", clientName: "고객A", status: "original_recorded", totalAmount: 3000 },
+        { contractId: "c2", title: "체결됨", clientName: "고객B", status: "executed", totalAmount: 1000 },
+      ],
+      billings: [
+        { id: "b1", clientName: "고객A", contractTitle: "유지보수", kindLabel: "반복 청구", amount: 3000, billingDate: "2026-09-01", dueDate: "2026-09-03", status: "scheduled" },
+        { id: "b2", clientName: "고객A", contractTitle: "유지보수", kindLabel: "잔금", amount: 1000, billingDate: "2026-10-01", dueDate: "2026-10-10", status: "scheduled" },
+        { id: "b3", clientName: "고객B", contractTitle: "입금됨", kindLabel: "착수금", amount: 500, billingDate: "2026-08-01", dueDate: "2026-08-05", status: "deposited" },
+      ],
+      pendingProposals: [
+        { id: "p1", kindLabel: "다음 할 일", body: "일정 조율이 필요합니다", clientName: "고객A", projectName: "브랜드 사이트" },
+      ],
+    });
+    expect(dashboard.quotesToSend.map((item) => item.href)).toEqual(["/quotes/q1/versions/v2/email"]);
+    expect(dashboard.contractsToExecute.map((item) => item.href)).toEqual(["/contracts/c1"]);
+    expect(dashboard.billingsToCheck.map((item) => item.href)).toEqual(["/billings/b1"]);
+    expect(dashboard.proposalsToReview[0]).toMatchObject({
+      href: "/proposals/p1",
+      detail: "고객A · 브랜드 사이트 · 다음 할 일 · 공식 결정 아님",
+    });
+  });
+
+  it("keeps overdue tasks before later dates and hides completed projects", () => {
+    const dashboard = buildFounderDashboard({
+      ...empty,
+      today: "2026-09-03",
+      setupItems: [],
+      projects: [
+        { id: "pr1", name: "진행 프로젝트", clientName: "고객A", status: "active", progressPercent: 40 },
+        { id: "pr2", name: "끝난 프로젝트", clientName: "고객B", status: "complete", progressPercent: 100 },
+      ],
+      tasks: [
+        { id: "t2", title: "다음 주 업무", dueDate: "2026-09-10", status: "open", clientName: "고객A", projectName: "사이트" },
+        { id: "t1", title: "지난 업무", dueDate: "2026-09-01", status: "open", clientName: "고객A", projectName: "사이트" },
+        { id: "t3", title: "완료된 업무", dueDate: "2026-09-02", status: "done", clientName: "고객A", projectName: "사이트" },
+      ],
+      recentDecisions: [
+        { id: "d1", kindLabel: "위험", body: "일정 지연", statusLabel: "확정", clientName: "고객A", projectName: "사이트" },
+      ],
+      documentCount: 4,
+      revenue: { confirmedAmount: 3000, scheduledAmount: 1000, unclassifiedCount: 1 },
+    });
+    expect(dashboard.activeProjects.map((item) => item.title)).toEqual(["진행 프로젝트"]);
+    expect(dashboard.schedule.map((item) => item.title)).toEqual(["지난 업무", "다음 주 업무"]);
+    expect(dashboard.schedule[0].detail).toContain("지남");
+    expect(dashboard.recentDecisions[0].href).toBe("/proposals/d1");
+    expect(dashboard.documentCount).toBe(4);
+    expect(dashboard.revenue.unclassifiedCount).toBe(1);
+  });
+});
