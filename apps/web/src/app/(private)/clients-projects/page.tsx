@@ -24,7 +24,6 @@ export default async function ClientsProjectsPage() {
           <h1>고객사와 프로젝트</h1>
           <p>고객사를 먼저 등록한 뒤 프로젝트를 연결하세요. 진행률은 현재 판단 기준이며, 계약·청구 단계는 다음 기능에서 이어집니다.</p>
         </div>
-        <a className="text-link" href="/dashboard">대시보드</a>
       </header>
 
       <section className="registration-grid" aria-label="등록">

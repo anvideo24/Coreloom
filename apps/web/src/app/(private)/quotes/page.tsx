@@ -15,7 +15,7 @@ export default async function QuotesPage() {
   const { clients, projects, versions } = await listFounderQuotes(session.founder.id);
 
   return <main className="operations-shell">
-    <header className="operations-header"><div><p className="auth-eyebrow">CORELOOM / QUOTES</p><h1>견적서</h1><p>견적 수정은 새 버전으로 남습니다. 금액은 부가세 별도 기준이며, 각 버전에서 PDF를 다운로드하거나 인쇄할 수 있습니다.</p></div><a className="text-link" href="/dashboard">대시보드</a></header>
+    <header className="operations-header"><div><p className="auth-eyebrow">CORELOOM / QUOTES</p><h1>견적서</h1><p>견적 수정은 새 버전으로 남습니다. 금액은 부가세 별도 기준이며, 각 버전에서 PDF를 다운로드하거나 인쇄할 수 있습니다.</p></div></header>
     {clients.length === 0 ? <section className="empty-state quote-empty"><h2>먼저 고객사를 등록해 주세요</h2><p>견적서는 고객사에 연결해 보관합니다.</p><a className="text-link" href="/clients-projects">고객사 등록으로 이동</a></section> : <section className="quote-editor-card"><p className="setup-code">새 견적 초안</p><form action={saveQuoteVersionAction} className="quote-form">
       <QuoteClientProjectFields clients={clients} projects={projects} />
       <label className="quote-form-full">견적명<input name="title" placeholder="예: 웹사이트 구축 견적" required /></label>

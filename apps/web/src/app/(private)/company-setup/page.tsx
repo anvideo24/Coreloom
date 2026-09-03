@@ -30,7 +30,6 @@ export default async function CompanySetupPage() {
           <h1>회사 설립 준비</h1>
           <p>개인사업자 시작에 필요한 확인과 증빙 위치를 한곳에 남깁니다. 세무 판단은 공식 안내 또는 전문가 확인 뒤 대표가 직접 확정합니다.</p>
         </div>
-        <a className="text-link" href="/dashboard">대시보드</a>
       </header>
 
       <section aria-label="설립 준비 진행률" className="progress-card">
