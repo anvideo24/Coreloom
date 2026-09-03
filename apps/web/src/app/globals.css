@@ -40,7 +40,7 @@ body {
   display: flex;
   justify-content: center;
   min-height: 100vh;
-  padding: var(--space-5);
+  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
 }
 
 .auth-card {
@@ -119,7 +119,7 @@ body {
 .dashboard-shell > p { margin: 0; max-width: 42rem; }
 .dashboard-action { align-items: center; display: inline-flex; justify-content: center; padding: 0 var(--space-5); text-decoration: none; }
 
-.private-app-shell { background: var(--canvas); display: grid; grid-template-columns: 15rem minmax(0, 1fr); min-height: 100vh; }.private-navigation { background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: var(--space-5); padding: var(--space-7) var(--space-5); }.private-navigation-brand { color: var(--ink); font-size: 1.125rem; font-weight: 800; letter-spacing: 0.06em; text-decoration: none; }.private-navigation > p { color: var(--muted); font-size: 0.75rem; margin: calc(var(--space-3) * -1) 0 0; }.private-navigation nav { display: grid; gap: var(--space-3); }.private-navigation nav a { border-radius: var(--radius-control); color: var(--ink); font-size: 0.875rem; font-weight: 700; min-height: var(--control-height); padding: 0 var(--space-3); text-decoration: none; align-content: center; }.private-navigation nav a:hover { background: color-mix(in srgb, var(--accent), transparent 92%); color: var(--accent); }.private-navigation a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 55%); outline-offset: 2px; }.private-app-content { min-width: 0; }
+.private-app-shell { background: var(--canvas); display: grid; grid-template-columns: 15rem minmax(0, 1fr); min-height: 100vh; }.private-navigation { background: var(--surface); border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: var(--space-5); padding: calc(var(--space-7) + env(safe-area-inset-top, 0px)) var(--space-5) var(--space-7); }.private-navigation-brand { color: var(--ink); font-size: 1.125rem; font-weight: 800; letter-spacing: 0.06em; text-decoration: none; }.private-navigation > p { color: var(--muted); font-size: 0.75rem; margin: calc(var(--space-3) * -1) 0 0; }.private-navigation nav { display: grid; gap: var(--space-3); }.private-navigation nav a { border-radius: var(--radius-control); color: var(--ink); font-size: 0.875rem; font-weight: 700; min-height: var(--control-height); padding: 0 var(--space-3); text-decoration: none; align-content: center; }.private-navigation nav a:hover { background: color-mix(in srgb, var(--accent), transparent 92%); color: var(--accent); }.private-navigation a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 55%); outline-offset: 2px; }.private-app-content { min-width: 0; }
 
 .operations-shell {
   margin: 0 auto;
@@ -200,13 +200,14 @@ body {
 .quote-print-shell { background: var(--canvas); min-height: 100vh; padding: var(--space-7); }.quote-print-actions { display: flex; gap: var(--space-5); justify-content: flex-end; margin: 0 auto var(--space-5); max-width: 50rem; }.quote-document-actions { align-items: center; display: flex; gap: var(--space-3); }.quote-print-button { margin: 0; padding: 0 var(--space-5); text-decoration: none; }.quote-print-link { background: transparent; border: 0; cursor: pointer; font: inherit; }.quote-document { background: var(--surface); border: 1px solid var(--line); margin: 0 auto; max-width: 50rem; padding: 4rem; }.quote-document header > p { color: var(--accent); font-weight: 700; margin: 0 0 var(--space-3); }.quote-document h1 { font-size: 2rem; margin: 0; }.quote-document dl { display: flex; gap: var(--space-7); margin: var(--space-7) 0 0; }.quote-document dt { color: var(--muted); font-size: 0.75rem; }.quote-document dd { margin: 0.25rem 0 0; }.quote-document table { border-collapse: collapse; margin-top: var(--space-10); width: 100%; }.quote-document th, .quote-document td { border-bottom: 1px solid var(--line); padding: var(--space-3); text-align: left; }.quote-document th:last-child, .quote-document td:last-child { text-align: right; }.quote-totals { margin-left: auto; margin-top: var(--space-7); max-width: 18rem; }.quote-totals p { display: flex; justify-content: space-between; margin: var(--space-3) 0; }.quote-total { border-top: 2px solid var(--ink); padding-top: var(--space-3); }.quote-note { border-top: 1px solid var(--line); color: var(--muted); margin-top: var(--space-10); padding-top: var(--space-5); white-space: pre-wrap; }
 
 @media (max-width: 48rem) {
-  .private-app-shell { display: block; }.private-navigation { border-bottom: 1px solid var(--line); border-right: 0; gap: var(--space-3); padding: var(--space-5); }.private-navigation > p { display: none; }.private-navigation nav { display: flex; gap: var(--space-3); overflow-x: auto; }.private-navigation nav a { flex: 0 0 auto; }
+  .private-app-shell { display: block; }.private-navigation { border-bottom: 1px solid var(--line); border-right: 0; gap: var(--space-3); padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-5) calc(var(--space-5) + env(safe-area-inset-bottom, 0px)); }.private-navigation > p { display: none; }.private-navigation nav { display: flex; gap: var(--space-3); overflow-x: auto; }.private-navigation nav a { flex: 0 0 auto; }
   .operations-header,
   .setup-card-heading { flex-direction: column; }
   .setup-form, .registration-grid, .project-row, .project-update-form, .quote-form, .quote-item-labels, .quote-item-inputs, .project-workspace { grid-template-columns: 1fr; }
   .project-workspace-rail { position: static; }
   .quote-document { padding: var(--space-5); }.quote-print-shell { padding: var(--space-5); }
   .setup-form .auth-submit { width: 100%; }
+  .auth-input, .quote-form input, .quote-form select, .quote-form textarea, .setup-form input, .setup-form select, .registration-card input, .registration-card select { font-size: 16px; }
 }
 
 @media print { .quote-print-actions { display: none; }.quote-print-shell { background: var(--surface); padding: 0; }.quote-document { border: 0; max-width: none; padding: 0; } }
