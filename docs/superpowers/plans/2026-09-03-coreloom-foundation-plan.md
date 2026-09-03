@@ -4,9 +4,19 @@
 
 **Goal:** Build the private founder-only Coreloom foundation for company-launch evidence, clients, projects, tasks, milestones, and the launch-first dashboard.
 
-**Architecture:** Put the Next.js application in `apps/web` and keep the repository root for rules, manuals, and plans. Use Supabase Auth, Postgres, and private Storage. Every business record belongs to one founder workspace and is protected by RLS. Recho, PDF/email delivery, electronic signatures, and Popbill are separate plans after this foundation has stable client and project identifiers.
+**Architecture:** Put the Next.js application in `apps/web` and keep the repository root for rules, manuals, and plans. Use Neon Postgres for the database. Every business record belongs to one founder workspace and is protected by application authorization plus database roles. Recho, PDF/email delivery, electronic signatures, and Popbill are separate plans after this foundation has stable client and project identifiers.
 
-**Tech Stack:** Next.js App Router, TypeScript, Tailwind CSS, Supabase Auth/Postgres/Storage, Vitest, Testing Library.
+**Tech Stack:** Next.js App Router, TypeScript, Tailwind CSS, Neon Postgres, Vitest, Testing Library.
+
+---
+
+## Infrastructure decision — 2026-09-03
+
+Coreloom has a dedicated Neon Free project in AWS Asia Pacific 1 (Singapore). Its `production` branch is the future operating-data boundary. A persistent `ai-development` child branch exists only for agent-assisted development and test data.
+
+No connection string, password, API key, or operational data may be committed to this repository or supplied to an AI tool. Neon MCP is development-branch only; it must not be connected to `production` or contain real customer, finance, or document data.
+
+Task 1 is complete. **Tasks 2 and later below are superseded and must not be executed**: they describe a Supabase implementation. Before the next feature is built, replace those tasks with a Neon-specific authentication, migration, authorization, and backup plan.
 
 ---
 
