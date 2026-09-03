@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
+import { signInFailureMessage } from "@/lib/auth/sign-in-error";
 
 export function SignInForm() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export function SignInForm() {
     const { error: signInError } = await authClient.signIn.email({ email, password });
 
     if (signInError) {
-      setError("로그인 정보를 확인해 주세요.");
+      setError(signInFailureMessage(signInError));
       setIsSubmitting(false);
       return;
     }

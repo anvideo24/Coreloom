@@ -8,6 +8,6 @@ export function createCoreloomAuth() {
   const config = readAuthConfig();
   return createNeonAuth({
     baseUrl: config.baseUrl,
-    cookies: { secret: config.cookieSecret },
+    cookies: { secret: config.cookieSecret, sameSite: "lax" },
   });
 }

@@ -8,7 +8,7 @@ import {
   LOCAL_MDNS_PATTERN,
   TAILSCALE_MAGICDNS_PATTERN,
 } from "@/lib/pwa/dev-origins";
-import { tailscaleFunnelArgs } from "@/lib/pwa/tailscale-funnel";
+import { funnelAuthDomainHint, funnelHttpsOrigins, tailscaleFunnelArgs } from "@/lib/pwa/tailscale-funnel";
 import { coreloomWebManifest } from "@/lib/pwa/web-manifest";
 
 describe("private development origins", () => {
@@ -21,6 +21,10 @@ describe("private development origins", () => {
     expect(isPrivateIPv4("100.64.0.1")).toBe(true);
     expect(isPrivateIPv4("8.8.8.8")).toBe(false);
     expect(isTailscaleIPv4("192.168.0.10")).toBe(false);
+  });
+
+  it("allows nested Tailscale Funnel hosts, not only one label under ts.net", () => {
+    expect(TAILSCALE_MAGICDNS_PATTERN).toBe("**.ts.net");
   });
 
   it("allows MagicDNS, LAN, and optional extra hosts without public addresses", () => {
@@ -60,5 +64,12 @@ describe("Coreloom web app manifest", () => {
 
   it("opens a phone URL with Funnel instead of requiring Tailscale on the phone", () => {
     expect(tailscaleFunnelArgs()).toEqual(["funnel", "--bg", "--yes", "3000"]);
+  });
+
+  it("reads Funnel HTTPS origins so Neon Auth can trust the phone address", () => {
+    expect(funnelHttpsOrigins("https://office.tailnet.ts.net/\n|-- proxy http://127.0.0.1:3000\n")).toEqual([
+      "https://office.tailnet.ts.net",
+    ]);
+    expect(funnelAuthDomainHint("https://office.tailnet.ts.net")).toContain("Neon Console");
   });
 });

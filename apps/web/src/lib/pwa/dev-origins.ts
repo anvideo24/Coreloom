@@ -1,4 +1,5 @@
-export const TAILSCALE_MAGICDNS_PATTERN = "*.ts.net";
+// Funnel hosts are machine.tailnet.ts.net. Next.js `*.ts.net` matches only one label.
+export const TAILSCALE_MAGICDNS_PATTERN = "**.ts.net";
 export const LOCAL_MDNS_PATTERN = "*.local";
 
 function ipv4Octets(address: string) {
