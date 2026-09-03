@@ -26,7 +26,7 @@ export default async function RevenueEntryDetailPage({ params }: { params: Promi
           <p>{row.sourceLabel} · {row.counterparty} · {revenueEntryStatusLabels[row.status]} · {entry.currency}</p>
         </div>
         <div className="quote-header-links">
-          <Link className="text-link" href="/billings">분할 청구</Link>
+          <Link className="text-link" href="/expenses">비용 원장</Link>
           <Link className="text-link" href="/revenue">매출 원장</Link>
         </div>
       </header>

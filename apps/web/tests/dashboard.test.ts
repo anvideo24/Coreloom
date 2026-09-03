@@ -9,6 +9,7 @@ const empty = {
   pendingProposals: [],
   projects: [],
   revenue: { confirmedAmount: 0, scheduledAmount: 0, unclassifiedCount: 0 },
+  expenses: [],
   tasks: [],
   recentDecisions: [],
   documentCount: 0,
@@ -91,8 +92,15 @@ describe("founder dashboard summary", () => {
       ],
       documentCount: 4,
       revenue: { confirmedAmount: 3000, scheduledAmount: 1000, unclassifiedCount: 1 },
+      expenses: [
+        { id: "ex1", title: "광고비", counterparty: "미분류", amount: 4000, settlementDate: "2026-09-03", status: "scheduled", unclassified: true },
+        { id: "ex2", title: "호스팅", counterparty: "구독 서비스", amount: 1000, settlementDate: "2026-09-10", status: "scheduled", unclassified: false },
+        { id: "ex3", title: "이미 지급", counterparty: "구독 서비스", amount: 2000, settlementDate: "2026-09-01", status: "confirmed", unclassified: false },
+      ],
     });
     expect(dashboard.activeProjects.map((item) => item.href)).toEqual(["/clients-projects/pr1"]);
+    expect(dashboard.expensesToCheck.map((item) => item.href)).toEqual(["/expenses/ex1"]);
+    expect(dashboard.expenses).toEqual({ confirmedAmount: 2000, scheduledAmount: 5000, unclassifiedCount: 1 });
     expect(dashboard.schedule.map((item) => item.title)).toEqual(["지난 업무", "다음 주 업무"]);
     expect(dashboard.schedule[0].detail).toContain("지남");
     expect(dashboard.recentDecisions[0].href).toBe("/proposals/d1");

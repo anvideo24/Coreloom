@@ -1,4 +1,5 @@
 import { calculateCompanySetupProgress, type CompanySetupStatus } from "@/lib/domain/company-setup";
+import { summarizeExpenses } from "@/lib/domain/expenses";
 
 export const DASHBOARD_TIME_ZONE = "Asia/Seoul";
 export const DASHBOARD_LIST_LIMIT = 5;
@@ -82,6 +83,15 @@ export function buildFounderDashboard(input: {
     scheduledAmount: number;
     unclassifiedCount: number;
   };
+  expenses: Array<{
+    id: string;
+    title: string;
+    counterparty: string;
+    amount: number;
+    settlementDate: string;
+    status: string;
+    unclassified: boolean;
+  }>;
   tasks: Array<{
     id: string;
     title: string;
@@ -167,6 +177,18 @@ export function buildFounderDashboard(input: {
       })),
     limit,
   );
+  const expensesToCheck = take(
+    input.expenses
+      .filter((item) => item.status === "scheduled" && item.settlementDate <= today)
+      .sort((left, right) => left.settlementDate.localeCompare(right.settlementDate))
+      .map((item) => ({
+        href: `/expenses/${item.id}`,
+        title: item.title,
+        detail: `${item.counterparty} · 지급 예정 ${item.settlementDate}`,
+        amount: item.amount,
+      })),
+    limit,
+  );
   const recentDecisions = take(
     input.recentDecisions.map((item) => ({
       href: `/proposals/${item.id}`,
@@ -187,6 +209,8 @@ export function buildFounderDashboard(input: {
     proposalsToReview,
     activeProjects,
     revenue: input.revenue,
+    expenses: summarizeExpenses(input.expenses),
+    expensesToCheck,
     schedule,
     recentDecisions,
     documentCount: input.documentCount,

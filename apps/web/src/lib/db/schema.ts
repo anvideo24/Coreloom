@@ -17,6 +17,7 @@ export const aiProposalKind = pgEnum("ai_proposal_kind", ["agreement", "next_act
 export const aiProposalStatus = pgEnum("ai_proposal_status", ["proposed", "confirmed", "rejected"]);
 export const ventureKind = pgEnum("venture_kind", ["app", "subscription"]);
 export const revenueEntryStatus = pgEnum("revenue_entry_status", ["scheduled", "confirmed"]);
+export const expenseEntryStatus = pgEnum("expense_entry_status", ["scheduled", "confirmed"]);
 export const vaultDocumentKind = pgEnum("vault_document_kind", ["company_setup", "contract", "deliverable", "settlement", "other"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
@@ -425,6 +426,30 @@ export const revenueEntries = pgTable(
   },
   (table) => [
     index("revenue_entries_workspace_occurred_on_idx").on(table.workspaceId, desc(table.occurredOn)),
+  ],
+);
+
+export const expenseEntries = pgTable(
+  "expense_entries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    ventureId: uuid("venture_id").references(() => ventures.id),
+    clientCompanyId: uuid("client_company_id").references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull().default("KRW"),
+    occurredOn: date("occurred_on", { mode: "string" }).notNull(),
+    settlementDate: date("settlement_date", { mode: "string" }).notNull(),
+    status: expenseEntryStatus("status").notNull().default("scheduled"),
+    note: text("note"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("expense_entries_workspace_occurred_on_idx").on(table.workspaceId, desc(table.occurredOn)),
   ],
 );
 

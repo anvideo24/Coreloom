@@ -64,7 +64,7 @@ export default async function DashboardPage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / DASHBOARD</p>
           <h1>오늘 확인할 운영</h1>
-          <p>설립 준비와 오늘 확인할 견적·계약·청구·AI 제안을 먼저 봅니다. 이 화면은 조회만 하며, 발송·체결·입금 확정은 각 화면에서 대표가 직접 합니다.</p>
+          <p>설립 준비와 오늘 확인할 견적·계약·청구·비용 지급·AI 제안을 먼저 봅니다. 이 화면은 조회만 하며, 발송·체결·입금 확정·비용 확정은 각 화면에서 대표가 직접 합니다.</p>
         </div>
       </header>
 
@@ -83,6 +83,7 @@ export default async function DashboardPage() {
       <DashboardList code="오늘" heading="견적 발송" items={dashboard.quotesToSend} empty="메일 요청이 없는 최신 견적 버전이 없습니다." />
       <DashboardList code="오늘" heading="계약 체결" items={dashboard.contractsToExecute} empty="체결 전 계약이 없습니다." />
       <DashboardList code="오늘" heading="청구 · 입금" items={dashboard.billingsToCheck} empty="오늘 확인할 청구·입금 예정이 없습니다." />
+      <DashboardList code="오늘" heading="비용 지급" items={dashboard.expensesToCheck} empty="오늘 확인할 비용 지급 예정이 없습니다." />
       <DashboardList code="오늘" heading="AI 확인 요청" items={dashboard.proposalsToReview} empty="확정 전 AI 제안이 없습니다." />
 
       <section aria-label="매출 요약" className="progress-card">
@@ -92,6 +93,15 @@ export default async function DashboardPage() {
         </div>
         <p className="form-help">확정 {dashboard.revenue.confirmedAmount.toLocaleString("ko-KR")}원 · 예정 {dashboard.revenue.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.revenue.unclassifiedCount}건</p>
         <Link className="text-link" href="/revenue">매출 원장으로 이동</Link>
+      </section>
+
+      <section aria-label="비용 요약" className="progress-card">
+        <div>
+          <p>비용 원장</p>
+          <strong>{dashboard.expenses.confirmedAmount.toLocaleString("ko-KR")}원</strong>
+        </div>
+        <p className="form-help">확정 {dashboard.expenses.confirmedAmount.toLocaleString("ko-KR")}원 · 예정 {dashboard.expenses.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.expenses.unclassifiedCount}건</p>
+        <Link className="text-link" href="/expenses">비용 원장으로 이동</Link>
       </section>
 
       <DashboardList code="프로젝트" heading="진행 중 고객사 프로젝트" items={dashboard.activeProjects} empty="진행·예정·보류 중인 프로젝트가 없습니다." />

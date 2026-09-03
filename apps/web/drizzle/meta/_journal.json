@@ -106,6 +106,13 @@
       "when": 1788434276125,
       "tag": "0014_white_rhino",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788436506514,
+      "tag": "0015_bizarre_mojo",
+      "breakpoints": true
     }
   ]
 }

@@ -13,6 +13,7 @@ import { listFounderVaultDocuments } from "@/lib/documents/repository";
 import { aiProposalKindLabels, aiProposalStatusLabels } from "@/lib/domain/ai-proposals";
 import { billingKindLabels } from "@/lib/domain/billings";
 import { buildFounderDashboard, calendarDateInTimeZone } from "@/lib/domain/dashboard";
+import { listFounderExpenseLedger } from "@/lib/expenses/repository";
 import { listFounderQuotes } from "@/lib/quotes/repository";
 import { listFounderRevenueLedger } from "@/lib/revenue/repository";
 import { listFounderTasks } from "@/lib/tasks/repository";
@@ -28,6 +29,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
     proposals,
     clientsProjects,
     revenue,
+    expenses,
     tasks,
     documents,
   ] = await Promise.all([
@@ -38,6 +40,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
     listFounderAiProposals(authUserId),
     listFounderClientsAndProjects(authUserId),
     listFounderRevenueLedger(authUserId),
+    listFounderExpenseLedger(authUserId),
     listFounderTasks(authUserId),
     listFounderVaultDocuments(authUserId),
   ]);
@@ -116,6 +119,15 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       progressPercent: item.progressPercent,
     })),
     revenue: revenue.summary,
+    expenses: expenses.rows.map((item) => ({
+      id: item.id,
+      title: item.title,
+      counterparty: item.counterparty,
+      amount: item.amount,
+      settlementDate: item.settlementDate,
+      status: item.status,
+      unclassified: item.unclassified,
+    })),
     tasks: tasks.tasks.map((item) => ({
       id: item.id,
       title: item.title,

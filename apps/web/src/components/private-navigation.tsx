@@ -9,6 +9,7 @@ const navigationItems = [
   { href: "/contracts", label: "계약" },
   { href: "/billings", label: "청구" },
   { href: "/revenue", label: "매출 원장" },
+  { href: "/expenses", label: "비용 원장" },
   { href: "/tasks", label: "업무" },
   { href: "/timeline", label: "근거 기록" },
   { href: "/proposals", label: "AI 제안" },
