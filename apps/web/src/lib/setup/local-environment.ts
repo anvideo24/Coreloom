@@ -66,3 +66,29 @@ export function appendDevelopmentDatabaseConfig(existing: string, values: Develo
 
   return `${prefix}DATABASE_URL=${JSON.stringify(values.databaseUrl)}\nCORELOOM_DATABASE_BRANCH="ai-development"\n`;
 }
+
+const quoteEmailSetupSchema = z.object({
+  apiKey: singleLine("Resend API 키를 입력해 주세요.").regex(/^re_/, "Resend API 키 형식을 확인해 주세요."),
+});
+
+export type QuoteEmailSetup = z.infer<typeof quoteEmailSetupSchema>;
+
+export function parseQuoteEmailSetup(input: unknown): QuoteEmailSetup {
+  const parsed = quoteEmailSetupSchema.safeParse(input);
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요.");
+  }
+
+  return parsed.data;
+}
+
+export function appendQuoteEmailConfig(existing: string, values: QuoteEmailSetup) {
+  if (/^(RESEND_API_KEY|CORELOOM_QUOTE_FROM)=/m.test(existing)) {
+    throw new Error("기존 이메일 발송 설정은 보호했습니다.");
+  }
+
+  const prefix = existing.endsWith("\n") ? existing : `${existing}\n`;
+
+  return `${prefix}RESEND_API_KEY=${JSON.stringify(values.apiKey)}\nCORELOOM_QUOTE_FROM="onboarding@resend.dev"\n`;
+}
