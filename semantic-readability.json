@@ -1,6 +1,6 @@
 {
   "schema": "semantic-readability/v1",
-  "artifact": "apps/web/src/app/(private)/company-setup/page.tsx",
+  "artifact": "apps/web/src/app/(private) 운영 화면",
   "units": [
     {
       "id": "company-setup-progress",
@@ -23,6 +23,18 @@
           "text": "0개",
           "line": 1,
           "container": "client-project-list-heading"
+        }
+      ]
+    },
+    {
+      "id": "quote-version-count",
+      "atomic_text": "0개",
+      "intentional_split": false,
+      "fragments": [
+        {
+          "text": "0개",
+          "line": 1,
+          "container": "quote-list-heading"
         }
       ]
     }

@@ -105,3 +105,41 @@ export const projects = pgTable(
     index("projects_client_company_updated_at_idx").on(table.clientCompanyId, desc(table.updatedAt)),
   ],
 );
+
+export const quotes = pgTable(
+  "quotes",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("quotes_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+    index("quotes_client_company_updated_at_idx").on(table.clientCompanyId, desc(table.updatedAt)),
+  ],
+);
+
+export const quoteVersions = pgTable(
+  "quote_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    quoteId: uuid("quote_id").notNull().references(() => quotes.id),
+    versionNumber: integer("version_number").notNull(),
+    title: text("title").notNull(),
+    items: jsonb("items").notNull(),
+    subtotalAmount: integer("subtotal_amount").notNull(),
+    vatAmount: integer("vat_amount").notNull(),
+    totalAmount: integer("total_amount").notNull(),
+    note: text("note"),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("quote_versions_quote_version_number_idx").on(table.quoteId, table.versionNumber),
+    index("quote_versions_quote_created_at_idx").on(table.quoteId, desc(table.createdAt)),
+  ],
+);

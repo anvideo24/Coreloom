@@ -22,6 +22,13 @@
       "when": 1788421794624,
       "tag": "0002_sharp_night_nurse",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788422588520,
+      "tag": "0003_deep_firebrand",
+      "breakpoints": true
     }
   ]
 }
