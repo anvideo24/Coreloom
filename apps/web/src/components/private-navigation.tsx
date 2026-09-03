@@ -7,6 +7,7 @@ const navigationItems = [
   { href: "/quotes", label: "견적서" },
   { href: "/contracts", label: "계약" },
   { href: "/billings", label: "청구" },
+  { href: "/tasks", label: "업무" },
 ];
 
 export function PrivateNavigation() {

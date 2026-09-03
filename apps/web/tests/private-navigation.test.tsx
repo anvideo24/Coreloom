@@ -13,5 +13,6 @@ describe("PrivateNavigation", () => {
     expect(html).toContain('href="/quotes"');
     expect(html).toContain('href="/contracts"');
     expect(html).toContain('href="/billings"');
+    expect(html).toContain('href="/tasks"');
   });
 });

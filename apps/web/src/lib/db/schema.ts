@@ -9,6 +9,7 @@ export const contractStatus = pgEnum("contract_status", ["draft", "original_reco
 export const contractExecutionMethod = pgEnum("contract_execution_method", ["stamped_original"]);
 export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "final"]);
 export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]);
+export const taskStatus = pgEnum("task_status", ["open", "done"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -239,5 +240,27 @@ export const billings = pgTable(
   (table) => [
     index("billings_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
     index("billings_contract_created_at_idx").on(table.contractId, desc(table.createdAt)),
+  ],
+);
+
+export const tasks = pgTable(
+  "tasks",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    title: text("title").notNull(),
+    dueDate: date("due_date", { mode: "string" }).notNull(),
+    completionCondition: text("completion_condition").notNull(),
+    status: taskStatus("status").notNull().default("open"),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("tasks_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
+    index("tasks_project_created_at_idx").on(table.projectId, desc(table.createdAt)),
   ],
 );
