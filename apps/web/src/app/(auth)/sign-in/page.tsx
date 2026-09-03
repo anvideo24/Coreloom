@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 import { SignInForm } from "@/components/sign-in-form";
 import { passwordResetCompleteMessage } from "@/lib/auth/password-reset";
 
@@ -18,6 +20,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         {resetCompleteMessage ? <p className="auth-notice" role="status">{resetCompleteMessage}</p> : null}
         <SignInForm />
         <p className="auth-help">처음 접근하는 경우, Neon Console에서 대표 계정을 먼저 만들어 주세요.</p>
+        {process.env.NODE_ENV !== "production" ? <p className="auth-help"><Link href="/setup">이 PC에서 처음 설정하기</Link></p> : null}
       </section>
     </main>
   );
