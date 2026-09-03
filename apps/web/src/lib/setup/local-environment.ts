@@ -16,6 +16,18 @@ const localSetupSchema = z.object({
 
 export type LocalSetup = z.infer<typeof localSetupSchema>;
 
+const developmentDatabaseSetupSchema = z.object({
+  databaseUrl: singleLine("개발 데이터베이스 연결 문자열을 입력해 주세요.").refine(
+    (value) => {
+      const protocol = new URL(value).protocol;
+      return protocol === "postgres:" || protocol === "postgresql:";
+    },
+    "PostgreSQL 연결 문자열을 입력해 주세요.",
+  ),
+});
+
+export type DevelopmentDatabaseSetup = z.infer<typeof developmentDatabaseSetupSchema>;
+
 export function parseLocalSetup(input: unknown): LocalSetup {
   const parsed = localSetupSchema.safeParse(input);
 
@@ -33,4 +45,24 @@ export function localEnvironmentFile(values: LocalSetup) {
     `CORELOOM_FOUNDER_EMAIL=${JSON.stringify(values.founderEmail)}`,
     "",
   ].join("\n");
+}
+
+export function parseDevelopmentDatabaseSetup(input: unknown): DevelopmentDatabaseSetup {
+  const parsed = developmentDatabaseSetupSchema.safeParse(input);
+
+  if (!parsed.success) {
+    throw new Error(parsed.error.issues[0]?.message ?? "입력값을 확인해 주세요.");
+  }
+
+  return parsed.data;
+}
+
+export function appendDevelopmentDatabaseConfig(existing: string, values: DevelopmentDatabaseSetup) {
+  if (/^(DATABASE_URL|CORELOOM_DATABASE_BRANCH)=/m.test(existing)) {
+    throw new Error("기존 개발 데이터베이스 설정은 보호했습니다.");
+  }
+
+  const prefix = existing.endsWith("\n") ? existing : `${existing}\n`;
+
+  return `${prefix}DATABASE_URL=${JSON.stringify(values.databaseUrl)}\nCORELOOM_DATABASE_BRANCH="ai-development"\n`;
 }
