@@ -30,7 +30,10 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
           <h1>{latest.title}</h1>
           <p>{detail.contract.clientName} · 현재 v{latest.versionNumber} · {contractStatusLabels[latest.status]} · {latest.currency}</p>
         </div>
-        <Link className="text-link" href="/contracts">계약 목록</Link>
+        <div className="quote-header-links">
+          {latest.status === "executed" ? <Link className="text-link" href="/billings">분할 청구</Link> : null}
+          <Link className="text-link" href="/contracts">계약 목록</Link>
+        </div>
       </header>
 
       {latest.status !== "executed" ? (

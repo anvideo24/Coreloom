@@ -6,6 +6,7 @@ const navigationItems = [
   { href: "/clients-projects", label: "고객사 · 프로젝트" },
   { href: "/quotes", label: "견적서" },
   { href: "/contracts", label: "계약" },
+  { href: "/billings", label: "청구" },
 ];
 
 export function PrivateNavigation() {

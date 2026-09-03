@@ -43,6 +43,13 @@
       "when": 1788425283725,
       "tag": "0005_dry_romulus",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788426305394,
+      "tag": "0006_amused_leader",
+      "breakpoints": true
     }
   ]
 }

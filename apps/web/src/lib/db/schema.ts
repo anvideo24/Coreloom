@@ -1,5 +1,5 @@
 import { desc } from "drizzle-orm";
-import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, date, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const workspaceRole = pgEnum("workspace_role", ["founder"]);
 export const companySetupStatus = pgEnum("company_setup_status", ["not_started", "in_progress", "complete", "not_applicable"]);
@@ -7,6 +7,8 @@ export const projectStatus = pgEnum("project_status", ["planned", "active", "on_
 export const quoteEmailDeliveryStatus = pgEnum("quote_email_delivery_status", ["pending", "accepted", "failed"]);
 export const contractStatus = pgEnum("contract_status", ["draft", "original_recorded", "executed"]);
 export const contractExecutionMethod = pgEnum("contract_execution_method", ["stamped_original"]);
+export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "final"]);
+export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -211,5 +213,31 @@ export const contractVersions = pgTable(
   (table) => [
     uniqueIndex("contract_versions_contract_version_number_idx").on(table.contractId, table.versionNumber),
     index("contract_versions_contract_created_at_idx").on(table.contractId, desc(table.createdAt)),
+  ],
+);
+
+export const billings = pgTable(
+  "billings",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    contractId: uuid("contract_id").notNull().references(() => contracts.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    kind: billingKind("kind").notNull(),
+    amount: integer("amount").notNull(),
+    currency: text("currency").notNull().default("KRW"),
+    billingDate: date("billing_date", { mode: "string" }).notNull(),
+    dueDate: date("due_date", { mode: "string" }).notNull(),
+    status: billingStatus("status").notNull().default("scheduled"),
+    note: text("note"),
+    depositedAt: timestamp("deposited_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("billings_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
+    index("billings_contract_created_at_idx").on(table.contractId, desc(table.createdAt)),
   ],
 );
