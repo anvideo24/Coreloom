@@ -16,6 +16,7 @@ export const aiProposalKind = pgEnum("ai_proposal_kind", ["agreement", "next_act
 export const aiProposalStatus = pgEnum("ai_proposal_status", ["proposed", "confirmed", "rejected"]);
 export const ventureKind = pgEnum("venture_kind", ["app", "subscription"]);
 export const revenueEntryStatus = pgEnum("revenue_entry_status", ["scheduled", "confirmed"]);
+export const vaultDocumentKind = pgEnum("vault_document_kind", ["company_setup", "contract", "deliverable", "settlement", "other"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -377,5 +378,40 @@ export const revenueEntries = pgTable(
   },
   (table) => [
     index("revenue_entries_workspace_occurred_on_idx").on(table.workspaceId, desc(table.occurredOn)),
+  ],
+);
+
+export const vaultDocuments = pgTable(
+  "vault_documents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    title: text("title").notNull(),
+    kind: vaultDocumentKind("kind").notNull(),
+    clientCompanyId: uuid("client_company_id").references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("vault_documents_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+  ],
+);
+
+export const vaultDocumentVersions = pgTable(
+  "vault_document_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    documentId: uuid("document_id").notNull().references(() => vaultDocuments.id),
+    versionNumber: integer("version_number").notNull(),
+    originalReference: text("original_reference").notNull(),
+    note: text("note"),
+    createdAt,
+  },
+  (table) => [
+    uniqueIndex("vault_document_versions_document_version_idx").on(table.documentId, table.versionNumber),
+    index("vault_document_versions_document_created_at_idx").on(table.documentId, desc(table.createdAt)),
   ],
 );

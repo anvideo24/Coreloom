@@ -3,6 +3,7 @@ import Link from "next/link";
 const navigationItems = [
   { href: "/dashboard", label: "대시보드" },
   { href: "/company-setup", label: "회사 설립 준비" },
+  { href: "/documents", label: "문서함" },
   { href: "/clients-projects", label: "고객사 · 프로젝트" },
   { href: "/quotes", label: "견적서" },
   { href: "/contracts", label: "계약" },
