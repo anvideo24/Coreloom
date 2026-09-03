@@ -11,5 +11,6 @@ describe("PrivateNavigation", () => {
     expect(html).toContain('href="/company-setup"');
     expect(html).toContain('href="/clients-projects"');
     expect(html).toContain('href="/quotes"');
+    expect(html).toContain('href="/contracts"');
   });
 });

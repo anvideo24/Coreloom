@@ -5,6 +5,8 @@ export const workspaceRole = pgEnum("workspace_role", ["founder"]);
 export const companySetupStatus = pgEnum("company_setup_status", ["not_started", "in_progress", "complete", "not_applicable"]);
 export const projectStatus = pgEnum("project_status", ["planned", "active", "on_hold", "complete"]);
 export const quoteEmailDeliveryStatus = pgEnum("quote_email_delivery_status", ["pending", "accepted", "failed"]);
+export const contractStatus = pgEnum("contract_status", ["draft", "original_recorded", "executed"]);
+export const contractExecutionMethod = pgEnum("contract_execution_method", ["stamped_original"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -163,4 +165,51 @@ export const quoteEmailDeliveries = pgTable(
     updatedAt,
   },
   (table) => [index("quote_email_deliveries_quote_version_created_at_idx").on(table.quoteVersionId, desc(table.createdAt))],
+);
+
+export const contracts = pgTable(
+  "contracts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    projectId: uuid("project_id").references(() => projects.id),
+    quoteId: uuid("quote_id").notNull().references(() => quotes.id),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    uniqueIndex("contracts_quote_id_idx").on(table.quoteId),
+    index("contracts_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+    index("contracts_client_company_updated_at_idx").on(table.clientCompanyId, desc(table.updatedAt)),
+  ],
+);
+
+export const contractVersions = pgTable(
+  "contract_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    contractId: uuid("contract_id").notNull().references(() => contracts.id),
+    quoteVersionId: uuid("quote_version_id").notNull().references(() => quoteVersions.id),
+    versionNumber: integer("version_number").notNull(),
+    title: text("title").notNull(),
+    items: jsonb("items").notNull(),
+    subtotalAmount: integer("subtotal_amount").notNull(),
+    vatAmount: integer("vat_amount").notNull(),
+    totalAmount: integer("total_amount").notNull(),
+    currency: text("currency").notNull().default("KRW"),
+    status: contractStatus("status").notNull().default("draft"),
+    executionMethod: contractExecutionMethod("execution_method").notNull().default("stamped_original"),
+    originalReference: text("original_reference"),
+    note: text("note"),
+    executedAt: timestamp("executed_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    uniqueIndex("contract_versions_contract_version_number_idx").on(table.contractId, table.versionNumber),
+    index("contract_versions_contract_created_at_idx").on(table.contractId, desc(table.createdAt)),
+  ],
 );
