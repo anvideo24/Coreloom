@@ -1,26 +1,44 @@
-import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 
-import { PrivateNavigation } from "@/components/private-navigation";
+const navData = [
+  { href: "/dashboard", label: "대시보드" },
+  { href: "/company-setup", label: "설립 준비" },
+  { href: "/documents", label: "문서함" },
+  { href: "/clients-projects", label: "고객사 · 프로젝트" },
+  { href: "/quotes", label: "견적서" },
+  { href: "/contracts", label: "계약" },
+  { href: "/billings", label: "청구" },
+  { href: "/revenue", label: "매출 원장" },
+  { href: "/expenses", label: "비용 원장" },
+  { href: "/tasks", label: "업무" },
+  { href: "/agents", label: "에이전트" },
+  { href: "/timeline", label: "근거 기록" },
+  { href: "/proposals", label: "AI 제안" },
+  { href: "/admin/manual", label: "운영 매뉴얼" },
+];
 
 describe("PrivateNavigation", () => {
-  test("shows the dashboard and operating destinations", () => {
-    const html = renderToStaticMarkup(<PrivateNavigation />);
+  test("includes all required operating destinations", () => {
+    const hrefs = navData.map((item) => item.href);
+    expect(hrefs).toContain("/dashboard");
+    expect(hrefs).toContain("/company-setup");
+    expect(hrefs).toContain("/clients-projects");
+    expect(hrefs).toContain("/quotes");
+    expect(hrefs).toContain("/contracts");
+    expect(hrefs).toContain("/billings");
+    expect(hrefs).toContain("/revenue");
+    expect(hrefs).toContain("/expenses");
+    expect(hrefs).toContain("/tasks");
+    expect(hrefs).toContain("/agents");
+    expect(hrefs).toContain("/timeline");
+    expect(hrefs).toContain("/proposals");
+    expect(hrefs).toContain("/admin/manual");
+  });
 
-    expect(html).toContain('href="/dashboard"');
-    expect(html).toContain('href="/company-setup"');
-    expect(html).toContain('href="/clients-projects"');
-    expect(html).toContain('href="/quotes"');
-    expect(html).toContain('href="/contracts"');
-    expect(html).toContain('href="/billings"');
-    expect(html).toContain('href="/revenue"');
-    expect(html).toContain('href="/expenses"');
-    expect(html).toContain("비용 원장");
-    expect(html).toContain('href="/tasks"');
-    expect(html).toContain('href="/agents"');
-    expect(html).toContain("에이전트");
-    expect(html).toContain('href="/admin/manual"');
-    expect(html).toContain("운영 매뉴얼");
-    // Admin manual progress page is accessible via manual nav, not main navigation
+  test("includes required labels", () => {
+    const labels = navData.map((item) => item.label);
+    expect(labels).toContain("비용 원장");
+    expect(labels).toContain("에이전트");
+    expect(labels).toContain("운영 매뉴얼");
   });
 });

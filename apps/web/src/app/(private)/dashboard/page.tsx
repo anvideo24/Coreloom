@@ -86,44 +86,36 @@ export default async function DashboardPage() {
       <DashboardList code="오늘" heading="비용 지급" items={dashboard.expensesToCheck} empty="오늘 확인할 비용 지급 예정이 없습니다." />
       <DashboardList code="오늘" heading="AI 확인 요청" items={dashboard.proposalsToReview} empty="확정 전 AI 제안이 없습니다." />
 
-      <section aria-label="매출 요약" className="progress-card">
-        <div>
-          <p>매출 원장</p>
-          <strong>{dashboard.revenue.confirmedAmount.toLocaleString("ko-KR")}원</strong>
+      <div aria-label="재무 요약" className="stat-grid">
+        <div className="stat-card">
+          <p className="stat-card-label">매출 확정</p>
+          <p className="stat-card-value">{dashboard.revenue.confirmedAmount.toLocaleString("ko-KR")}원</p>
+          <p className="stat-card-sub">예정 {dashboard.revenue.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.revenue.unclassifiedCount}건</p>
+          <Link className="stat-card-link" href="/revenue">매출 원장 →</Link>
         </div>
-        <p className="form-help">확정 {dashboard.revenue.confirmedAmount.toLocaleString("ko-KR")}원 · 예정 {dashboard.revenue.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.revenue.unclassifiedCount}건</p>
-        <Link className="text-link" href="/revenue">매출 원장으로 이동</Link>
-      </section>
-
-      <section aria-label="비용 요약" className="progress-card">
-        <div>
-          <p>비용 원장</p>
-          <strong>{dashboard.expenses.confirmedAmount.toLocaleString("ko-KR")}원</strong>
+        <div className="stat-card">
+          <p className="stat-card-label">비용 확정</p>
+          <p className="stat-card-value">{dashboard.expenses.confirmedAmount.toLocaleString("ko-KR")}원</p>
+          <p className="stat-card-sub">예정 {dashboard.expenses.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.expenses.unclassifiedCount}건</p>
+          <Link className="stat-card-link" href="/expenses">비용 원장 →</Link>
         </div>
-        <p className="form-help">확정 {dashboard.expenses.confirmedAmount.toLocaleString("ko-KR")}원 · 예정 {dashboard.expenses.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.expenses.unclassifiedCount}건</p>
-        <Link className="text-link" href="/expenses">비용 원장으로 이동</Link>
-      </section>
+        <div className="stat-card">
+          <p className="stat-card-label">진행 중 프로젝트</p>
+          <p className="stat-card-value">{dashboard.activeProjects.length}건</p>
+          <p className="stat-card-sub">대기 업무 {dashboard.schedule.length}개</p>
+          <Link className="stat-card-link" href="/clients-projects">프로젝트 →</Link>
+        </div>
+        <div className="stat-card">
+          <p className="stat-card-label">문서함</p>
+          <p className="stat-card-value">{dashboard.documentCount}건</p>
+          <p className="stat-card-sub">비공개 원본 보관</p>
+          <Link className="stat-card-link" href="/documents">문서함 →</Link>
+        </div>
+      </div>
 
       <DashboardList code="프로젝트" heading="진행 중 고객사 프로젝트" items={dashboard.activeProjects} empty="진행·예정·보류 중인 프로젝트가 없습니다." />
       <DashboardList code="일정" heading="업무 일정" items={dashboard.schedule} empty="진행 중인 업무가 없습니다." />
       <DashboardList code="결정" heading="최근 결정" items={dashboard.recentDecisions} empty="확정하거나 반려한 AI 제안이 아직 없습니다." />
-
-      <section aria-label="문서 보관 상태" className="quote-list">
-        <div className="list-heading">
-          <div>
-            <p className="setup-code">문서함</p>
-            <h2>원본 보관</h2>
-          </div>
-          <span>{dashboard.documentCount}건</span>
-        </div>
-        <Link className="quote-row" href="/documents">
-          <div>
-            <p>올린 파일은 대표만 받을 수 있습니다.</p>
-            <h3>비공개 문서함</h3>
-          </div>
-          <strong>{dashboard.documentCount}건</strong>
-        </Link>
-      </section>
     </main>
   );
 }
