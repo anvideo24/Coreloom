@@ -29,7 +29,7 @@ export default async function CompanySetupPage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / COMPANY SETUP</p>
           <h1>회사 설립 준비</h1>
-          <p>개인사업자 시작에 필요한 확인과 증빙 위치를 한곳에 남깁니다. 세무 판단은 공식 안내 또는 전문가 확인 뒤 대표가 직접 확정합니다. 원본 위치의 버전 보관은 비공개 문서함에서 이어갑니다.</p>
+          <p>개인사업자 시작에 필요한 확인과 증빙 위치를 한곳에 남깁니다. 세무 판단은 공식 안내 또는 전문가 확인 뒤 대표가 직접 확정합니다. 증빙 위치 없이 항목을 완료로 바꿀 수 없습니다. 원본 위치의 버전 보관은 비공개 문서함에서 이어갑니다.</p>
         </div>
         <div className="quote-header-links">
           <Link className="text-link" href="/documents">비공개 문서함</Link>

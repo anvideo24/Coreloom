@@ -47,4 +47,14 @@ describe("company setup updates", () => {
       completedAt: expect.any(Date),
     });
   });
+
+  it("rejects completing an item without evidence", () => {
+    expect(() => normalizeCompanySetupUpdate({ status: "complete" })).toThrow("Evidence is required to mark as complete");
+    expect(() => normalizeCompanySetupUpdate({ status: "complete", evidenceReference: "  " })).toThrow("Evidence is required to mark as complete");
+  });
+
+  it("allows in-progress or not-applicable without evidence", () => {
+    expect(normalizeCompanySetupUpdate({ status: "in_progress" })).toMatchObject({ status: "in_progress", evidenceReference: null, completedAt: null });
+    expect(normalizeCompanySetupUpdate({ status: "not_applicable" })).toMatchObject({ status: "not_applicable", completedAt: null });
+  });
 });

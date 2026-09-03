@@ -77,6 +77,10 @@ export function normalizeCompanySetupUpdate(input: {
   const evidenceReference = input.evidenceReference?.trim() || null;
   const note = input.note?.trim() || null;
 
+  if (status === "complete" && !evidenceReference) {
+    throw new Error("Evidence is required to mark as complete");
+  }
+
   return {
     status,
     evidenceReference,
