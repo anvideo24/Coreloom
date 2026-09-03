@@ -10,7 +10,7 @@ export default function LocalSetupPage() {
       <section aria-labelledby="local-setup-title" className="auth-card">
         <p className="auth-eyebrow">LOCAL DEVELOPMENT ONLY</p>
         <h1 id="local-setup-title">처음 설정</h1>
-        <p className="auth-intro">이 PC에서만 사용할 Coreloom 개발 연결 정보를 입력합니다. 값은 저장소에 올라가지 않습니다.</p>
+        <p className="auth-intro">대표 로그인에 필요한 Coreloom 개발 연결 정보만 저장합니다. 값은 저장소에 올라가지 않습니다.</p>
         <LocalSetupForm />
         <p className="auth-help">저장 뒤 개발 서버를 다시 시작하면 대표 로그인 화면을 사용할 수 있습니다.</p>
       </section>

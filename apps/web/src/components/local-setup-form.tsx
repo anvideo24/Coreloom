@@ -23,7 +23,6 @@ export function LocalSetupForm() {
     const formData = new FormData(event.currentTarget);
     const response = await fetch("/api/local-setup", {
       body: JSON.stringify({
-        databaseUrl: String(formData.get("databaseUrl") ?? ""),
         authBaseUrl: String(formData.get("authBaseUrl") ?? ""),
         cookieSecret: String(formData.get("cookieSecret") ?? ""),
         founderEmail: String(formData.get("founderEmail") ?? ""),
@@ -45,9 +44,6 @@ export function LocalSetupForm() {
 
   return (
     <form className="auth-form" onSubmit={saveLocalSetup}>
-      <label className="auth-label" htmlFor="databaseUrl">개발 데이터베이스 연결 문자열</label>
-      <input autoComplete="off" className="auth-input" id="databaseUrl" name="databaseUrl" required type="password" />
-
       <label className="auth-label" htmlFor="authBaseUrl">Neon Auth 주소</label>
       <input autoComplete="off" className="auth-input" id="authBaseUrl" name="authBaseUrl" placeholder="https://…" required type="url" />
 
