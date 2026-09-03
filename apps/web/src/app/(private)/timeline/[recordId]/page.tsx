@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { founderSession } from "@/lib/auth/session";
+import { listFounderAiProposalsForEvidence } from "@/lib/ai-proposals/repository";
+import { aiProposalKindLabels, aiProposalStatusLabels, isOfficialDecision } from "@/lib/domain/ai-proposals";
 import { rechoEvidenceKindLabels } from "@/lib/domain/recho-evidence";
 import { getFounderRechoEvidenceDetail } from "@/lib/recho-evidence/repository";
 
@@ -12,7 +14,10 @@ export default async function TimelineDetailPage({ params }: { params: Promise<{
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
   const { recordId } = await params;
-  const record = await getFounderRechoEvidenceDetail(session.founder.id, recordId);
+  const [record, proposals] = await Promise.all([
+    getFounderRechoEvidenceDetail(session.founder.id, recordId),
+    listFounderAiProposalsForEvidence(session.founder.id, recordId),
+  ]);
   if (!record) notFound();
 
   return (
@@ -24,6 +29,7 @@ export default async function TimelineDetailPage({ params }: { params: Promise<{
           <p>{record.clientName} · {record.projectName} · {rechoEvidenceKindLabels[record.kind]} · {record.occurredOn} {record.occurredTime}</p>
         </div>
         <div className="quote-header-links">
+          <Link className="text-link" href="/proposals">AI 제안</Link>
           <Link className="text-link" href="/clients-projects">고객사·프로젝트</Link>
           <Link className="text-link" href="/timeline">근거 목록</Link>
         </div>
@@ -41,6 +47,24 @@ export default async function TimelineDetailPage({ params }: { params: Promise<{
       <section className="quote-editor-card">
         <p className="setup-code">연결 이유</p>
         <p className="form-help">{record.linkReason}</p>
+      </section>
+      <section className="quote-list" aria-label="이 근거의 AI 제안">
+        <div className="list-heading">
+          <div>
+            <p className="setup-code">AI 제안</p>
+            <h2>이 기록의 제안</h2>
+          </div>
+          <span>{proposals.length}건</span>
+        </div>
+        {proposals.length === 0 ? <p className="empty-state">이 근거에 연결된 제안이 없습니다. 원문을 확인한 뒤 AI 제안에서 등록하세요.</p> : proposals.map((proposal) => (
+          <a className="quote-row" href={`/proposals/${proposal.id}`} key={proposal.id}>
+            <div>
+              <p>{aiProposalKindLabels[proposal.kind]} · {isOfficialDecision(proposal.status) ? "공식 결정" : "공식 결정 아님"}</p>
+              <h3>{proposal.body}</h3>
+            </div>
+            <strong>{aiProposalStatusLabels[proposal.status]}</strong>
+          </a>
+        ))}
       </section>
     </main>
   );

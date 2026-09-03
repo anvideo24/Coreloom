@@ -19,7 +19,7 @@ export default async function TimelinePage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / EVIDENCE</p>
           <h1>근거 기록</h1>
-          <p>Recho의 메일·통화·회의를 프로젝트에 연결하고 시간순으로 봅니다. Coreloom은 원문 식별자·발생 시각·연결 이유만 보관하며, 원문은 수정하지 않습니다. Recho API 동기화와 AI 제안은 이 기능에 포함되지 않습니다.</p>
+          <p>Recho의 메일·통화·회의를 프로젝트에 연결하고 시간순으로 봅니다. Coreloom은 원문 식별자·발생 시각·연결 이유만 보관하며, 원문은 수정하지 않습니다. AI 제안은 근거에 연결한 뒤 AI 제안 화면에서 확정하거나 반려합니다. Recho API 동기화는 이 기능에 포함되지 않습니다.</p>
         </div>
       </header>
       {projects.length === 0 ? (

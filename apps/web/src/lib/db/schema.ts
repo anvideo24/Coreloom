@@ -12,6 +12,8 @@ export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
 export const clientContactRelationStatus = pgEnum("client_contact_relation_status", ["active", "inactive"]);
 export const rechoEvidenceKind = pgEnum("recho_evidence_kind", ["email", "call", "meeting"]);
+export const aiProposalKind = pgEnum("ai_proposal_kind", ["agreement", "next_action", "risk"]);
+export const aiProposalStatus = pgEnum("ai_proposal_status", ["proposed", "confirmed", "rejected"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -309,5 +311,28 @@ export const rechoEvidence = pgTable(
   (table) => [
     uniqueIndex("recho_evidence_project_original_idx").on(table.projectId, table.originalIdentifier),
     index("recho_evidence_workspace_occurred_on_idx").on(table.workspaceId, desc(table.occurredOn)),
+  ],
+);
+
+export const aiProposals = pgTable(
+  "ai_proposals",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    evidenceId: uuid("evidence_id").notNull().references(() => rechoEvidence.id),
+    kind: aiProposalKind("kind").notNull(),
+    body: text("body").notNull(),
+    status: aiProposalStatus("status").notNull().default("proposed"),
+    decisionReason: text("decision_reason"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("ai_proposals_workspace_created_at_idx").on(table.workspaceId, desc(table.createdAt)),
+    index("ai_proposals_evidence_created_at_idx").on(table.evidenceId, desc(table.createdAt)),
   ],
 );
