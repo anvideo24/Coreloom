@@ -8,6 +8,7 @@ import {
   LOCAL_MDNS_PATTERN,
   TAILSCALE_MAGICDNS_PATTERN,
 } from "@/lib/pwa/dev-origins";
+import { tailscaleFunnelArgs } from "@/lib/pwa/tailscale-funnel";
 import { coreloomWebManifest } from "@/lib/pwa/web-manifest";
 
 describe("private development origins", () => {
@@ -55,5 +56,9 @@ describe("Coreloom web app manifest", () => {
       lang: "ko",
       theme_color: "#0b684c",
     });
+  });
+
+  it("opens a phone URL with Funnel instead of requiring Tailscale on the phone", () => {
+    expect(tailscaleFunnelArgs()).toEqual(["funnel", "--bg", "--yes", "3000"]);
   });
 });
