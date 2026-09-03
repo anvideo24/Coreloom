@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
-import { completeTaskAction } from "@/app/(private)/tasks/actions";
+import { assignTaskAgentAction, completeTaskAction } from "@/app/(private)/tasks/actions";
 import { founderSession } from "@/lib/auth/session";
 import { taskStatusLabels } from "@/lib/domain/tasks";
 import { getFounderTaskDetail } from "@/lib/tasks/repository";
@@ -22,10 +22,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         <div>
           <p className="auth-eyebrow">CORELOOM / TASK</p>
           <h1>{task.title}</h1>
-          <p>{task.clientName} · {task.projectName} · {taskStatusLabels[task.status]} · 기한 {task.dueDate}</p>
+          <p>{task.clientName} · {task.projectName} · {taskStatusLabels[task.status]} · 기한 {task.dueDate}{task.assignedAgentName ? ` · ${task.assignedAgentName}` : ""}</p>
         </div>
         <div className="quote-header-links">
           <Link className="text-link" href="/clients-projects">고객사·프로젝트</Link>
+          {task.assignedAgentId ? <Link className="text-link" href={`/agents/${task.assignedAgentId}`}>에이전트</Link> : <Link className="text-link" href="/agents">에이전트</Link>}
           <Link className="text-link" href="/tasks">업무 목록</Link>
         </div>
       </header>
@@ -34,6 +35,32 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         <p className="form-help">{task.completionCondition}</p>
         {task.completedAt ? <p className="form-help">완료 확인 {task.completedAt.toLocaleDateString("ko-KR")}</p> : null}
       </section>
+      {task.status === "open" ? (
+        <section className="quote-editor-card">
+          <p className="setup-code">에이전트 배정</p>
+          <p className="form-help">활성 시스템 계정만 배정합니다. 사업 범위 에이전트와 다른 프로젝트 에이전트는 고를 수 없습니다. 완료된 업무는 배정을 바꾸지 않습니다.</p>
+          <form action={assignTaskAgentAction} className="quote-form">
+            <input name="taskId" type="hidden" value={task.id} />
+            <label className="quote-form-full">AI 에이전트
+              <select defaultValue={task.assignedAgentId ?? ""} name="assignedAgentId">
+                <option value="">배정 안 함</option>
+                {task.assignableAgents.map((agent) => (
+                  <option key={agent.id} value={agent.id}>
+                    {agent.name}{agent.projectName && agent.clientName ? ` · ${agent.clientName} · ${agent.projectName}` : " · 회사 공통"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="auth-submit" type="submit">배정 저장</button>
+          </form>
+        </section>
+      ) : (
+        <section className="quote-editor-card">
+          <p className="setup-code">에이전트 배정</p>
+          <p>{task.assignedAgentName ?? "배정 없음"}</p>
+          <p className="form-help">완료된 업무는 배정을 바꾸지 않습니다.</p>
+        </section>
+      )}
       {task.status === "open" ? (
         <section className="quote-editor-card">
           <p className="setup-code">완료 확인</p>

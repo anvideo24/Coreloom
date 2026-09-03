@@ -17,6 +17,8 @@ describe("PrivateNavigation", () => {
     expect(html).toContain('href="/expenses"');
     expect(html).toContain("비용 원장");
     expect(html).toContain('href="/tasks"');
+    expect(html).toContain('href="/agents"');
+    expect(html).toContain("에이전트");
     expect(html).toContain('href="/admin/manual"');
     expect(html).toContain("운영 매뉴얼");
   });

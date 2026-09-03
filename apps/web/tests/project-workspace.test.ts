@@ -36,7 +36,7 @@ describe("project workspace", () => {
       contacts: [],
       tasks: [
         { id: "t2", title: "다음 주", dueDate: "2026-09-10", statusLabel: "진행", status: "open" },
-        { id: "t1", title: "오늘", dueDate: "2026-09-03", statusLabel: "진행", status: "open" },
+        { id: "t1", title: "오늘", dueDate: "2026-09-03", statusLabel: "진행", status: "open", agentName: "초안 도우미" },
       ],
       quotes: [],
       contracts: [],
@@ -55,6 +55,7 @@ describe("project workspace", () => {
       ],
     });
     expect(workspace.tasks.map((item) => item.title)).toEqual(["오늘", "다음 주"]);
+    expect(workspace.tasks[0].detail).toBe("기한 2026-09-03 · 진행 · 초안 도우미");
     expect(workspace.billings.map((item) => item.href)).toEqual(["/billings/b1", "/billings/b2"]);
     expect(workspace.timeline.map((group) => group.occurredOn)).toEqual(["2026-09-03", "2026-09-01"]);
     expect(workspace.timeline[0].records[0].proposals[0]).toMatchObject({

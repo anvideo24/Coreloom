@@ -19,6 +19,8 @@ export const ventureKind = pgEnum("venture_kind", ["app", "subscription"]);
 export const revenueEntryStatus = pgEnum("revenue_entry_status", ["scheduled", "confirmed"]);
 export const expenseEntryStatus = pgEnum("expense_entry_status", ["scheduled", "confirmed"]);
 export const vaultDocumentKind = pgEnum("vault_document_kind", ["company_setup", "contract", "deliverable", "settlement", "other"]);
+export const aiAgentStatus = pgEnum("ai_agent_status", ["active", "inactive"]);
+export const aiAgentWorkLogStatus = pgEnum("ai_agent_work_log_status", ["pending", "approved", "rejected"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -330,6 +332,7 @@ export const tasks = pgTable(
     dueDate: date("due_date", { mode: "string" }).notNull(),
     completionCondition: text("completion_condition").notNull(),
     status: taskStatus("status").notNull().default("open"),
+    assignedAgentId: uuid("assigned_agent_id").references(() => aiAgents.id),
     completedAt: timestamp("completed_at", { withTimezone: true }),
     createdAt,
     updatedAt,
@@ -338,6 +341,7 @@ export const tasks = pgTable(
   (table) => [
     index("tasks_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
     index("tasks_project_created_at_idx").on(table.projectId, desc(table.createdAt)),
+    index("tasks_assigned_agent_idx").on(table.assignedAgentId),
   ],
 );
 
@@ -489,5 +493,49 @@ export const vaultDocumentVersions = pgTable(
   (table) => [
     uniqueIndex("vault_document_versions_document_version_idx").on(table.documentId, table.versionNumber),
     index("vault_document_versions_document_created_at_idx").on(table.documentId, desc(table.createdAt)),
+  ],
+);
+
+export const aiAgents = pgTable(
+  "ai_agents",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    name: text("name").notNull(),
+    purpose: text("purpose").notNull(),
+    allowedWork: jsonb("allowed_work").$type<string[]>().notNull(),
+    accessScope: text("access_scope").notNull(),
+    projectId: uuid("project_id").references(() => projects.id),
+    ventureId: uuid("venture_id").references(() => ventures.id),
+    status: aiAgentStatus("status").notNull().default("active"),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("ai_agents_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+  ],
+);
+
+export const aiAgentWorkLogs = pgTable(
+  "ai_agent_work_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    agentId: uuid("agent_id").notNull().references(() => aiAgents.id),
+    taskId: uuid("task_id").references(() => tasks.id),
+    recordedByUserId: text("recorded_by_user_id").notNull(),
+    requestNote: text("request_note").notNull(),
+    inputNote: text("input_note").notNull(),
+    resultNote: text("result_note"),
+    status: aiAgentWorkLogStatus("status").notNull().default("pending"),
+    decisionReason: text("decision_reason"),
+    decidedAt: timestamp("decided_at", { withTimezone: true }),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [
+    index("ai_agent_work_logs_agent_created_at_idx").on(table.agentId, desc(table.createdAt)),
+    index("ai_agent_work_logs_workspace_created_at_idx").on(table.workspaceId, desc(table.createdAt)),
   ],
 );

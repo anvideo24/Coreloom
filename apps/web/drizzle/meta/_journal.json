@@ -120,6 +120,13 @@
       "when": 1788448588085,
       "tag": "0016_vault_document_originals",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788449749647,
+      "tag": "0017_ai_agent_accounts",
+      "breakpoints": true
     }
   ]
 }
