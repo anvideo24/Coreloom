@@ -17,6 +17,7 @@ import {
   tasks,
   vaultDocumentVersions,
   vaultDocuments,
+  aiAgents,
 } from "@/lib/db/schema";
 import { aiProposalKindLabels, aiProposalStatusLabels } from "@/lib/domain/ai-proposals";
 import { billingKindLabels, billingStatusLabels } from "@/lib/domain/billings";
@@ -77,7 +78,9 @@ export async function getFounderProjectWorkspace(authUserId: string, projectId: 
       title: tasks.title,
       dueDate: tasks.dueDate,
       status: tasks.status,
+      agentName: aiAgents.name,
     }).from(tasks)
+      .leftJoin(aiAgents, eq(tasks.assignedAgentId, aiAgents.id))
       .where(and(eq(tasks.workspaceId, workspace.id), eq(tasks.projectId, project.id), isNull(tasks.deletedAt))),
     database.select({
       quoteId: quotes.id,
@@ -169,6 +172,7 @@ export async function getFounderProjectWorkspace(authUserId: string, projectId: 
       dueDate: item.dueDate,
       status: item.status,
       statusLabel: taskStatusLabels[item.status],
+      agentName: item.agentName,
     })),
     quotes: quoteRows,
     contracts: contractRows.map((item) => ({

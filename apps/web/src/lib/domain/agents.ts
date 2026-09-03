@@ -1,0 +1,199 @@
+export const aiAgentAllowedWorkKinds = ["research", "draft", "task_update", "approval_request"] as const;
+export const aiAgentForbiddenWorkKinds = [
+  "expense_confirm",
+  "contract_execute",
+  "revenue_confirm",
+  "refund",
+  "permission_change",
+  "public_publish",
+] as const;
+export const aiAgentStatuses = ["active", "inactive"] as const;
+export const aiAgentWorkLogStatuses = ["pending", "approved", "rejected"] as const;
+
+export type AiAgentAllowedWork = (typeof aiAgentAllowedWorkKinds)[number];
+export type AiAgentStatus = (typeof aiAgentStatuses)[number];
+export type AiAgentWorkLogStatus = (typeof aiAgentWorkLogStatuses)[number];
+
+export const aiAgentAllowedWorkLabels: Record<AiAgentAllowedWork, string> = {
+  research: "자료 조사",
+  draft: "초안 작성",
+  task_update: "업무 업데이트",
+  approval_request: "승인 요청 초안",
+};
+
+export const aiAgentStatusLabels: Record<AiAgentStatus, string> = {
+  active: "활성",
+  inactive: "중지",
+};
+
+export const aiAgentWorkLogStatusLabels: Record<AiAgentWorkLogStatus, string> = {
+  pending: "대기",
+  approved: "승인",
+  rejected: "반려",
+};
+
+export const COMPANY_AGENT_SCOPE_LABEL = "회사 공통";
+
+function trimRequired(value: string, message: string, max: number, tooLong: string) {
+  const trimmed = value.trim();
+  if (!trimmed) throw new Error(message);
+  if (trimmed.length > max) throw new Error(tooLong);
+  return trimmed;
+}
+
+export function normalizeAllowedWork(kinds: string[]) {
+  const unique = [...new Set(kinds.map((kind) => kind.trim()).filter(Boolean))];
+  if (unique.length === 0) throw new Error("Allowed work is required");
+  for (const kind of unique) {
+    if ((aiAgentForbiddenWorkKinds as readonly string[]).includes(kind)) {
+      throw new Error("Agents cannot independently confirm money, contracts, permissions, or public publishing");
+    }
+    if (!(aiAgentAllowedWorkKinds as readonly string[]).includes(kind)) {
+      throw new Error("Unsupported allowed work");
+    }
+  }
+  return unique as AiAgentAllowedWork[];
+}
+
+export function formatAllowedWork(kinds: string[]) {
+  return kinds
+    .filter((kind): kind is AiAgentAllowedWork => (aiAgentAllowedWorkKinds as readonly string[]).includes(kind))
+    .map((kind) => aiAgentAllowedWorkLabels[kind])
+    .join(" · ");
+}
+
+export function agentAccessLabel(input: {
+  accessScope: string;
+  projectName?: string | null;
+  clientName?: string | null;
+  ventureName?: string | null;
+}) {
+  if (input.projectName && input.clientName) {
+    return `${input.clientName} · ${input.projectName} · ${input.accessScope}`;
+  }
+  if (input.ventureName) return `${input.ventureName} · ${input.accessScope}`;
+  return `${COMPANY_AGENT_SCOPE_LABEL} · ${input.accessScope}`;
+}
+
+export function isAgentAssignableToProject(agent: {
+  status: string;
+  projectId: string | null;
+  ventureId: string | null;
+}, projectId: string) {
+  if (agent.status !== "active") return false;
+  if (agent.ventureId) return false;
+  if (agent.projectId && agent.projectId !== projectId) return false;
+  return true;
+}
+
+export function normalizeAiAgentDraft(input: {
+  name: string;
+  purpose: string;
+  allowedWork: string[];
+  accessScope: string;
+  projectId?: string;
+  ventureId?: string;
+}): {
+  name: string;
+  purpose: string;
+  allowedWork: AiAgentAllowedWork[];
+  accessScope: string;
+  projectId: string | null;
+  ventureId: string | null;
+  status: "active";
+} {
+  const projectId = input.projectId?.trim() || null;
+  const ventureId = input.ventureId?.trim() || null;
+  if (projectId && ventureId) throw new Error("Link to a project or a venture, not both");
+  return {
+    name: trimRequired(input.name, "Agent name is required", 80, "Agent name is too long"),
+    purpose: trimRequired(input.purpose, "Agent purpose is required", 500, "Agent purpose is too long"),
+    allowedWork: normalizeAllowedWork(input.allowedWork),
+    accessScope: trimRequired(input.accessScope, "Agent access scope is required", 500, "Agent access scope is too long"),
+    projectId,
+    ventureId,
+    status: "active",
+  };
+}
+
+export function deactivateAiAgent(input: { status: string }) {
+  if (input.status !== "active") throw new Error("Inactive agents cannot be changed");
+  return { status: "inactive" as const };
+}
+
+export function assignTaskAgent(input: {
+  status: string;
+  assignedAgentId?: string | null;
+  agentStatus?: string | null;
+  agentProjectId?: string | null;
+  agentVentureId?: string | null;
+  taskProjectId: string;
+}) {
+  if (input.status === "done") throw new Error("Completed tasks cannot be changed");
+  if (input.status !== "open") throw new Error("Unsupported task status");
+  const assignedAgentId = input.assignedAgentId?.trim() || null;
+  if (!assignedAgentId) return { assignedAgentId: null };
+  if (input.agentStatus !== "active") throw new Error("Inactive agents cannot be assigned");
+  if (input.agentVentureId) throw new Error("Venture-scoped agents cannot be assigned to project tasks");
+  if (input.agentProjectId && input.agentProjectId !== input.taskProjectId) {
+    throw new Error("Task is outside the agent access scope");
+  }
+  return { assignedAgentId };
+}
+
+export function normalizeAiAgentWorkLog(input: {
+  requestNote: string;
+  inputNote: string;
+  resultNote?: string;
+  taskId?: string;
+}) {
+  const requestNote = trimRequired(input.requestNote, "Work request is required", 2000, "Work request is too long");
+  const inputNote = trimRequired(input.inputNote, "Work input is required", 2000, "Work input is too long");
+  const resultNote = input.resultNote?.trim() || null;
+  if (resultNote && resultNote.length > 2000) throw new Error("Work result is too long");
+  return {
+    requestNote,
+    inputNote,
+    resultNote,
+    taskId: input.taskId?.trim() || null,
+  };
+}
+
+export function assertAgentCanRecordWork(input: {
+  agentStatus: string;
+  agentProjectId: string | null;
+  agentVentureId: string | null;
+  taskProjectId?: string | null;
+}) {
+  if (input.agentStatus !== "active") throw new Error("Inactive agents cannot record work");
+  if (!input.taskProjectId) return;
+  if (input.agentVentureId) throw new Error("Venture-scoped agents cannot record project task work");
+  if (input.agentProjectId && input.agentProjectId !== input.taskProjectId) {
+    throw new Error("Task is outside the agent access scope");
+  }
+}
+
+export function approveAiAgentWork(input: { status: string; approved: boolean; resultNote?: string | null }) {
+  if (!input.approved) throw new Error("Representative approval is required");
+  if (input.status !== "pending") throw new Error("Decided agent work cannot be changed");
+  const resultNote = input.resultNote?.trim() || "";
+  if (!resultNote) throw new Error("Work result is required");
+  if (resultNote.length > 2000) throw new Error("Work result is too long");
+  return { status: "approved" as const, resultNote };
+}
+
+export function rejectAiAgentWork(input: { status: string; approved: boolean; reason: string }) {
+  if (!input.approved) throw new Error("Representative approval is required");
+  if (input.status !== "pending") throw new Error("Decided agent work cannot be changed");
+  const decisionReason = input.reason.trim();
+  if (!decisionReason) throw new Error("Rejection reason is required");
+  if (decisionReason.length > 500) throw new Error("Rejection reason is too long");
+  return { status: "rejected" as const, decisionReason };
+}
+
+export function partitionAgentWorkLogs<T extends { status: string }>(logs: T[]) {
+  return {
+    pending: logs.filter((item) => item.status === "pending"),
+    decided: logs.filter((item) => item.status !== "pending"),
+  };
+}

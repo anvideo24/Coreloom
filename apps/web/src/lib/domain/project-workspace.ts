@@ -30,7 +30,7 @@ export function buildProjectWorkspace(input: {
     progressPercent: number;
   };
   contacts: Array<{ id: string; name: string; role: string | null; detail: string }>;
-  tasks: Array<{ id: string; title: string; dueDate: string; statusLabel: string; status: string }>;
+  tasks: Array<{ id: string; title: string; dueDate: string; statusLabel: string; status: string; agentName?: string | null }>;
   quotes: Array<{ quoteId: string; versionNumber: number; title: string; totalAmount: number }>;
   contracts: Array<{ contractId: string; versionNumber: number; title: string; statusLabel: string; totalAmount: number }>;
   billings: Array<{ id: string; kindLabel: string; amount: number; dueDate: string; statusLabel: string }>;
@@ -75,7 +75,7 @@ export function buildProjectWorkspace(input: {
     .map((item) => ({
       href: `/tasks/${item.id}`,
       title: item.title,
-      detail: `기한 ${item.dueDate} · ${item.statusLabel}`,
+      detail: `기한 ${item.dueDate} · ${item.statusLabel}${item.agentName ? ` · ${item.agentName}` : ""}`,
     }));
   const billings = [...input.billings]
     .sort((left, right) => left.dueDate.localeCompare(right.dueDate))

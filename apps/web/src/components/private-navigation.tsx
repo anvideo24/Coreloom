@@ -11,6 +11,7 @@ const navigationItems = [
   { href: "/revenue", label: "매출 원장" },
   { href: "/expenses", label: "비용 원장" },
   { href: "/tasks", label: "업무" },
+  { href: "/agents", label: "에이전트" },
   { href: "/timeline", label: "근거 기록" },
   { href: "/proposals", label: "AI 제안" },
   { href: "/admin/manual", label: "운영 매뉴얼" },
