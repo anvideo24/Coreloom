@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   assertExecutedContractForBilling,
+  billingPdfDownloadPath,
+  calculateBillingInvoiceAmounts,
   confirmBillingDeposit,
   normalizeBillingDraft,
 } from "@/lib/domain/billings";
@@ -41,5 +43,20 @@ describe("billing deposits", () => {
   it("allows billing only after a contract is executed", () => {
     expect(() => assertExecutedContractForBilling("draft")).toThrow("Only an executed contract can be billed");
     expect(() => assertExecutedContractForBilling("executed")).not.toThrow();
+  });
+});
+
+describe("billing invoices", () => {
+  it("keeps supply amount VAT-exclusive like quotes", () => {
+    expect(calculateBillingInvoiceAmounts(3000)).toEqual({
+      subtotalAmount: 3000,
+      vatAmount: 300,
+      totalAmount: 3300,
+    });
+    expect(() => calculateBillingInvoiceAmounts(0)).toThrow("Billing amount must be a positive integer");
+  });
+
+  it("builds a founder-only PDF download path", () => {
+    expect(billingPdfDownloadPath("billing-1")).toBe("/billings/billing-1/download");
   });
 });

@@ -60,3 +60,13 @@ export function confirmBillingDeposit(input: { status: string; approved: boolean
   if (input.status !== "scheduled") throw new Error("Unsupported billing status");
   return { status: "deposited" as const };
 }
+
+export function calculateBillingInvoiceAmounts(amount: number) {
+  if (!Number.isInteger(amount) || amount <= 0) throw new Error("Billing amount must be a positive integer");
+  const vatAmount = Math.round(amount * 0.1);
+  return { subtotalAmount: amount, vatAmount, totalAmount: amount + vatAmount };
+}
+
+export function billingPdfDownloadPath(billingId: string) {
+  return `/billings/${billingId}/download`;
+}

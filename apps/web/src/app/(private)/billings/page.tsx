@@ -19,7 +19,7 @@ export default async function BillingsPage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / BILLINGS</p>
           <h1>분할 청구</h1>
-          <p>체결된 계약에 착수금·중도금·잔금 일정을 등록합니다. 입금은 대표가 확인한 뒤에만 확정되며, 청구서 메일과 세금계산서 발행은 아직 포함하지 않습니다.</p>
+          <p>체결된 계약에 착수금·중도금·잔금 일정을 등록합니다. 입금은 대표가 확인한 뒤에만 확정됩니다. 각 청구에서 부가세 별도 PDF를 내려받거나 대표 승인 뒤 이메일로 보낼 수 있습니다. 세금계산서 발행은 포함하지 않습니다.</p>
         </div>
       </header>
       {executableContracts.length === 0 ? (

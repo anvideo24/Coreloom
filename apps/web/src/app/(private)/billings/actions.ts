@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { founderSession } from "@/lib/auth/session";
-import { confirmFounderBillingDeposit, createFounderBilling } from "@/lib/billings/repository";
+import { confirmFounderBillingDeposit, createFounderBilling, sendFounderBillingEmail } from "@/lib/billings/repository";
+import { normalizeQuoteEmailDraft } from "@/lib/domain/quote-email";
 
 function value(formData: FormData, key: string) {
   const item = formData.get(key);
@@ -44,4 +45,23 @@ export async function confirmBillingDepositAction(formData: FormData) {
   revalidatePath(`/billings/${billingId}`);
   revalidatePath("/billings");
   redirect(`/billings/${billingId}`);
+}
+
+export async function sendBillingEmailAction(formData: FormData) {
+  const founder = await requireFounder();
+  const billingId = value(formData, "billingId");
+  const destination = `/billings/${billingId}/email`;
+  try {
+    const draft = normalizeQuoteEmailDraft({
+      recipient: value(formData, "recipient"),
+      subject: value(formData, "subject"),
+      message: value(formData, "message"),
+      approved: value(formData, "approved") === "true",
+    });
+    await sendFounderBillingEmail({ actorUserId: founder.id, billingId, ...draft });
+  } catch {
+    redirect(`${destination}?status=failed`);
+  }
+  revalidatePath(`/billings/${billingId}`);
+  redirect(`${destination}?status=accepted`);
 }

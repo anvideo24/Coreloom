@@ -271,6 +271,25 @@ export const billings = pgTable(
   ],
 );
 
+export const billingEmailDeliveries = pgTable(
+  "billing_email_deliveries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    billingId: uuid("billing_id").notNull().references(() => billings.id),
+    recipient: text("recipient").notNull(),
+    subject: text("subject").notNull(),
+    message: text("message").notNull(),
+    status: quoteEmailDeliveryStatus("status").notNull().default("pending"),
+    providerMessageId: text("provider_message_id"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    failureReason: text("failure_reason"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [index("billing_email_deliveries_billing_created_at_idx").on(table.billingId, desc(table.createdAt))],
+);
+
 export const tasks = pgTable(
   "tasks",
   {

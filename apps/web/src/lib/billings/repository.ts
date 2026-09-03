@@ -3,13 +3,16 @@ import "server-only";
 import { and, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, billings, clientCompanies, contracts, contractVersions } from "@/lib/db/schema";
+import { auditEvents, billingEmailDeliveries, billings, clientCompanies, contracts, contractVersions } from "@/lib/db/schema";
 import {
   assertExecutedContractForBilling,
   billingKindLabels,
+  calculateBillingInvoiceAmounts,
   confirmBillingDeposit,
   normalizeBillingDraft,
 } from "@/lib/domain/billings";
+import { billingEmailConfigured, deliverBillingEmail } from "@/lib/billings/email";
+import { createBillingPdf } from "@/lib/billings/pdf";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 async function latestContractVersion(database: ReturnType<typeof createDatabase>, contractId: string) {
@@ -157,4 +160,92 @@ export async function confirmFounderBillingDeposit(input: { actorUserId: string;
     payload: { billingId: billing.id, contractId: billing.contractId },
   });
   return { billingId: billing.id };
+}
+
+export async function listFounderBillingEmailDeliveries(authUserId: string, billingId: string) {
+  const workspace = await ensureFounderWorkspace(authUserId, "billings");
+  const database = createDatabase();
+  return database.select({
+    id: billingEmailDeliveries.id,
+    recipient: billingEmailDeliveries.recipient,
+    subject: billingEmailDeliveries.subject,
+    status: billingEmailDeliveries.status,
+    createdAt: billingEmailDeliveries.createdAt,
+    sentAt: billingEmailDeliveries.sentAt,
+  }).from(billingEmailDeliveries)
+    .where(and(eq(billingEmailDeliveries.workspaceId, workspace.id), eq(billingEmailDeliveries.billingId, billingId)))
+    .orderBy(desc(billingEmailDeliveries.createdAt));
+}
+
+export async function sendFounderBillingEmail(input: {
+  actorUserId: string;
+  billingId: string;
+  recipient: string;
+  subject: string;
+  message: string;
+}) {
+  if (!billingEmailConfigured()) throw new Error("Billing email service is not configured");
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "billings");
+  const database = createDatabase();
+  const detail = await getFounderBillingDetail(input.actorUserId, input.billingId);
+  if (!detail) throw new Error("Billing was not found");
+  const { billing } = detail;
+  const invoice = calculateBillingInvoiceAmounts(billing.amount);
+  const [delivery] = await database.insert(billingEmailDeliveries).values({
+    workspaceId: workspace.id,
+    billingId: billing.id,
+    recipient: input.recipient,
+    subject: input.subject,
+    message: input.message,
+  }).returning({ id: billingEmailDeliveries.id });
+
+  try {
+    const kindLabel = billingKindLabels[billing.kind];
+    const providerMessageId = await deliverBillingEmail({
+      clientName: billing.clientName,
+      contractTitle: detail.contractTitle,
+      kindLabel,
+      message: input.message,
+      pdf: await createBillingPdf({
+        clientName: billing.clientName,
+        contractTitle: detail.contractTitle,
+        kindLabel,
+        billingDate: billing.billingDate,
+        dueDate: billing.dueDate,
+        subtotalAmount: invoice.subtotalAmount,
+        vatAmount: invoice.vatAmount,
+        totalAmount: invoice.totalAmount,
+        note: billing.note,
+      }),
+      recipient: input.recipient,
+      subject: input.subject,
+      idempotencyKey: `billing-email-${delivery.id}`,
+    });
+    await database.update(billingEmailDeliveries).set({
+      status: "accepted",
+      providerMessageId,
+      sentAt: new Date(),
+      updatedAt: new Date(),
+    }).where(eq(billingEmailDeliveries.id, delivery.id));
+    await database.insert(auditEvents).values({
+      workspaceId: workspace.id,
+      actorUserId: input.actorUserId,
+      eventType: "billing.email_accepted",
+      payload: { billingId: billing.id, billingEmailDeliveryId: delivery.id },
+    });
+    return { deliveryId: delivery.id };
+  } catch {
+    await database.update(billingEmailDeliveries).set({
+      status: "failed",
+      failureReason: "provider_rejected_or_unavailable",
+      updatedAt: new Date(),
+    }).where(eq(billingEmailDeliveries.id, delivery.id));
+    await database.insert(auditEvents).values({
+      workspaceId: workspace.id,
+      actorUserId: input.actorUserId,
+      eventType: "billing.email_failed",
+      payload: { billingId: billing.id, billingEmailDeliveryId: delivery.id },
+    });
+    throw new Error("Billing email could not be sent");
+  }
 }

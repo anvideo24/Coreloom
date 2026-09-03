@@ -92,6 +92,13 @@
       "when": 1788433008402,
       "tag": "0012_vengeful_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788434016384,
+      "tag": "0013_adorable_thunderbolt",
+      "breakpoints": true
     }
   ]
 }
