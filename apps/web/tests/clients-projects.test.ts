@@ -1,10 +1,49 @@
 import { describe, expect, it } from "vitest";
 
-import { normalizeClientName, normalizeProjectProgressUpdate, normalizeProjectRegistration, projectStatuses } from "@/lib/domain/clients-projects";
+import { normalizeClientContact, normalizeClientName, normalizeProjectProgressUpdate, normalizeProjectRegistration, projectStatuses } from "@/lib/domain/clients-projects";
 
-describe("client registration", () => {
-  it("stores a trimmed client name", () => {
-    expect(normalizeClientName("  Acme Studio  ")).toBe("Acme Studio");
+describe("client contact registration", () => {
+  it("keeps a client-linked contact with optional email and role", () => {
+    expect(normalizeClientContact({
+      clientId: "client-1",
+      name: "  김담당  ",
+      role: "  프로젝트 매니저  ",
+      email: " contact@example.com ",
+      phone: " 010-0000-0000 ",
+      relationStatus: "active",
+    })).toEqual({
+      clientId: "client-1",
+      name: "김담당",
+      role: "프로젝트 매니저",
+      email: "contact@example.com",
+      phone: "010-0000-0000",
+      relationStatus: "active",
+    });
+  });
+
+  it("rejects a missing name or invalid email", () => {
+    expect(() => normalizeClientContact({ clientId: "client-1", name: " ", relationStatus: "active" })).toThrow("Contact name is required");
+    expect(() => normalizeClientContact({ clientId: "client-1", name: "김담당", email: "not-an-email", relationStatus: "active" })).toThrow("Contact email is invalid");
+  });
+
+  it("rejects a missing client or unsupported relation status", () => {
+    expect(() => normalizeClientContact({ clientId: " ", name: "김담당", relationStatus: "active" })).toThrow("Client is required");
+    expect(() => normalizeClientContact({ clientId: "client-1", name: "김담당", relationStatus: "unknown" })).toThrow("Unsupported contact relation status");
+  });
+
+  it("keeps an inactive relation without requiring email or phone", () => {
+    expect(normalizeClientContact({
+      clientId: "client-1",
+      name: "김담당",
+      relationStatus: "inactive",
+    })).toEqual({
+      clientId: "client-1",
+      name: "김담당",
+      role: null,
+      email: null,
+      phone: null,
+      relationStatus: "inactive",
+    });
   });
 });
 

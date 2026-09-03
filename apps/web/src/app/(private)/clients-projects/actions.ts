@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 
 import { founderSession } from "@/lib/auth/session";
-import { createFounderClient, createFounderProject, updateFounderProjectProgress } from "@/lib/clients-projects/repository";
+import { createFounderClient, createFounderClientContact, createFounderProject, updateFounderProjectProgress } from "@/lib/clients-projects/repository";
 
 function value(formData: FormData, key: string) {
   const item = formData.get(key);
@@ -19,6 +19,20 @@ async function authorizedFounder() {
 export async function createClientAction(formData: FormData) {
   const founder = await authorizedFounder();
   await createFounderClient({ actorUserId: founder.id, name: value(formData, "name") });
+  revalidatePath("/clients-projects");
+}
+
+export async function createClientContactAction(formData: FormData) {
+  const founder = await authorizedFounder();
+  await createFounderClientContact({
+    actorUserId: founder.id,
+    clientId: value(formData, "clientId"),
+    name: value(formData, "name"),
+    role: value(formData, "role"),
+    email: value(formData, "email"),
+    phone: value(formData, "phone"),
+    relationStatus: value(formData, "relationStatus"),
+  });
   revalidatePath("/clients-projects");
 }
 

@@ -10,6 +10,7 @@ export const contractExecutionMethod = pgEnum("contract_execution_method", ["sta
 export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "final"]);
 export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]);
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
+export const clientContactRelationStatus = pgEnum("client_contact_relation_status", ["active", "inactive"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -90,6 +91,27 @@ export const clientCompanies = pgTable(
   (table) => [
     uniqueIndex("client_companies_workspace_name_idx").on(table.workspaceId, table.name),
     index("client_companies_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+  ],
+);
+
+export const clientContacts = pgTable(
+  "client_contacts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    name: text("name").notNull(),
+    role: text("role"),
+    email: text("email"),
+    phone: text("phone"),
+    relationStatus: clientContactRelationStatus("relation_status").notNull().default("active"),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("client_contacts_client_created_at_idx").on(table.clientCompanyId, desc(table.createdAt)),
+    index("client_contacts_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
   ],
 );
 
