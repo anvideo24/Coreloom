@@ -224,3 +224,4 @@ body {
 .manual-document pre, .manual-document code { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 .manual-document pre { background: var(--canvas); border-radius: var(--radius-control); overflow: auto; padding: var(--space-5); }
 .manual-document blockquote { border-left: 3px solid var(--line); color: var(--muted); padding-left: var(--space-5); }
+.manual-document table { border-collapse: collapse; font-size: 0.875rem; width: 100%; }.manual-document th, .manual-document td { border: 1px solid var(--line); padding: 0.5rem 0.75rem; text-align: left; }.manual-document th { background: var(--canvas); font-weight: 700; }

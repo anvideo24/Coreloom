@@ -21,5 +21,6 @@ describe("PrivateNavigation", () => {
     expect(html).toContain("에이전트");
     expect(html).toContain('href="/admin/manual"');
     expect(html).toContain("운영 매뉴얼");
+    // Admin manual progress page is accessible via manual nav, not main navigation
   });
 });

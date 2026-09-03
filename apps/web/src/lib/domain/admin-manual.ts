@@ -2,8 +2,11 @@ export const ADMIN_MANUAL_OVERVIEW_FILE = "00-coreloom-매뉴얼.md";
 export const ADMIN_MANUAL_CHANGELOG_FILE = "CHANGELOG.md";
 export const ADMIN_MANUAL_ROLES_DIRECTORY = "roles";
 
+export const ADMIN_MANUAL_PROGRESS_FILE = "system-progress.md";
+
 export const adminManualNav = [
   { href: "/admin/manual", label: "개요" },
+  { href: "/admin/manual/progress", label: "시스템 진행 현황" },
   { href: "/admin/manual/roles", label: "역할별 운영 절차" },
   { href: "/admin/manual/changelog", label: "변경 기록" },
 ] as const;
@@ -19,7 +22,8 @@ export type ManualBlock =
   | { type: "paragraph"; inlines: ManualInline[] }
   | { type: "list"; ordered: boolean; items: ManualInline[][] }
   | { type: "code"; text: string }
-  | { type: "quote"; inlines: ManualInline[] };
+  | { type: "quote"; inlines: ManualInline[] }
+  | { type: "table"; headers: string[]; rows: string[][] };
 
 export function isSafeManualSlug(slug: string) {
   return slug.trim() === slug && slug.length > 0 && slug.length <= 80 && !/[./\\]/.test(slug);
@@ -62,6 +66,7 @@ export function resolveManualHref(href: string) {
   const normalized = trimmed.replaceAll("\\", "/").replace(/^\.\//, "");
   if (normalized.endsWith(ADMIN_MANUAL_OVERVIEW_FILE)) return "/admin/manual";
   if (normalized.endsWith(ADMIN_MANUAL_CHANGELOG_FILE)) return "/admin/manual/changelog";
+  if (normalized.endsWith(ADMIN_MANUAL_PROGRESS_FILE)) return "/admin/manual/progress";
   const roleMatch = normalized.match(/(?:^|\/)roles\/([^/]+)\.md$/);
   if (roleMatch && isSafeManualSlug(roleMatch[1])) return `/admin/manual/roles/${encodeURIComponent(roleMatch[1])}`;
   return null;
@@ -108,6 +113,20 @@ export function parseManualMarkdown(markdown: string): ManualBlock[] {
     const line = lines[index];
     if (!line.trim()) {
       index += 1;
+      continue;
+    }
+
+    if (line.startsWith("| ") && line.includes(" | ")) {
+      const parseRow = (raw: string) => raw.split("|").map((cell) => cell.trim()).filter(Boolean);
+      const headers = parseRow(line);
+      index += 1;
+      if (index < lines.length && /^\|[\s:|-]+\|$/.test(lines[index].trim())) index += 1;
+      const rows: string[][] = [];
+      while (index < lines.length && lines[index].startsWith("| ")) {
+        rows.push(parseRow(lines[index]));
+        index += 1;
+      }
+      blocks.push({ type: "table", headers, rows });
       continue;
     }
 

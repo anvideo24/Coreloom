@@ -25,6 +25,7 @@ function ManualBlocks({ blocks }: { blocks: ManualBlock[] }) {
       const ListTag = block.ordered ? "ol" : "ul";
       return <ListTag key={index}>{block.items.map((item, itemIndex) => <li key={itemIndex}><InlineText inlines={item} /></li>)}</ListTag>;
     }
+    if (block.type === "table") return <table key={index}><thead><tr>{block.headers.map((header, headerIndex) => <th key={headerIndex}>{header}</th>)}</tr></thead><tbody>{block.rows.map((row, rowIndex) => <tr key={rowIndex}>{row.map((cell, cellIndex) => <td key={cellIndex}>{cell}</td>)}</tr>)}</tbody></table>;
     if (block.type === "code") return <pre key={index}><code>{block.text}</code></pre>;
     if (block.type === "quote") return <blockquote key={index}><InlineText inlines={block.inlines} /></blockquote>;
     return <p key={index}><InlineText inlines={block.inlines} /></p>;

@@ -9,7 +9,7 @@ import {
   roleManualFile,
   shortenCommit,
 } from "@/lib/domain/admin-manual";
-import { readAdminManualOverview } from "@/lib/admin-manual/repository";
+import { readAdminManualOverview, readAdminManualProgress } from "@/lib/admin-manual/repository";
 
 describe("admin manual catalog", () => {
   it("allows only markdown files inside the manual folder", () => {
@@ -90,6 +90,18 @@ describe("admin manual rendering", () => {
   });
 });
 
+describe("admin manual table parsing", () => {
+  it("parses a markdown table into headers and rows", () => {
+    const blocks = parseManualMarkdown([
+      "| 기능 | 상태 |",
+      "| --- | --- |",
+      "| 대시보드 | 완료 |",
+      "| 환불 | 미착수 |",
+    ].join("\n"));
+    expect(blocks[0]).toEqual({ type: "table", headers: ["기능", "상태"], rows: [["대시보드", "완료"], ["환불", "미착수"]] });
+  });
+});
+
 describe("admin manual source files", () => {
   it("reads the overview markdown from the repository original", () => {
     const source = readAdminManualOverview();
@@ -97,5 +109,11 @@ describe("admin manual source files", () => {
     expect(source.markdown).toContain("/admin/manual");
     expect(source.deployVersion).toMatch(/\d+\.\d+\.\d+/);
     expect(source.manualCommit.length).toBeGreaterThan(0);
+  });
+
+  it("reads the system progress tracking page", () => {
+    const source = readAdminManualProgress();
+    expect(source.markdown).toContain("시스템 구성 진행 현황");
+    expect(source.markdown).toContain("완료");
   });
 });

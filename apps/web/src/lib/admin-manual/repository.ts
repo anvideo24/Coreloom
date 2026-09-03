@@ -7,6 +7,7 @@ import "server-only";
 import {
   ADMIN_MANUAL_CHANGELOG_FILE,
   ADMIN_MANUAL_OVERVIEW_FILE,
+  ADMIN_MANUAL_PROGRESS_FILE,
   ADMIN_MANUAL_ROLES_DIRECTORY,
   assertManualRelativePath,
   listRoleManuals,
@@ -70,6 +71,10 @@ export function readAdminManualOverview() {
 
 export function readAdminManualChangelog() {
   return { ...readManualFile(ADMIN_MANUAL_CHANGELOG_FILE), title: "변경 기록" };
+}
+
+export function readAdminManualProgress() {
+  return { ...readManualFile(ADMIN_MANUAL_PROGRESS_FILE), title: "시스템 진행 현황" };
 }
 
 export function listAdminManualRoles() {
