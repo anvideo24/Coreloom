@@ -394,13 +394,22 @@ body {
 .form-help { color: var(--muted); line-height: 1.65; margin: 0; }
 
 .empty-state {
-  align-items: center;
   color: var(--muted);
+  line-height: 1.65;
+  margin: 0;
+  padding: var(--space-5) 0;
+}
+
+section.empty-state,
+.quote-empty {
+  align-items: center;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
   display: grid;
   gap: var(--space-3);
   justify-items: center;
-  line-height: 1.65;
-  margin: 0;
+  margin-top: var(--space-6);
   padding: var(--space-10) var(--space-5);
   text-align: center;
 }
@@ -438,7 +447,7 @@ body {
 .project-update-form .auth-submit { margin: 0; padding: 0 var(--space-3); }
 
 /* ── 에디터 카드 ─────────────────────────────── */
-.quote-editor-card, .quote-empty {
+.quote-editor-card {
   background: var(--surface);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
@@ -446,9 +455,8 @@ body {
   padding: var(--space-5) var(--space-6);
 }
 
-.quote-empty { text-align: center; }
-.quote-empty h2 { margin: 0 0 var(--space-3); font-size: 1.125rem; font-weight: 700; }
-.quote-empty p { color: var(--muted); margin-bottom: var(--space-5); }
+.quote-empty h2 { font-size: 1.125rem; font-weight: 700; margin: 0; }
+.quote-empty p { color: var(--muted); margin: 0; }
 
 /* ── 견적 폼 ─────────────────────────────────── */
 .quote-form { display: grid; gap: var(--space-3); grid-template-columns: repeat(2, minmax(0, 1fr)); }
