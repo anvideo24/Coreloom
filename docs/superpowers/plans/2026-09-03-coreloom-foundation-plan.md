@@ -31,7 +31,7 @@ apps/web/
   src/lib/{auth,supabase,domain}/
   src/types/coreloom.ts
   tests/{setup,projects,progress,dashboard,workspace}.test.ts
-  vitest.config.ts
+  vitest.config.mts
 supabase/migrations/  # created by the Supabase CLI
 ```
 
@@ -70,7 +70,7 @@ Expected: `apps/web/package.json` exists and the root `.git` remains the only Gi
 
 - [ ] **Step 1a: Configure Vitest to resolve the app alias**
 
-Create `apps/web/vitest.config.ts`:
+Create `apps/web/vitest.config.mts`:
 
 ```ts
 import { fileURLToPath } from "node:url";
