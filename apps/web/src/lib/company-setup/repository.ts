@@ -3,39 +3,9 @@ import "server-only";
 import { and, asc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, companySetupItems, workspaceMembers, workspaces } from "@/lib/db/schema";
+import { auditEvents, companySetupItems } from "@/lib/db/schema";
 import { companySetupTemplates, normalizeCompanySetupUpdate } from "@/lib/domain/company-setup";
-
-async function ensureFounderWorkspace(authUserId: string) {
-  const database = createDatabase();
-  const [existing] = await database
-    .select({ id: workspaces.id })
-    .from(workspaceMembers)
-    .innerJoin(workspaces, eq(workspaceMembers.workspaceId, workspaces.id))
-    .where(and(eq(workspaceMembers.authUserId, authUserId), isNull(workspaceMembers.deletedAt)))
-    .limit(1);
-
-  if (existing) return existing;
-
-  const [workspace] = await database
-    .insert(workspaces)
-    .values({ name: "Coreloom 대표 운영" })
-    .returning({ id: workspaces.id });
-
-  await database.insert(workspaceMembers).values({
-    workspaceId: workspace.id,
-    authUserId,
-    role: "founder",
-  });
-  await database.insert(auditEvents).values({
-    workspaceId: workspace.id,
-    actorUserId: authUserId,
-    eventType: "workspace.created",
-    payload: { origin: "company-setup" },
-  });
-
-  return workspace;
-}
+import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 async function ensureCompanySetupItems(workspaceId: string, actorUserId: string) {
   const database = createDatabase();

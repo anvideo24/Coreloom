@@ -1,8 +1,9 @@
 import { desc } from "drizzle-orm";
-import { boolean, index, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 
 export const workspaceRole = pgEnum("workspace_role", ["founder"]);
 export const companySetupStatus = pgEnum("company_setup_status", ["not_started", "in_progress", "complete", "not_applicable"]);
+export const projectStatus = pgEnum("project_status", ["planned", "active", "on_hold", "complete"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -67,5 +68,40 @@ export const companySetupItems = pgTable(
   (table) => [
     uniqueIndex("company_setup_items_workspace_code_idx").on(table.workspaceId, table.code),
     index("company_setup_items_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+  ],
+);
+
+export const clientCompanies = pgTable(
+  "client_companies",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    name: text("name").notNull(),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    uniqueIndex("client_companies_workspace_name_idx").on(table.workspaceId, table.name),
+    index("client_companies_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+  ],
+);
+
+export const projects = pgTable(
+  "projects",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    name: text("name").notNull(),
+    status: projectStatus("status").notNull().default("planned"),
+    progressPercent: integer("progress_percent").notNull().default(0),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    index("projects_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+    index("projects_client_company_updated_at_idx").on(table.clientCompanyId, desc(table.updatedAt)),
   ],
 );

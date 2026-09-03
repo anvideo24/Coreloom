@@ -13,6 +13,18 @@
           "container": "progress-card"
         }
       ]
+    },
+    {
+      "id": "client-project-count",
+      "atomic_text": "0개",
+      "intentional_split": false,
+      "fragments": [
+        {
+          "text": "0개",
+          "line": 1,
+          "container": "client-project-list-heading"
+        }
+      ]
     }
   ]
 }

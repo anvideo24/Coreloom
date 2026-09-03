@@ -161,9 +161,22 @@ body {
 .setup-card-heading > a:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 55%); outline-offset: 2px; }
 .setup-form .auth-submit { align-self: end; margin: 0; padding: 0 var(--space-5); }
 
+.registration-grid { display: grid; gap: var(--space-5); grid-template-columns: repeat(2, minmax(0, 1fr)); margin-top: var(--space-7); }
+.registration-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-card); display: grid; gap: var(--space-3); padding: var(--space-5); }
+.registration-card h2, .list-heading h2 { font-size: 1.25rem; letter-spacing: -0.02em; margin: 0; }
+.registration-card label { display: grid; font-size: 0.875rem; font-weight: 700; gap: 0.375rem; }
+.registration-card input, .registration-card select { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-control); color: var(--ink); font: inherit; min-height: var(--control-height); padding: 0 var(--space-3); }
+.registration-card .auth-submit { margin: var(--space-3) 0 0; padding: 0 var(--space-5); width: fit-content; }
+.form-help, .empty-state { color: var(--muted); line-height: 1.6; margin: 0; }
+.project-list { display: grid; gap: var(--space-3); margin-top: var(--space-7); }
+.list-heading { align-items: end; display: flex; justify-content: space-between; }
+.list-heading > span { color: var(--muted); font-weight: 700; }
+.project-row { align-items: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-control); display: grid; gap: var(--space-5); grid-template-columns: minmax(12rem, 1.4fr) auto minmax(10rem, 0.8fr); padding: var(--space-5); }
+.project-row p { color: var(--muted); font-size: 0.875rem; margin: 0 0 0.25rem; }.project-row h3 { font-size: 1rem; margin: 0; }.project-status { color: var(--accent); font-size: 0.875rem; font-weight: 700; }.project-progress { display: grid; gap: 0.375rem; }.project-progress strong { font-size: 0.875rem; }
+
 @media (max-width: 48rem) {
   .operations-header,
   .setup-card-heading { flex-direction: column; }
-  .setup-form { grid-template-columns: 1fr; }
+  .setup-form, .registration-grid, .project-row { grid-template-columns: 1fr; }
   .setup-form .auth-submit { width: 100%; }
 }

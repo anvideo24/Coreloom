@@ -27,6 +27,7 @@ export default async function DashboardPage() {
       <h1>운영 기반이 준비되었습니다.</h1>
       <p>{session.founder.email} 계정으로 로그인했습니다. 회사 설립 준비와 고객사·프로젝트 운영 기능을 다음 단계에서 연결합니다.</p>
       <a className="auth-submit dashboard-action" href="/company-setup">회사 설립 준비 시작</a>
+      <a className="text-link" href="/clients-projects">고객사와 프로젝트 관리</a>
     </main>
   );
 }
