@@ -16,11 +16,54 @@ export function nextDocumentVersionNumber(latestVersionNumber: number) {
   return latestVersionNumber + 1;
 }
 
+export const allowedDocumentContentTypes = ["application/pdf", "image/jpeg", "image/png", "image/webp"] as const;
+export const MAX_DOCUMENT_BYTES = 20 * 1024 * 1024;
+
 export function normalizeOriginalReference(value: string) {
   const originalReference = value.trim();
   if (!originalReference) throw new Error("Original reference is required");
   if (originalReference.length > 500) throw new Error("Original reference is too long");
   return originalReference;
+}
+
+export function sanitizeOriginalFilename(name: string) {
+  const cleaned = name.replace(/[/\\]/g, "").replace(/^\.+/, "").trim();
+  if (!cleaned) throw new Error("Original filename is required");
+  if (cleaned.length > 180) throw new Error("Original filename is too long");
+  return cleaned;
+}
+
+export function normalizeVaultDocumentSource(input: { originalReference?: string; filename?: string }) {
+  const originalReference = input.originalReference?.trim() || "";
+  const filename = input.filename?.trim() || "";
+  if (!originalReference && !filename) throw new Error("Original file or location is required");
+  return {
+    originalReference: originalReference
+      ? normalizeOriginalReference(originalReference)
+      : sanitizeOriginalFilename(filename),
+  };
+}
+
+export function normalizeStoredDocumentFile(input: { filename: string; contentType: string; byteSize: number }) {
+  if (input.byteSize <= 0) throw new Error("Document file is empty");
+  if (input.byteSize > MAX_DOCUMENT_BYTES) throw new Error("Document file is too large");
+  if (!(allowedDocumentContentTypes as readonly string[]).includes(input.contentType)) {
+    throw new Error("Unsupported document file type");
+  }
+  return {
+    filename: sanitizeOriginalFilename(input.filename),
+    contentType: input.contentType,
+    byteSize: input.byteSize,
+  };
+}
+
+export function vaultDocumentDownloadPath(documentId: string, versionId: string) {
+  return `/documents/${documentId}/versions/${versionId}/download`;
+}
+
+export function documentDownloadDisposition(filename: string) {
+  const safe = sanitizeOriginalFilename(filename).replace(/"/g, "");
+  return `attachment; filename="${safe}"; filename*=UTF-8''${encodeURIComponent(safe)}`;
 }
 
 export function originalReferenceHref(reference: string) {
@@ -36,7 +79,8 @@ export function originalReferenceHref(reference: string) {
 export function normalizeVaultDocumentDraft(input: {
   title: string;
   kind: string;
-  originalReference: string;
+  originalReference?: string;
+  filename?: string;
   projectId?: string;
   note?: string;
 }): {
@@ -58,17 +102,23 @@ export function normalizeVaultDocumentDraft(input: {
   return {
     title,
     kind: input.kind as VaultDocumentKind,
-    originalReference: normalizeOriginalReference(input.originalReference),
+    originalReference: normalizeVaultDocumentSource({
+      originalReference: input.originalReference,
+      filename: input.filename,
+    }).originalReference,
     projectId,
     note,
   };
 }
 
-export function normalizeVaultDocumentVersion(input: { originalReference: string; note?: string }) {
+export function normalizeVaultDocumentVersion(input: { originalReference?: string; filename?: string; note?: string }) {
   const note = input.note?.trim() || null;
   if (note && note.length > 500) throw new Error("Document note is too long");
   return {
-    originalReference: normalizeOriginalReference(input.originalReference),
+    originalReference: normalizeVaultDocumentSource({
+      originalReference: input.originalReference,
+      filename: input.filename,
+    }).originalReference,
     note,
   };
 }

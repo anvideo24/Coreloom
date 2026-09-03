@@ -4,8 +4,15 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, clientCompanies, projects, vaultDocumentVersions, vaultDocuments } from "@/lib/db/schema";
-import { COMPANY_DOCUMENT_LABEL, nextDocumentVersionNumber, normalizeVaultDocumentDraft, normalizeVaultDocumentVersion } from "@/lib/domain/documents";
+import { COMPANY_DOCUMENT_LABEL, nextDocumentVersionNumber, normalizeStoredDocumentFile, normalizeVaultDocumentDraft, normalizeVaultDocumentVersion } from "@/lib/domain/documents";
+import { writeStoredDocument } from "@/lib/documents/storage";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
+
+type StoredDocumentUpload = {
+  filename: string;
+  contentType: string;
+  bytes: Uint8Array;
+};
 
 export async function listFounderVaultDocuments(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "documents");
@@ -26,6 +33,8 @@ export async function listFounderVaultDocuments(authUserId: string) {
     title: vaultDocuments.title,
     kind: vaultDocuments.kind,
     originalReference: vaultDocumentVersions.originalReference,
+    storedFilename: vaultDocumentVersions.storedFilename,
+    storageKey: vaultDocumentVersions.storageKey,
     clientName: clientCompanies.name,
     projectName: projects.name,
     createdAt: vaultDocumentVersions.createdAt,
@@ -44,6 +53,7 @@ export async function listFounderVaultDocuments(authUserId: string) {
     if (latestByDocument.has(row.documentId)) continue;
     latestByDocument.set(row.documentId, {
       ...row,
+      hasStoredFile: Boolean(row.storageKey),
       counterparty: row.projectName && row.clientName
         ? `${row.clientName} · ${row.projectName}`
         : COMPANY_DOCUMENT_LABEL,
@@ -80,6 +90,10 @@ export async function getFounderVaultDocumentDetail(authUserId: string, document
     id: vaultDocumentVersions.id,
     versionNumber: vaultDocumentVersions.versionNumber,
     originalReference: vaultDocumentVersions.originalReference,
+    storedFilename: vaultDocumentVersions.storedFilename,
+    contentType: vaultDocumentVersions.contentType,
+    byteSize: vaultDocumentVersions.byteSize,
+    storageKey: vaultDocumentVersions.storageKey,
     note: vaultDocumentVersions.note,
     createdAt: vaultDocumentVersions.createdAt,
   }).from(vaultDocumentVersions)
@@ -100,17 +114,50 @@ export async function getFounderVaultDocumentDetail(authUserId: string, document
   };
 }
 
+async function storeUploadedVersion(input: {
+  workspaceId: string;
+  documentId: string;
+  versionId: string;
+  file?: StoredDocumentUpload;
+}) {
+  if (!input.file) return null;
+  const stored = normalizeStoredDocumentFile({
+    filename: input.file.filename,
+    contentType: input.file.contentType,
+    byteSize: input.file.bytes.byteLength,
+  });
+  const storageKey = await writeStoredDocument({
+    workspaceId: input.workspaceId,
+    documentId: input.documentId,
+    versionId: input.versionId,
+    filename: stored.filename,
+    bytes: input.file.bytes,
+  });
+  const database = createDatabase();
+  await database.update(vaultDocumentVersions).set({
+    storedFilename: stored.filename,
+    contentType: stored.contentType,
+    byteSize: stored.byteSize,
+    storageKey,
+  }).where(eq(vaultDocumentVersions.id, input.versionId));
+  return stored;
+}
+
 export async function createFounderVaultDocument(input: {
   actorUserId: string;
   title: string;
   kind: string;
-  originalReference: string;
+  originalReference?: string;
   projectId?: string;
   note?: string;
+  file?: StoredDocumentUpload;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "documents");
   const database = createDatabase();
-  const draft = normalizeVaultDocumentDraft(input);
+  const draft = normalizeVaultDocumentDraft({
+    ...input,
+    filename: input.file?.filename,
+  });
 
   let clientCompanyId: string | null = null;
   if (draft.projectId) {
@@ -146,11 +193,23 @@ export async function createFounderVaultDocument(input: {
     note: draft.note,
   }).returning({ id: vaultDocumentVersions.id });
 
+  const stored = await storeUploadedVersion({
+    workspaceId: workspace.id,
+    documentId: created.id,
+    versionId: version.id,
+    file: input.file,
+  });
+
   await database.insert(auditEvents).values({
     workspaceId: workspace.id,
     actorUserId: input.actorUserId,
     eventType: "vault_document.created",
-    payload: { documentId: created.id, versionId: version.id, kind: draft.kind },
+    payload: {
+      documentId: created.id,
+      versionId: version.id,
+      kind: draft.kind,
+      storedFilename: stored?.filename ?? null,
+    },
   });
 
   return { documentId: created.id };
@@ -159,8 +218,9 @@ export async function createFounderVaultDocument(input: {
 export async function addFounderVaultDocumentVersion(input: {
   actorUserId: string;
   documentId: string;
-  originalReference: string;
+  originalReference?: string;
   note?: string;
+  file?: StoredDocumentUpload;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "documents");
   const database = createDatabase();
@@ -178,7 +238,10 @@ export async function addFounderVaultDocumentVersion(input: {
     .where(eq(vaultDocumentVersions.documentId, document.id))
     .orderBy(desc(vaultDocumentVersions.versionNumber))
     .limit(1);
-  const version = normalizeVaultDocumentVersion(input);
+  const version = normalizeVaultDocumentVersion({
+    ...input,
+    filename: input.file?.filename,
+  });
   const [created] = await database.insert(vaultDocumentVersions).values({
     workspaceId: workspace.id,
     documentId: document.id,
@@ -187,13 +250,38 @@ export async function addFounderVaultDocumentVersion(input: {
     note: version.note,
   }).returning({ id: vaultDocumentVersions.id, versionNumber: vaultDocumentVersions.versionNumber });
 
+  const stored = await storeUploadedVersion({
+    workspaceId: workspace.id,
+    documentId: document.id,
+    versionId: created.id,
+    file: input.file,
+  });
+
   await database.update(vaultDocuments).set({ updatedAt: new Date() }).where(eq(vaultDocuments.id, document.id));
   await database.insert(auditEvents).values({
     workspaceId: workspace.id,
     actorUserId: input.actorUserId,
     eventType: "vault_document.version_added",
-    payload: { documentId: document.id, versionId: created.id, versionNumber: created.versionNumber },
+    payload: {
+      documentId: document.id,
+      versionId: created.id,
+      versionNumber: created.versionNumber,
+      storedFilename: stored?.filename ?? null,
+    },
   });
 
   return { documentId: document.id };
+}
+
+export async function getFounderVaultDocumentVersionFile(authUserId: string, documentId: string, versionId: string) {
+  const detail = await getFounderVaultDocumentDetail(authUserId, documentId);
+  const version = detail?.versions.find((candidate) => candidate.id === versionId);
+  if (!detail || !version?.storageKey || !version.storedFilename || !version.contentType) return null;
+  return {
+    title: detail.document.title,
+    versionNumber: version.versionNumber,
+    storedFilename: version.storedFilename,
+    contentType: version.contentType,
+    storageKey: version.storageKey,
+  };
 }

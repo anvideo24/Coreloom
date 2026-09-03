@@ -112,13 +112,13 @@ export default async function DashboardPage() {
         <div className="list-heading">
           <div>
             <p className="setup-code">문서함</p>
-            <h2>원본 위치 보관</h2>
+            <h2>원본 보관</h2>
           </div>
           <span>{dashboard.documentCount}건</span>
         </div>
         <Link className="quote-row" href="/documents">
           <div>
-            <p>파일 업로드는 포함하지 않습니다.</p>
+            <p>올린 파일은 대표만 받을 수 있습니다.</p>
             <h3>비공개 문서함</h3>
           </div>
           <strong>{dashboard.documentCount}건</strong>

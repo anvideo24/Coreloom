@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { addVaultDocumentVersionAction } from "@/app/(private)/documents/actions";
 import { founderSession } from "@/lib/auth/session";
-import { originalReferenceHref, vaultDocumentKindLabels } from "@/lib/domain/documents";
+import { originalReferenceHref, vaultDocumentDownloadPath, vaultDocumentKindLabels } from "@/lib/domain/documents";
 import { getFounderVaultDocumentDetail } from "@/lib/documents/repository";
 
 export const dynamic = "force-dynamic";
@@ -33,9 +33,12 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
         </div>
       </header>
       <section className="quote-editor-card">
-        <p className="setup-code">현재 원본 위치</p>
-        <p className="form-help">이 위치는 덮어쓰지 않습니다. 원본이 바뀌면 아래 새 버전으로만 남깁니다. 파일 업로드는 포함되지 않습니다.</p>
+        <p className="setup-code">현재 원본</p>
+        <p className="form-help">이 원본은 덮어쓰지 않습니다. 바뀌면 아래 새 버전으로만 남깁니다. 올린 파일은 대표만 받을 수 있습니다.</p>
         <p>{latest.originalReference}</p>
+        {latest.storageKey ? (
+          <p><a className="text-link" href={vaultDocumentDownloadPath(detail.document.id, latest.id)}>원본 받기</a></p>
+        ) : null}
         {latestHref ? (
           <p><a className="text-link" href={latestHref} rel="noreferrer" target="_blank">원본 열기</a></p>
         ) : null}
@@ -43,26 +46,27 @@ export default async function DocumentDetailPage({ params }: { params: Promise<{
       </section>
       <section className="quote-editor-card">
         <p className="setup-code">새 버전</p>
-        <p className="form-help">이전 버전 위치는 그대로 두고, 새 원본 위치만 추가합니다.</p>
+        <p className="form-help">이전 버전은 그대로 두고, 새 원본 파일 또는 위치만 추가합니다.</p>
         <form action={addVaultDocumentVersionAction} className="quote-form">
           <input name="documentId" type="hidden" value={detail.document.id} />
-          <label className="quote-form-full">원본 경로 또는 링크<input name="originalReference" required /></label>
+          <label className="quote-form-full">원본 파일<input accept="application/pdf,image/jpeg,image/png,image/webp" name="originalFile" type="file" /></label>
+          <label className="quote-form-full">원본 경로 또는 링크 (선택)<input name="originalReference" /></label>
           <label className="quote-form-full">메모 (선택)<textarea name="note" /></label>
-          <button className="auth-submit" type="submit">v{latest.versionNumber + 1} 위치 저장</button>
+          <button className="auth-submit" type="submit">v{latest.versionNumber + 1} 원본 저장</button>
         </form>
       </section>
       <section className="quote-list" aria-label="버전 이력">
         <div className="list-heading">
           <div>
             <p className="setup-code">버전</p>
-            <h2>원본 위치 이력</h2>
+            <h2>원본 이력</h2>
           </div>
           <span>{detail.versions.length}개</span>
         </div>
         {detail.versions.map((version) => (
           <article className="quote-row" key={version.id}>
             <div>
-              <p>v{version.versionNumber} · {version.createdAt.toLocaleString("ko-KR")}</p>
+              <p>v{version.versionNumber} · {version.createdAt.toLocaleString("ko-KR")}{version.storageKey ? " · 파일 보관" : ""}</p>
               <h3>{version.originalReference}</h3>
             </div>
             <strong>v{version.versionNumber}</strong>

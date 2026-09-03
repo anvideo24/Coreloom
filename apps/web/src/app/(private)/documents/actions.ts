@@ -11,6 +11,16 @@ function value(formData: FormData, key: string) {
   return typeof item === "string" ? item : "";
 }
 
+async function uploadedFile(formData: FormData) {
+  const item = formData.get("originalFile");
+  if (!(item instanceof File) || item.size === 0) return undefined;
+  return {
+    filename: item.name,
+    contentType: item.type,
+    bytes: new Uint8Array(await item.arrayBuffer()),
+  };
+}
+
 async function requireFounder() {
   const session = await founderSession();
   if (session.state !== "authorized") throw new Error("Founder access is required");
@@ -26,6 +36,7 @@ export async function createVaultDocumentAction(formData: FormData) {
     originalReference: value(formData, "originalReference"),
     projectId: value(formData, "projectId"),
     note: value(formData, "note"),
+    file: await uploadedFile(formData),
   });
   revalidatePath("/documents");
   revalidatePath("/company-setup");
@@ -40,6 +51,7 @@ export async function addVaultDocumentVersionAction(formData: FormData) {
     documentId,
     originalReference: value(formData, "originalReference"),
     note: value(formData, "note"),
+    file: await uploadedFile(formData),
   });
   revalidatePath(`/documents/${documentId}`);
   revalidatePath("/documents");
