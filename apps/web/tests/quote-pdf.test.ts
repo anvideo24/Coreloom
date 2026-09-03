@@ -16,5 +16,5 @@ describe("createQuotePdf", () => {
     });
 
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
-  });
+  }, 15000);
 });

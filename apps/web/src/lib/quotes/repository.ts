@@ -3,8 +3,10 @@ import "server-only";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, clientCompanies, projects, quotes, quoteVersions } from "@/lib/db/schema";
+import { auditEvents, clientCompanies, projects, quoteEmailDeliveries, quotes, quoteVersions } from "@/lib/db/schema";
 import { calculateQuoteAmounts, nextQuoteVersionNumber, QuoteItemInput } from "@/lib/domain/quotes";
+import { createQuotePdf } from "@/lib/quotes/pdf";
+import { deliverQuoteEmail, quoteEmailConfigured } from "@/lib/quotes/email";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 export async function listFounderQuotes(authUserId: string) {
@@ -90,4 +92,34 @@ export async function createFounderQuoteVersion(input: {
   await database.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: input.actorUserId,
     eventType: "quote.version_created", payload: { quoteId, quoteVersionId: version.id, versionNumber } });
   return { quoteId, versionId: version.id, versionNumber };
+}
+
+export async function listFounderQuoteEmailDeliveries(authUserId: string, quoteId: string, quoteVersionId: string) {
+  const workspace = await ensureFounderWorkspace(authUserId, "quotes");
+  const database = createDatabase();
+  return database.select({ id: quoteEmailDeliveries.id, recipient: quoteEmailDeliveries.recipient, subject: quoteEmailDeliveries.subject, status: quoteEmailDeliveries.status, createdAt: quoteEmailDeliveries.createdAt, sentAt: quoteEmailDeliveries.sentAt })
+    .from(quoteEmailDeliveries).where(and(eq(quoteEmailDeliveries.workspaceId, workspace.id), eq(quoteEmailDeliveries.quoteId, quoteId), eq(quoteEmailDeliveries.quoteVersionId, quoteVersionId))).orderBy(desc(quoteEmailDeliveries.createdAt));
+}
+
+export async function sendFounderQuoteEmail(input: { actorUserId: string; message: string; quoteId: string; quoteVersionId: string; recipient: string; subject: string }) {
+  if (!quoteEmailConfigured()) throw new Error("Quote email service is not configured");
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "quotes");
+  const database = createDatabase();
+  const [quote] = await database.select({ id: quotes.id, clientName: clientCompanies.name }).from(quotes).innerJoin(clientCompanies, eq(quotes.clientCompanyId, clientCompanies.id))
+    .where(and(eq(quotes.id, input.quoteId), eq(quotes.workspaceId, workspace.id), isNull(quotes.deletedAt), isNull(clientCompanies.deletedAt))).limit(1);
+  const [version] = await database.select().from(quoteVersions).where(and(eq(quoteVersions.id, input.quoteVersionId), eq(quoteVersions.quoteId, input.quoteId), eq(quoteVersions.workspaceId, workspace.id))).limit(1);
+  if (!quote || !version) throw new Error("Quote version was not found");
+  const [delivery] = await database.insert(quoteEmailDeliveries).values({ workspaceId: workspace.id, quoteId: quote.id, quoteVersionId: version.id, recipient: input.recipient, subject: input.subject, message: input.message }).returning({ id: quoteEmailDeliveries.id });
+
+  try {
+    const items = Array.isArray(version.items) ? version.items as { description: string; amount: number }[] : [];
+    const providerMessageId = await deliverQuoteEmail({ clientName: quote.clientName, message: input.message, pdf: await createQuotePdf({ clientName: quote.clientName, title: version.title, versionNumber: version.versionNumber, items, subtotalAmount: version.subtotalAmount, vatAmount: version.vatAmount, totalAmount: version.totalAmount, note: version.note }), quoteTitle: version.title, recipient: input.recipient, subject: input.subject, versionNumber: version.versionNumber, idempotencyKey: `quote-email-${delivery.id}` });
+    await database.update(quoteEmailDeliveries).set({ status: "accepted", providerMessageId, sentAt: new Date(), updatedAt: new Date() }).where(eq(quoteEmailDeliveries.id, delivery.id));
+    await database.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: input.actorUserId, eventType: "quote.email_accepted", payload: { quoteId: quote.id, quoteVersionId: version.id, quoteEmailDeliveryId: delivery.id } });
+    return { deliveryId: delivery.id };
+  } catch {
+    await database.update(quoteEmailDeliveries).set({ status: "failed", failureReason: "provider_rejected_or_unavailable", updatedAt: new Date() }).where(eq(quoteEmailDeliveries.id, delivery.id));
+    await database.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: input.actorUserId, eventType: "quote.email_failed", payload: { quoteId: quote.id, quoteVersionId: version.id, quoteEmailDeliveryId: delivery.id } });
+    throw new Error("Quote email could not be sent");
+  }
 }

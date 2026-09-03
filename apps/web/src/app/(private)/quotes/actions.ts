@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 import { founderSession } from "@/lib/auth/session";
-import { createFounderQuoteVersion } from "@/lib/quotes/repository";
+import { normalizeQuoteEmailDraft } from "@/lib/domain/quote-email";
+import { createFounderQuoteVersion, sendFounderQuoteEmail } from "@/lib/quotes/repository";
 
 function value(formData: FormData, key: string) { const item = formData.get(key); return typeof item === "string" ? item : ""; }
 
@@ -22,4 +23,20 @@ export async function saveQuoteVersionAction(formData: FormData) {
   });
   revalidatePath("/quotes");
   redirect(`/quotes/${result.quoteId}`);
+}
+
+export async function sendQuoteVersionEmailAction(formData: FormData) {
+  const session = await founderSession();
+  if (session.state !== "authorized") throw new Error("Founder access is required");
+  const quoteId = value(formData, "quoteId");
+  const quoteVersionId = value(formData, "quoteVersionId");
+  const destination = `/quotes/${quoteId}/versions/${quoteVersionId}/email`;
+  try {
+    const draft = normalizeQuoteEmailDraft({ recipient: value(formData, "recipient"), subject: value(formData, "subject"), message: value(formData, "message"), approved: value(formData, "approved") === "true" });
+    await sendFounderQuoteEmail({ actorUserId: session.founder.id, quoteId, quoteVersionId, ...draft });
+  } catch {
+    redirect(`${destination}?status=failed`);
+  }
+  revalidatePath(`/quotes/${quoteId}`);
+  redirect(`${destination}?status=accepted`);
 }

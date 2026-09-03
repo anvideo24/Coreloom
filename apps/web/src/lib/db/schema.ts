@@ -4,6 +4,7 @@ import { boolean, index, integer, jsonb, pgEnum, pgTable, text, timestamp, uniqu
 export const workspaceRole = pgEnum("workspace_role", ["founder"]);
 export const companySetupStatus = pgEnum("company_setup_status", ["not_started", "in_progress", "complete", "not_applicable"]);
 export const projectStatus = pgEnum("project_status", ["planned", "active", "on_hold", "complete"]);
+export const quoteEmailDeliveryStatus = pgEnum("quote_email_delivery_status", ["pending", "accepted", "failed"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -142,4 +143,24 @@ export const quoteVersions = pgTable(
     uniqueIndex("quote_versions_quote_version_number_idx").on(table.quoteId, table.versionNumber),
     index("quote_versions_quote_created_at_idx").on(table.quoteId, desc(table.createdAt)),
   ],
+);
+
+export const quoteEmailDeliveries = pgTable(
+  "quote_email_deliveries",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    quoteId: uuid("quote_id").notNull().references(() => quotes.id),
+    quoteVersionId: uuid("quote_version_id").notNull().references(() => quoteVersions.id),
+    recipient: text("recipient").notNull(),
+    subject: text("subject").notNull(),
+    message: text("message").notNull(),
+    status: quoteEmailDeliveryStatus("status").notNull().default("pending"),
+    providerMessageId: text("provider_message_id"),
+    sentAt: timestamp("sent_at", { withTimezone: true }),
+    failureReason: text("failure_reason"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [index("quote_email_deliveries_quote_version_created_at_idx").on(table.quoteVersionId, desc(table.createdAt))],
 );

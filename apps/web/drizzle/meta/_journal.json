@@ -29,6 +29,13 @@
       "when": 1788422588520,
       "tag": "0003_deep_firebrand",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788423741903,
+      "tag": "0004_milky_lady_bullseye",
+      "breakpoints": true
     }
   ]
 }
