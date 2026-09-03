@@ -48,7 +48,7 @@ export async function listFounderVaultDocuments(authUserId: string) {
     ))
     .orderBy(desc(vaultDocumentVersions.createdAt));
 
-  const latestByDocument = new Map<string, (typeof versionRows)[number] & { counterparty: string }>();
+  const latestByDocument = new Map<string, (typeof versionRows)[number] & { counterparty: string; hasStoredFile: boolean }>();
   for (const row of versionRows) {
     if (latestByDocument.has(row.documentId)) continue;
     latestByDocument.set(row.documentId, {

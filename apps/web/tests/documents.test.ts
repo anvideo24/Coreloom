@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import path from "node:path";
 
 import {
   documentDownloadDisposition,
@@ -92,7 +93,7 @@ describe("private document versions", () => {
 
 describe("private document store", () => {
   it("keeps originals under a local folder and rejects path escape", () => {
-    expect(documentStoreRoot(undefined, "/tmp/coreloom")).toBe("/tmp/coreloom/.local/documents");
+    expect(documentStoreRoot(undefined, "/tmp/coreloom")).toBe(path.resolve("/tmp/coreloom/.local/documents"));
     const key = documentStorageKey(
       "11111111-1111-1111-1111-111111111111",
       "22222222-2222-2222-2222-222222222222",
