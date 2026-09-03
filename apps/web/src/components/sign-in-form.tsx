@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth/client";
@@ -53,6 +54,10 @@ export function SignInForm() {
       <button className="auth-submit" disabled={isSubmitting} type="submit">
         {isSubmitting ? "확인 중…" : "Coreloom 열기"}
       </button>
+
+      <Link className="auth-link" href="/auth/forgot-password">
+        비밀번호 설정 또는 재설정
+      </Link>
     </form>
   );
 }

@@ -111,6 +111,9 @@ body {
 
 .auth-submit:disabled { cursor: wait; opacity: 0.65; }
 .auth-error { color: var(--danger); font-size: 0.875rem; margin: 0; }
+.auth-link { color: var(--accent); font-size: 0.875rem; font-weight: 700; margin-top: var(--space-3); text-align: center; }
+.auth-link:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent), transparent 55%); outline-offset: 2px; }
+.auth-notice { background: color-mix(in srgb, var(--accent), transparent 92%); border: 1px solid color-mix(in srgb, var(--accent), transparent 75%); border-radius: var(--radius-control); color: var(--ink); line-height: 1.6; margin: 0; padding: var(--space-5); }
 
 .dashboard-shell { align-items: flex-start; flex-direction: column; gap: var(--space-5); margin: 0 auto; max-width: 50rem; }
 .dashboard-shell > p { margin: 0; max-width: 42rem; }
