@@ -6,16 +6,27 @@ import { useEffect, useId, useState } from "react";
 
 import {
   compactTabs,
+  isEditableHotkeyTarget,
   isNavItemActive,
+  isNavToggleHotkey,
+  NAV_WIDE_MEDIA,
   navGroups,
   navItemsForTab,
+  parseWideNavOpen,
+  serializeWideNavOpen,
   tabIdForPath,
+  WIDE_NAV_OPEN_STORAGE_KEY,
   type CompactTabId,
 } from "@/lib/domain/private-navigation";
 
+function isWideNavigationViewport() {
+  return window.matchMedia(NAV_WIDE_MEDIA).matches;
+}
+
 export function PrivateNavigation() {
   const pathname = usePathname();
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(true);
+  const [sidebarReady, setSidebarReady] = useState(false);
   const [openTab, setOpenTab] = useState<CompactTabId | null>(null);
   const drawerTitleId = useId();
   const sheetTitleId = useId();
@@ -24,33 +35,50 @@ export function PrivateNavigation() {
   const sheetLabel = openTab ? compactTabs.find((tab) => tab.id === openTab)?.label : null;
 
   useEffect(() => {
-    setDrawerOpen(false);
+    setDrawerOpen(parseWideNavOpen(window.localStorage.getItem(WIDE_NAV_OPEN_STORAGE_KEY)));
+    setSidebarReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (!sidebarReady) return;
+    window.localStorage.setItem(WIDE_NAV_OPEN_STORAGE_KEY, serializeWideNavOpen(drawerOpen));
+  }, [drawerOpen, sidebarReady]);
+
+  useEffect(() => {
     setOpenTab(null);
   }, [pathname]);
 
   useEffect(() => {
-    if (!drawerOpen && !openTab) return;
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setDrawerOpen(false);
         setOpenTab(null);
+        return;
       }
+      if (!isNavToggleHotkey(event) || isEditableHotkeyTarget(event.target)) return;
+      if (!isWideNavigationViewport()) return;
+      event.preventDefault();
+      setDrawerOpen((open) => !open);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [drawerOpen, openTab]);
+  }, []);
 
   useEffect(() => {
-    if (!drawerOpen && !openTab) return;
+    if (!openTab) return;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     return () => {
       document.body.style.overflow = previous;
     };
-  }, [drawerOpen, openTab]);
+  }, [openTab]);
 
   function toggleTab(tabId: CompactTabId) {
     setOpenTab((current) => (current === tabId ? null : tabId));
+  }
+
+  function toggleDrawer() {
+    setDrawerOpen((open) => !open);
   }
 
   return (
@@ -59,8 +87,10 @@ export function PrivateNavigation() {
         <button
           aria-controls="private-drawer"
           aria-expanded={drawerOpen}
+          aria-keyshortcuts="Control+B Meta+B"
           className="private-menu-button"
-          onClick={() => setDrawerOpen(true)}
+          onClick={toggleDrawer}
+          title="Ctrl+B 또는 ⌘B"
           type="button"
         >
           <span aria-hidden="true" className="private-menu-icon" />
@@ -70,8 +100,7 @@ export function PrivateNavigation() {
       </header>
 
       <div className={drawerOpen ? "private-drawer-layer is-open" : "private-drawer-layer"} inert={!drawerOpen}>
-        <button aria-label="메뉴 닫기" className="private-drawer-backdrop" onClick={() => setDrawerOpen(false)} type="button" />
-        <aside aria-labelledby={drawerTitleId} aria-modal="true" className="private-navigation" id="private-drawer" role="dialog">
+        <aside aria-labelledby={drawerTitleId} className="private-navigation" id="private-drawer">
           <div className="private-drawer-head">
             <div>
               <p className="private-navigation-brand" id={drawerTitleId}>CORELOOM</p>

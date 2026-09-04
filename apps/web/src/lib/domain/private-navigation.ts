@@ -1,4 +1,6 @@
 export const NAV_COMPACT_MAX_PX = 640;
+export const NAV_WIDE_MEDIA = "(min-width: 40rem)";
+export const WIDE_NAV_OPEN_STORAGE_KEY = "coreloom.wide-nav-open";
 
 export type NavItem = {
   href: string;
@@ -96,4 +98,36 @@ export function tabIdForPath(pathname: string): CompactTabId | null {
 
 export function navigationShell(widthPx: number) {
   return widthPx < NAV_COMPACT_MAX_PX ? "compact" : "drawer";
+}
+
+export function parseWideNavOpen(raw: string | null, fallback = true) {
+  if (raw === "0" || raw === "false") return false;
+  if (raw === "1" || raw === "true") return true;
+  return fallback;
+}
+
+export function serializeWideNavOpen(open: boolean) {
+  return open ? "1" : "0";
+}
+
+export function isNavToggleHotkey(event: {
+  key: string;
+  code?: string;
+  altKey: boolean;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey?: boolean;
+  repeat?: boolean;
+}) {
+  if (event.repeat || event.altKey || event.shiftKey) return false;
+  if (!event.ctrlKey && !event.metaKey) return false;
+  return event.key.toLowerCase() === "b" || event.code === "KeyB";
+}
+
+export function isEditableHotkeyTarget(target: EventTarget | null) {
+  if (target == null || typeof target !== "object") return false;
+  const el = target as { tagName?: string; isContentEditable?: boolean };
+  const tag = typeof el.tagName === "string" ? el.tagName.toUpperCase() : "";
+  if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return true;
+  return Boolean(el.isContentEditable);
 }

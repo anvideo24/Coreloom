@@ -230,19 +230,17 @@ body {
 .private-topbar .private-navigation-brand { color: var(--nav-ink); }
 
 .private-drawer-layer {
-  inset: 0;
+  overflow: hidden;
   pointer-events: none;
-  position: fixed;
-  visibility: hidden;
-  z-index: 40;
+  transition: width 180ms ease;
+  width: 0;
 }
 
 .private-drawer-layer.is-open {
   pointer-events: auto;
-  visibility: visible;
+  width: 20rem;
 }
 
-.private-drawer-backdrop,
 .private-sheet-backdrop {
   background: rgb(28 25 22 / 46%);
   border: 0;
@@ -256,18 +254,13 @@ body {
   color: var(--nav-ink);
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   gap: var(--space-5);
   height: 100%;
-  max-width: 20rem;
   overflow-y: auto;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4) calc(var(--space-7) + env(safe-area-inset-bottom, 0px));
-  position: relative;
-  transform: translateX(-100%);
-  transition: transform 180ms ease;
-  width: min(20rem, 88vw);
+  width: 20rem;
 }
-
-.private-drawer-layer.is-open .private-navigation { transform: translateX(0); }
 
 .private-drawer-head {
   align-items: flex-start;
@@ -423,7 +416,31 @@ body {
 }
 
 @media (min-width: 40rem) {
-  .private-topbar { display: flex; }
+  .private-app-shell {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    height: 100dvh;
+    min-height: 100dvh;
+    overflow: hidden;
+  }
+  .private-drawer-layer {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    height: 100%;
+    min-height: 0;
+  }
+  .private-topbar {
+    display: flex;
+    grid-column: 2;
+    grid-row: 1;
+  }
+  .private-app-content {
+    grid-column: 2;
+    grid-row: 2;
+    min-height: 0;
+    overflow: auto;
+  }
   .private-tabbar,
   .private-sheet-layer { display: none !important; }
 }

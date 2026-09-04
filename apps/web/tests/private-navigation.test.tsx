@@ -1,10 +1,15 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  isEditableHotkeyTarget,
   isNavItemActive,
+  isNavToggleHotkey,
+  NAV_WIDE_MEDIA,
   navItems,
   navItemsForTab,
   navigationShell,
+  parseWideNavOpen,
+  serializeWideNavOpen,
   tabIdForPath,
 } from "@/lib/domain/private-navigation";
 
@@ -34,7 +39,7 @@ describe("PrivateNavigation", () => {
     expect(labels).toContain("운영 매뉴얼");
   });
 
-  test("uses a bottom bar on folded phones and a drawer from unfolded fold upward", () => {
+  test("uses a bottom bar on folded phones and a push sidebar from unfolded fold upward", () => {
     expect(navigationShell(300)).toBe("compact");
     expect(navigationShell(390)).toBe("compact");
     expect(navigationShell(639)).toBe("compact");
@@ -42,6 +47,36 @@ describe("PrivateNavigation", () => {
     expect(navigationShell(720)).toBe("drawer");
     expect(navigationShell(1920)).toBe("drawer");
     expect(navigationShell(3840)).toBe("drawer");
+    expect(NAV_WIDE_MEDIA).toBe("(min-width: 40rem)");
+  });
+
+  test("toggles the wide sidebar with Control or Command and B", () => {
+    expect(isNavToggleHotkey({ key: "b", code: "KeyB", altKey: false, ctrlKey: true, metaKey: false })).toBe(true);
+    expect(isNavToggleHotkey({ key: "b", code: "KeyB", altKey: false, ctrlKey: false, metaKey: true })).toBe(true);
+    expect(isNavToggleHotkey({ key: "B", code: "KeyB", altKey: false, ctrlKey: true, metaKey: false })).toBe(true);
+    expect(isNavToggleHotkey({ key: "b", code: "KeyB", altKey: false, ctrlKey: false, metaKey: false })).toBe(false);
+    expect(isNavToggleHotkey({ key: "b", code: "KeyB", altKey: true, ctrlKey: true, metaKey: false })).toBe(false);
+    expect(isNavToggleHotkey({ key: "b", code: "KeyB", altKey: false, ctrlKey: true, metaKey: false, shiftKey: true })).toBe(false);
+    expect(isNavToggleHotkey({ key: "b", code: "KeyB", altKey: false, ctrlKey: true, metaKey: false, repeat: true })).toBe(false);
+    expect(isNavToggleHotkey({ key: "k", code: "KeyK", altKey: false, ctrlKey: true, metaKey: false })).toBe(false);
+  });
+
+  test("does not steal Control or Command B from form fields", () => {
+    expect(isEditableHotkeyTarget({ tagName: "INPUT" })).toBe(true);
+    expect(isEditableHotkeyTarget({ tagName: "textarea" })).toBe(true);
+    expect(isEditableHotkeyTarget({ tagName: "SELECT" })).toBe(true);
+    expect(isEditableHotkeyTarget({ tagName: "DIV", isContentEditable: true })).toBe(true);
+    expect(isEditableHotkeyTarget({ tagName: "BUTTON" })).toBe(false);
+    expect(isEditableHotkeyTarget(null)).toBe(false);
+  });
+
+  test("remembers whether the wide sidebar was open", () => {
+    expect(parseWideNavOpen(null)).toBe(true);
+    expect(parseWideNavOpen("1")).toBe(true);
+    expect(parseWideNavOpen("0")).toBe(false);
+    expect(parseWideNavOpen("false")).toBe(false);
+    expect(serializeWideNavOpen(true)).toBe("1");
+    expect(serializeWideNavOpen(false)).toBe("0");
   });
 
   test("maps routes to compact tabs and nested paths stay in the same tab", () => {
