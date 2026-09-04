@@ -5,15 +5,32 @@ import { useState } from "react";
 type Client = { id: string; name: string };
 type Project = { id: string; name: string; clientCompanyId: string };
 
-export function QuoteClientProjectFields({ clients, projects }: { clients: Client[]; projects: Project[] }) {
-  const [clientId, setClientId] = useState(clients[0]?.id ?? "");
+export function QuoteClientProjectFields({
+  clients,
+  projects,
+  clientId: controlledClientId,
+  onClientIdChange,
+}: {
+  clients: Client[];
+  projects: Project[];
+  clientId?: string;
+  onClientIdChange?: (clientId: string) => void;
+}) {
+  const [localClientId, setLocalClientId] = useState(clients[0]?.id ?? "");
+  const clientId = controlledClientId ?? localClientId;
+  const setClientId = onClientIdChange ?? setLocalClientId;
   const clientProjects = projects.filter((project) => project.clientCompanyId === clientId);
 
   return (
     <>
       <label>
         고객사
-        <select name="clientId" onChange={(event) => setClientId(event.target.value)} required value={clientId}>
+        <select
+          name="clientId"
+          onChange={(event) => setClientId(event.target.value)}
+          required
+          value={clientId}
+        >
           {clients.map((client) => (
             <option key={client.id} value={client.id}>
               {client.name}
@@ -23,7 +40,7 @@ export function QuoteClientProjectFields({ clients, projects }: { clients: Clien
       </label>
       <label>
         프로젝트 (선택)
-        <select defaultValue="" name="projectId">
+        <select defaultValue="" key={clientId} name="projectId">
           <option value="">연결하지 않음</option>
           {clientProjects.map((project) => (
             <option key={project.id} value={project.id}>

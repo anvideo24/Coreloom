@@ -3,12 +3,23 @@ import "server-only";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, clientCompanies, projects, quoteEmailDeliveries, quotes, quoteVersions } from "@/lib/db/schema";
+import {
+  auditEvents,
+  clientCompanies,
+  clientContacts,
+  projects,
+  quoteEmailDeliveries,
+  quotes,
+  quoteVersions,
+} from "@/lib/db/schema";
 import {
   calculateQuoteCosting,
+  defaultQuoteValidUntil,
   nextQuoteVersionNumber,
   normalizeQuoteVatMode,
   normalizeStoredQuoteItemsForPdf,
+  parseDateInputValue,
+  toDateInputValue,
   type QuotePackage,
 } from "@/lib/domain/quotes";
 import { createQuotePdf } from "@/lib/quotes/pdf";
@@ -18,25 +29,48 @@ import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 export async function listFounderQuotes(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "quotes");
   const database = createDatabase();
-  const clients = await database.select({ id: clientCompanies.id, name: clientCompanies.name }).from(clientCompanies)
-    .where(and(eq(clientCompanies.workspaceId, workspace.id), isNull(clientCompanies.deletedAt))).orderBy(asc(clientCompanies.name));
-  const projectRows = await database.select({ id: projects.id, name: projects.name, clientCompanyId: projects.clientCompanyId }).from(projects)
-    .where(and(eq(projects.workspaceId, workspace.id), isNull(projects.deletedAt))).orderBy(asc(projects.name));
-  const versions = await database.select({
-    quoteId: quotes.id,
-    versionId: quoteVersions.id,
-    versionNumber: quoteVersions.versionNumber,
-    title: quoteVersions.title,
-    totalAmount: quoteVersions.totalAmount,
-    vatMode: quoteVersions.vatMode,
-    clientName: clientCompanies.name,
-    createdAt: quoteVersions.createdAt,
-  }).from(quoteVersions)
+  const clients = await database
+    .select({ id: clientCompanies.id, name: clientCompanies.name })
+    .from(clientCompanies)
+    .where(and(eq(clientCompanies.workspaceId, workspace.id), isNull(clientCompanies.deletedAt)))
+    .orderBy(asc(clientCompanies.name));
+  const projectRows = await database
+    .select({ id: projects.id, name: projects.name, clientCompanyId: projects.clientCompanyId })
+    .from(projects)
+    .where(and(eq(projects.workspaceId, workspace.id), isNull(projects.deletedAt)))
+    .orderBy(asc(projects.name));
+  const contacts = await database
+    .select({
+      id: clientContacts.id,
+      name: clientContacts.name,
+      role: clientContacts.role,
+      email: clientContacts.email,
+      phone: clientContacts.phone,
+      clientCompanyId: clientContacts.clientCompanyId,
+      relationStatus: clientContacts.relationStatus,
+    })
+    .from(clientContacts)
+    .where(and(eq(clientContacts.workspaceId, workspace.id), isNull(clientContacts.deletedAt)))
+    .orderBy(asc(clientContacts.name));
+  const versions = await database
+    .select({
+      quoteId: quotes.id,
+      versionId: quoteVersions.id,
+      versionNumber: quoteVersions.versionNumber,
+      title: quoteVersions.title,
+      totalAmount: quoteVersions.totalAmount,
+      vatMode: quoteVersions.vatMode,
+      issuedOn: quoteVersions.issuedOn,
+      validUntil: quoteVersions.validUntil,
+      clientName: clientCompanies.name,
+      createdAt: quoteVersions.createdAt,
+    })
+    .from(quoteVersions)
     .innerJoin(quotes, eq(quoteVersions.quoteId, quotes.id))
     .innerJoin(clientCompanies, eq(quotes.clientCompanyId, clientCompanies.id))
     .where(and(eq(quotes.workspaceId, workspace.id), isNull(quotes.deletedAt), isNull(clientCompanies.deletedAt)))
     .orderBy(desc(quoteVersions.createdAt));
-  return { clients, projects: projectRows, versions };
+  return { clients, projects: projectRows, contacts, versions };
 }
 
 export async function getFounderQuoteDetail(authUserId: string, quoteId: string) {
@@ -57,12 +91,15 @@ export async function createFounderQuoteVersion(input: {
   quoteId?: string;
   clientId: string;
   projectId?: string;
+  clientContactId?: string;
   title: string;
   note?: string;
   vatMode?: string;
   packages: Array<Partial<QuotePackage>>;
   targetMarginPercent?: unknown;
   operatingCostPercent?: unknown;
+  issuedOn?: string;
+  validUntil?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "quotes");
   const database = createDatabase();
@@ -73,47 +110,112 @@ export async function createFounderQuoteVersion(input: {
     targetMarginPercent: input.targetMarginPercent,
     operatingCostPercent: input.operatingCostPercent,
   });
-  const title = input.title.trim();
-  if (!title) throw new Error("Quote title is required");
+
+  const [client] = await database
+    .select({ id: clientCompanies.id, name: clientCompanies.name })
+    .from(clientCompanies)
+    .where(
+      and(
+        eq(clientCompanies.id, input.clientId),
+        eq(clientCompanies.workspaceId, workspace.id),
+        isNull(clientCompanies.deletedAt),
+      ),
+    )
+    .limit(1);
+  if (!client) throw new Error("Client was not found");
+
+  const title = input.title.trim() || `${client.name} · 견적`;
+  const issuedOn = input.issuedOn?.trim()
+    ? parseDateInputValue(input.issuedOn)
+    : new Date(`${toDateInputValue(new Date())}T00:00:00`);
+  const validUntil = input.validUntil?.trim()
+    ? parseDateInputValue(input.validUntil)
+    : defaultQuoteValidUntil(issuedOn);
+
+  let contactName: string | null = null;
+  let clientContactId: string | null = input.clientContactId?.trim() || null;
+  if (clientContactId) {
+    const [contact] = await database
+      .select({
+        id: clientContacts.id,
+        name: clientContacts.name,
+        clientCompanyId: clientContacts.clientCompanyId,
+      })
+      .from(clientContacts)
+      .where(
+        and(
+          eq(clientContacts.id, clientContactId),
+          eq(clientContacts.workspaceId, workspace.id),
+          isNull(clientContacts.deletedAt),
+        ),
+      )
+      .limit(1);
+    if (!contact || contact.clientCompanyId !== client.id) throw new Error("Client contact was not found");
+    contactName = contact.name;
+  }
 
   let quoteId = input.quoteId?.trim();
   let versionNumber = 1;
   if (quoteId) {
-    const [existing] = await database.select({ id: quotes.id }).from(quotes)
-      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspace.id), isNull(quotes.deletedAt))).limit(1);
+    const [existing] = await database
+      .select({ id: quotes.id })
+      .from(quotes)
+      .where(and(eq(quotes.id, quoteId), eq(quotes.workspaceId, workspace.id), isNull(quotes.deletedAt)))
+      .limit(1);
     if (!existing) throw new Error("Quote was not found");
-    const [latest] = await database.select({ versionNumber: quoteVersions.versionNumber }).from(quoteVersions)
-      .where(eq(quoteVersions.quoteId, quoteId)).orderBy(desc(quoteVersions.versionNumber)).limit(1);
+    const [latest] = await database
+      .select({ versionNumber: quoteVersions.versionNumber })
+      .from(quoteVersions)
+      .where(eq(quoteVersions.quoteId, quoteId))
+      .orderBy(desc(quoteVersions.versionNumber))
+      .limit(1);
     versionNumber = nextQuoteVersionNumber(latest?.versionNumber ?? 0);
   } else {
-    const [client] = await database.select({ id: clientCompanies.id }).from(clientCompanies)
-      .where(and(eq(clientCompanies.id, input.clientId), eq(clientCompanies.workspaceId, workspace.id), isNull(clientCompanies.deletedAt))).limit(1);
-    if (!client) throw new Error("Client was not found");
     const projectId = input.projectId?.trim() || null;
     if (projectId) {
-      const [project] = await database.select({ id: projects.id }).from(projects)
-        .where(and(eq(projects.id, projectId), eq(projects.workspaceId, workspace.id), eq(projects.clientCompanyId, client.id), isNull(projects.deletedAt))).limit(1);
+      const [project] = await database
+        .select({ id: projects.id })
+        .from(projects)
+        .where(
+          and(
+            eq(projects.id, projectId),
+            eq(projects.workspaceId, workspace.id),
+            eq(projects.clientCompanyId, client.id),
+            isNull(projects.deletedAt),
+          ),
+        )
+        .limit(1);
       if (!project) throw new Error("Project was not found");
     }
-    const [created] = await database.insert(quotes).values({ workspaceId: workspace.id, clientCompanyId: client.id, projectId }).returning({ id: quotes.id });
+    const [created] = await database
+      .insert(quotes)
+      .values({ workspaceId: workspace.id, clientCompanyId: client.id, projectId })
+      .returning({ id: quotes.id });
     quoteId = created.id;
   }
 
-  const [version] = await database.insert(quoteVersions).values({
-    workspaceId: workspace.id,
-    quoteId,
-    versionNumber,
-    title,
-    items: amounts.items,
-    subtotalAmount: amounts.subtotalAmount,
-    vatAmount: amounts.vatAmount,
-    totalAmount: amounts.totalAmount,
-    vatMode: amounts.vatMode,
-    targetMarginPercent: amounts.targetMarginPercent,
-    operatingCostPercent: amounts.operatingCostPercent,
-    costAmount: amounts.costAmount,
-    note: input.note?.trim() || null,
-  }).returning({ id: quoteVersions.id });
+  const [version] = await database
+    .insert(quoteVersions)
+    .values({
+      workspaceId: workspace.id,
+      quoteId,
+      versionNumber,
+      title,
+      items: amounts.items,
+      subtotalAmount: amounts.subtotalAmount,
+      vatAmount: amounts.vatAmount,
+      totalAmount: amounts.totalAmount,
+      vatMode: amounts.vatMode,
+      targetMarginPercent: amounts.targetMarginPercent,
+      operatingCostPercent: amounts.operatingCostPercent,
+      costAmount: amounts.costAmount,
+      issuedOn,
+      validUntil,
+      clientContactId,
+      contactName,
+      note: input.note?.trim() || null,
+    })
+    .returning({ id: quoteVersions.id });
   await database.update(quotes).set({ updatedAt: new Date() }).where(eq(quotes.id, quoteId));
   await database.insert(auditEvents).values({
     workspaceId: workspace.id,
@@ -155,6 +257,7 @@ export async function sendFounderQuoteEmail(input: {
       message: input.message,
       pdf: await createQuotePdf({
         clientName: quote.clientName,
+        contactName: version.contactName,
         title: version.title,
         versionNumber: version.versionNumber,
         items,
@@ -163,6 +266,8 @@ export async function sendFounderQuoteEmail(input: {
         totalAmount: version.totalAmount,
         vatMode: version.vatMode,
         note: version.note,
+        issuedOn: version.issuedOn,
+        validUntil: version.validUntil,
       }),
       quoteTitle: version.title,
       recipient: input.recipient,

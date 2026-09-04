@@ -148,6 +148,13 @@
       "when": 1788502800000,
       "tag": "0020_quote_costing",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788506400000,
+      "tag": "0021_quote_invoice_document",
+      "breakpoints": true
     }
   ]
 }

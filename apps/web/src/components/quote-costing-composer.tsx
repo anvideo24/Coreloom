@@ -8,6 +8,7 @@ import {
   createEmptyQuotePackage,
   monthlyRateForRole,
   quoteRoleRates,
+  quoteVatModeLabels,
   suggestCustomerSupplyAmount,
   type QuotePackage,
   type QuoteVatMode,
@@ -18,6 +19,11 @@ type ComposerProps = {
   initialVatMode?: QuoteVatMode;
   initialTargetMarginPercent?: number;
   initialOperatingCostPercent?: number;
+  initialTitle?: string;
+  clientName?: string;
+  versionNumber?: number;
+  note?: string;
+  onNoteChange?: (note: string) => void;
   vatMode?: QuoteVatMode;
   onVatModeChange?: (mode: QuoteVatMode) => void;
 };
@@ -44,15 +50,18 @@ function WonAmountInput({
   value,
   onValueChange,
   "aria-label": ariaLabel,
+  className,
 }: {
   value: number;
   onValueChange: (value: number) => void;
   "aria-label"?: string;
+  className?: string;
 }) {
   return (
     <input
       aria-label={ariaLabel}
       autoComplete="off"
+      className={className}
       inputMode="numeric"
       onChange={(event) => onValueChange(parseWonDigits(event.target.value))}
       type="text"
@@ -123,6 +132,11 @@ export function QuoteCostingComposer({
   initialVatMode = "exclusive",
   initialTargetMarginPercent = 30,
   initialOperatingCostPercent = 10,
+  initialTitle = "",
+  clientName = "고객사",
+  versionNumber = 1,
+  note: controlledNote,
+  onNoteChange,
   vatMode: controlledVatMode,
   onVatModeChange,
 }: ComposerProps) {
@@ -130,12 +144,16 @@ export function QuoteCostingComposer({
     initialPackages?.length ? initialPackages : [createEmptyQuotePackage()],
   );
   const [expanded, setExpanded] = useState<Record<number, boolean>>({ 0: true });
-  const [tab, setTab] = useState<TabId>("internal");
+  const [tab, setTab] = useState<TabId>("customer");
+  const [title, setTitle] = useState(initialTitle);
+  const [localNote, setLocalNote] = useState("");
   const [localVatMode, setLocalVatMode] = useState<QuoteVatMode>(initialVatMode);
   const [targetMarginPercent, setTargetMarginPercent] = useState(initialTargetMarginPercent);
   const [operatingCostPercent, setOperatingCostPercent] = useState(initialOperatingCostPercent);
 
   const vatMode = controlledVatMode ?? localVatMode;
+  const note = controlledNote ?? localNote;
+  const setNote = onNoteChange ?? setLocalNote;
 
   const setVatMode = (mode: QuoteVatMode) => {
     if (onVatModeChange) onVatModeChange(mode);
@@ -212,11 +230,20 @@ export function QuoteCostingComposer({
     );
   };
 
+  const addPackage = () => {
+    setPackages((current) => [...current, createEmptyQuotePackage()]);
+    setExpanded((current) => ({ ...current, [packages.length]: true }));
+  };
+
+  const amountLabel = vatMode === "inclusive" ? "금액(부가세 포함)" : "공급가액";
+
   return (
-    <div className="quote-costing">
+    <div className={`quote-costing ${tab === "customer" ? "is-customer" : "is-internal"}`}>
       <input name="packagesJson" type="hidden" value={JSON.stringify(livePackages)} />
       <input name="targetMarginPercent" type="hidden" value={targetMarginPercent} />
       <input name="operatingCostPercent" type="hidden" value={operatingCostPercent} />
+      <input name="title" type="hidden" value={title.trim() || "제목 없는 견적"} />
+      {controlledNote == null ? <input name="note" type="hidden" value={note} /> : null}
       {controlledVatMode == null ? <input name="vatMode" type="hidden" value={vatMode} /> : null}
 
       <div className="quote-costing-toolbar">
@@ -253,79 +280,186 @@ export function QuoteCostingComposer({
         </label>
       </div>
 
-      {tab === "internal" ? (
-        <div className="quote-costing-sliders">
-          <label>
-            <span>
-              목표 마진 <strong>{targetMarginPercent}%</strong>
-            </span>
-            <PercentRangeInput
-              aria-label="목표 마진"
-              max={90}
-              min={0}
-              onValueChange={setTargetMarginPercent}
-              value={targetMarginPercent}
+      {tab === "customer" ? (
+        <article className="quote-document quote-document-compose">
+          <header>
+            <p>견적서 · {quoteVatModeLabels[vatMode]}</p>
+            <input
+              aria-label="견적명"
+              className="quote-document-title-input"
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="제목 없는 견적"
+              value={title}
             />
-          </label>
-          <label>
-            <span>
-              운영비 <strong>{operatingCostPercent}%</strong>
-            </span>
-            <PercentRangeInput
-              aria-label="운영비"
-              max={50}
-              min={0}
-              onValueChange={setOperatingCostPercent}
-              value={operatingCostPercent}
-            />
-          </label>
-        </div>
-      ) : (
-        <p className="quote-costing-hint">
-          고객 PDF에는 작업명·설명·금액만 나갑니다. 단가·가동률·마진은 포함되지 않습니다.
-        </p>
-      )}
+            <dl>
+              <div>
+                <dt>고객사</dt>
+                <dd>{clientName || "고객사 선택"}</dd>
+              </div>
+              <div>
+                <dt>버전</dt>
+                <dd>v{versionNumber}</dd>
+              </div>
+            </dl>
+          </header>
 
-      <div className="quote-costing-packages">
-        {livePackages.map((pkg, index) => {
-          const isOpen = Boolean(expanded[index]);
-          const summary = [
-            pkg.role || null,
-            pkg.months ? `${pkg.months}개월` : null,
-            pkg.headcount ? `${pkg.headcount}명` : null,
-            `${pkg.utilizationPercent}%`,
-          ]
-            .filter(Boolean)
-            .join(" · ");
-          const selectedRole = roleSelectValue(pkg.role);
-
-          return (
-            <article className={`quote-package ${isOpen ? "is-open" : "is-collapsed"}`} key={index}>
-              <div className="quote-package-summary">
-                <div className="quote-package-head">
-                  <button
-                    aria-expanded={isOpen}
-                    className="quote-package-toggle"
-                    onClick={() => setExpanded((current) => ({ ...current, [index]: !current[index] }))}
-                    type="button"
-                  >
-                    <span aria-hidden="true">{isOpen ? "▾" : "▸"}</span>
-                  </button>
-                  <label className="quote-package-title">
-                    작업명
+          <table>
+            <thead>
+              <tr>
+                <th>항목</th>
+                <th>{amountLabel}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {livePackages.map((pkg, index) => (
+                <tr key={index}>
+                  <td>
                     <input
+                      aria-label={`항목 ${index + 1} 작업명`}
+                      className="quote-document-line-title"
                       onChange={(event) => updatePackage(index, { title: event.target.value })}
                       placeholder={`작업 패키지 ${index + 1}`}
                       required
                       value={pkg.title}
                     />
-                  </label>
-                </div>
-                {tab === "internal" && summary ? <p className="quote-package-meta">{summary}</p> : null}
+                    <textarea
+                      aria-label={`항목 ${index + 1} 설명`}
+                      className="quote-document-line-desc"
+                      onChange={(event) => updatePackage(index, { customerDescription: event.target.value })}
+                      placeholder="고객에게 보이는 설명"
+                      rows={2}
+                      value={pkg.customerDescription}
+                    />
+                    {livePackages.length > 1 ? (
+                      <button
+                        className="quote-item-remove"
+                        onClick={() => {
+                          setPackages((current) => current.filter((_, pkgIndex) => pkgIndex !== index));
+                          setExpanded({});
+                        }}
+                        type="button"
+                      >
+                        항목 삭제
+                      </button>
+                    ) : null}
+                  </td>
+                  <td>
+                    <WonAmountInput
+                      aria-label={`항목 ${index + 1} 금액`}
+                      className="quote-document-line-amount"
+                      onValueChange={(amount) => updatePackage(index, { amount, amountLocked: true })}
+                      value={pkg.amount}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
 
-                <div className="quote-package-inline-edits">
-                  {tab === "internal" ? (
-                    <>
+          <button className="text-link quote-item-add" onClick={addPackage} type="button">
+            항목 추가
+          </button>
+
+          <section className="quote-totals">
+            <p>
+              <span>{vatMode === "inclusive" ? "공급가액(역산)" : "공급가액"}</span>
+              <strong>{won(preview.subtotalAmount)}</strong>
+            </p>
+            <p>
+              <span>{vatMode === "inclusive" ? "부가세 (포함분)" : "부가세 (10%)"}</span>
+              <strong>{won(preview.vatAmount)}</strong>
+            </p>
+            <p className="quote-total">
+              <span>합계</span>
+              <strong>{won(preview.totalAmount)}</strong>
+            </p>
+          </section>
+
+          <label className="quote-document-note">
+            메모 (선택)
+            <textarea
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="견적 조건이나 전달 메모"
+              value={note}
+            />
+          </label>
+        </article>
+      ) : (
+        <>
+          <div className="quote-costing-sliders">
+            <label>
+              <span>
+                목표 마진 <strong>{targetMarginPercent}%</strong>
+              </span>
+              <PercentRangeInput
+                aria-label="목표 마진"
+                max={90}
+                min={0}
+                onValueChange={setTargetMarginPercent}
+                value={targetMarginPercent}
+              />
+            </label>
+            <label>
+              <span>
+                운영비 <strong>{operatingCostPercent}%</strong>
+              </span>
+              <PercentRangeInput
+                aria-label="운영비"
+                max={50}
+                min={0}
+                onValueChange={setOperatingCostPercent}
+                value={operatingCostPercent}
+              />
+            </label>
+          </div>
+
+          <label className="quote-form-title quote-costing-internal-title">
+            견적명
+            <input
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="제목 없는 견적"
+              value={title}
+            />
+          </label>
+
+          <div className="quote-costing-packages">
+            {livePackages.map((pkg, index) => {
+              const isOpen = Boolean(expanded[index]);
+              const summary = [
+                pkg.role || null,
+                pkg.months ? `${pkg.months}개월` : null,
+                pkg.headcount ? `${pkg.headcount}명` : null,
+                `${pkg.utilizationPercent}%`,
+              ]
+                .filter(Boolean)
+                .join(" · ");
+              const selectedRole = roleSelectValue(pkg.role);
+
+              return (
+                <article className={`quote-package ${isOpen ? "is-open" : "is-collapsed"}`} key={index}>
+                  <div className="quote-package-summary">
+                    <div className="quote-package-head">
+                      <button
+                        aria-expanded={isOpen}
+                        className="quote-package-toggle"
+                        onClick={() => setExpanded((current) => ({ ...current, [index]: !current[index] }))}
+                        type="button"
+                      >
+                        <span aria-hidden="true">{isOpen ? "▾" : "▸"}</span>
+                      </button>
+                      <label className="quote-package-title">
+                        작업명
+                        <input
+                          onChange={(event) => updatePackage(index, { title: event.target.value })}
+                          placeholder={`작업 패키지 ${index + 1}`}
+                          required={tab === "internal"}
+                          value={pkg.title}
+                        />
+                      </label>
+                    </div>
+                    {summary ? <p className="quote-package-meta">{summary}</p> : null}
+
+                    <div className="quote-package-inline-edits">
                       <label className="quote-package-role">
                         역할 / 등급
                         <select
@@ -408,67 +542,56 @@ export function QuoteCostingComposer({
                         원가
                         <output>{won(pkg.costAmount)}</output>
                       </label>
-                    </>
-                  ) : null}
-                  <label>
-                    {vatMode === "inclusive" ? "고객 금액" : "공급가"}
-                    <WonAmountInput
-                      aria-label={vatMode === "inclusive" ? "고객 금액" : "공급가"}
-                      onValueChange={(amount) => updatePackage(index, { amount, amountLocked: true })}
-                      value={pkg.amount}
-                    />
-                  </label>
-                  {tab === "internal" && pkg.amountLocked ? (
-                    <button className="text-link" onClick={() => unlockAndSuggest(index)} type="button">
-                      제안가 다시 적용
-                    </button>
-                  ) : null}
-                </div>
-              </div>
+                      <label>
+                        {vatMode === "inclusive" ? "고객 금액" : "공급가"}
+                        <WonAmountInput
+                          aria-label={vatMode === "inclusive" ? "고객 금액" : "공급가"}
+                          onValueChange={(amount) => updatePackage(index, { amount, amountLocked: true })}
+                          value={pkg.amount}
+                        />
+                      </label>
+                      {pkg.amountLocked ? (
+                        <button className="text-link" onClick={() => unlockAndSuggest(index)} type="button">
+                          제안가 다시 적용
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
 
-              {isOpen ? (
-                <div className="quote-package-body">
-                  <label>
-                    고객용 설명 (PDF)
-                    <textarea
-                      onChange={(event) => updatePackage(index, { customerDescription: event.target.value })}
-                      placeholder="고객 견적서에만 보이는 설명"
-                      value={pkg.customerDescription}
-                    />
-                  </label>
-                  {packages.length > 1 ? (
-                    <button
-                      className="quote-item-remove"
-                      onClick={() => {
-                        setPackages((current) => current.filter((_, pkgIndex) => pkgIndex !== index));
-                        setExpanded({});
-                      }}
-                      type="button"
-                    >
-                      패키지 삭제
-                    </button>
+                  {isOpen ? (
+                    <div className="quote-package-body">
+                      <label>
+                        고객용 설명 (PDF)
+                        <textarea
+                          onChange={(event) => updatePackage(index, { customerDescription: event.target.value })}
+                          placeholder="고객 견적서에만 보이는 설명"
+                          value={pkg.customerDescription}
+                        />
+                      </label>
+                      {packages.length > 1 ? (
+                        <button
+                          className="quote-item-remove"
+                          onClick={() => {
+                            setPackages((current) => current.filter((_, pkgIndex) => pkgIndex !== index));
+                            setExpanded({});
+                          }}
+                          type="button"
+                        >
+                          패키지 삭제
+                        </button>
+                      ) : null}
+                    </div>
                   ) : null}
-                </div>
-              ) : null}
-            </article>
-          );
-        })}
-        <button
-          className="text-link quote-item-add"
-          onClick={() => {
-            setPackages((current) => [...current, createEmptyQuotePackage()]);
-            setExpanded((current) => ({ ...current, [packages.length]: true }));
-          }}
-          type="button"
-        >
-          패키지 추가
-        </button>
-      </div>
+                </article>
+              );
+            })}
+            <button className="text-link quote-item-add" onClick={addPackage} type="button">
+              패키지 추가
+            </button>
+          </div>
 
-      <aside className="quote-costing-live" aria-live="polite">
-        <p className="setup-code">실시간 합계</p>
-        {tab === "internal" ? (
-          <>
+          <aside className="quote-costing-live" aria-live="polite">
+            <p className="setup-code">실시간 합계</p>
             <p>
               <span>내부 원가</span>
               <strong>{won(preview.costAmount)}</strong>
@@ -481,21 +604,21 @@ export function QuoteCostingComposer({
               <span>마진</span>
               <strong>{won(preview.marginAmount)}</strong>
             </p>
-          </>
-        ) : null}
-        <p>
-          <span>공급가</span>
-          <strong>{won(preview.subtotalAmount)}</strong>
-        </p>
-        <p>
-          <span>부가세</span>
-          <strong>{won(preview.vatAmount)}</strong>
-        </p>
-        <p className="quote-costing-total">
-          <span>합계</span>
-          <strong>{won(preview.totalAmount)}</strong>
-        </p>
-      </aside>
+            <p>
+              <span>공급가</span>
+              <strong>{won(preview.subtotalAmount)}</strong>
+            </p>
+            <p>
+              <span>부가세</span>
+              <strong>{won(preview.vatAmount)}</strong>
+            </p>
+            <p className="quote-costing-total">
+              <span>합계</span>
+              <strong>{won(preview.totalAmount)}</strong>
+            </p>
+          </aside>
+        </>
+      )}
     </div>
   );
 }
