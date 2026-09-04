@@ -1,7 +1,6 @@
 export const PC_DEV_ORIGIN = "http://127.0.0.1:3000";
 export const PC_DEV_DASHBOARD = `${PC_DEV_ORIGIN}/dashboard`;
 export const LOCAL_DEV_PORT = "3000";
-export const STAY_UP_INTERVAL_MS = 45_000;
 
 export type LocalSyncDecision = {
   action: "pull" | "skip";
@@ -37,22 +36,6 @@ export function decideLocalMainSync(input: {
     action: "pull",
     message: "origin/main을 받아 PC와 휴대폰이 같은 최신 화면을 보게 합니다.",
   };
-}
-
-export function decideStayUpTick(input: {
-  branch: string;
-  dirty: boolean;
-  behindMain: boolean;
-  serverRunning: boolean;
-}) {
-  const sync = decideLocalMainSync(input);
-  if (sync.action === "pull") {
-    return { pull: true, restart: true, message: `${sync.message} 서버를 다시 켭니다.` };
-  }
-  if (!input.serverRunning) {
-    return { pull: false, restart: true, message: "PC 서버가 꺼져 있어 다시 켭니다." };
-  }
-  return { pull: false, restart: false, message: sync.message };
 }
 
 export function formatLocalUpBanner(input: { phoneOrigins: string[] }) {
