@@ -4,14 +4,34 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, clientCompanies, clientContacts, projects } from "@/lib/db/schema";
-import { normalizeClientContact, normalizeClientName, normalizeProjectProgressUpdate, normalizeProjectRegistration } from "@/lib/domain/clients-projects";
+import {
+  normalizeClientCompanyProfile,
+  normalizeClientContact,
+  normalizeProjectProgressUpdate,
+  normalizeProjectRegistration,
+  type ClientCompanyProfile,
+} from "@/lib/domain/clients-projects";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
+
+const clientCompanyColumns = {
+  id: clientCompanies.id,
+  name: clientCompanies.name,
+  businessRegistrationNumber: clientCompanies.businessRegistrationNumber,
+  representativeName: clientCompanies.representativeName,
+  address: clientCompanies.address,
+  businessType: clientCompanies.businessType,
+  businessItem: clientCompanies.businessItem,
+  website: clientCompanies.website,
+  phone: clientCompanies.phone,
+  email: clientCompanies.email,
+  businessRegistrationRef: clientCompanies.businessRegistrationRef,
+} as const;
 
 export async function listFounderClientsAndProjects(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "clients-projects");
   const database = createDatabase();
   const clients = await database
-    .select({ id: clientCompanies.id, name: clientCompanies.name })
+    .select(clientCompanyColumns)
     .from(clientCompanies)
     .where(and(eq(clientCompanies.workspaceId, workspace.id), isNull(clientCompanies.deletedAt)))
     .orderBy(asc(clientCompanies.name));
@@ -41,6 +61,7 @@ export async function listFounderClientsAndProjects(authUserId: string) {
       email: clientContacts.email,
       phone: clientContacts.phone,
       relationStatus: clientContacts.relationStatus,
+      taxInvoiceRecipient: clientContacts.taxInvoiceRecipient,
       clientCompanyId: clientContacts.clientCompanyId,
       clientName: clientCompanies.name,
     })
@@ -59,8 +80,7 @@ export async function listFounderClientsAndProjects(authUserId: string) {
 export async function listFounderClients(authUserId: string) {
   const { clients, projects, contacts } = await listFounderClientsAndProjects(authUserId);
   return clients.map((client) => ({
-    id: client.id,
-    name: client.name,
+    ...client,
     contactCount: contacts.filter((contact) => contact.clientCompanyId === client.id).length,
     projectCount: projects.filter((project) => project.clientCompanyId === client.id).length,
   }));
@@ -77,13 +97,15 @@ export async function getFounderClient(authUserId: string, clientId: string) {
   };
 }
 
-export async function createFounderClient(input: { actorUserId: string; name: string }) {
+export async function createFounderClient(input: {
+  actorUserId: string;
+} & Parameters<typeof normalizeClientCompanyProfile>[0]) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
   const database = createDatabase();
-  const name = normalizeClientName(input.name);
+  const profile = normalizeClientCompanyProfile(input);
   const [created] = await database
     .insert(clientCompanies)
-    .values({ workspaceId: workspace.id, name })
+    .values({ workspaceId: workspace.id, ...profile })
     .onConflictDoNothing()
     .returning({ id: clientCompanies.id });
 
@@ -101,6 +123,40 @@ export async function createFounderClient(input: { actorUserId: string; name: st
   return created;
 }
 
+export async function updateFounderClient(input: {
+  actorUserId: string;
+  clientId: string;
+} & Parameters<typeof normalizeClientCompanyProfile>[0]) {
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
+  const database = createDatabase();
+  const profile = normalizeClientCompanyProfile(input);
+  const [existing] = await database
+    .select({ id: clientCompanies.id })
+    .from(clientCompanies)
+    .where(and(
+      eq(clientCompanies.id, input.clientId),
+      eq(clientCompanies.workspaceId, workspace.id),
+      isNull(clientCompanies.deletedAt),
+    ))
+    .limit(1);
+
+  if (!existing) throw new Error("Client was not found");
+
+  await database
+    .update(clientCompanies)
+    .set({ ...profile, updatedAt: new Date() })
+    .where(eq(clientCompanies.id, existing.id));
+
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "client_company.updated",
+    payload: { clientCompanyId: existing.id },
+  });
+
+  return existing;
+}
+
 export async function createFounderClientContact(input: {
   actorUserId: string;
   clientId: string;
@@ -109,6 +165,7 @@ export async function createFounderClientContact(input: {
   email?: string;
   phone?: string;
   relationStatus: string;
+  taxInvoiceRecipient?: boolean | string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
   const database = createDatabase();
@@ -135,6 +192,7 @@ export async function createFounderClientContact(input: {
       email: contact.email,
       phone: contact.phone,
       relationStatus: contact.relationStatus,
+      taxInvoiceRecipient: contact.taxInvoiceRecipient,
     })
     .returning({ id: clientContacts.id });
 
@@ -223,3 +281,5 @@ export async function updateFounderProjectProgress(input: {
 
   return saved;
 }
+
+export type { ClientCompanyProfile };
