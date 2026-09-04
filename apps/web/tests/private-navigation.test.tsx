@@ -20,6 +20,7 @@ describe("PrivateNavigation", () => {
   test("includes all required operating destinations", () => {
     const hrefs = navItems().map((item) => item.href);
     expect(hrefs).toContain("/dashboard");
+    expect(hrefs).toContain("/approvals");
     expect(hrefs).toContain("/company-setup");
     expect(hrefs).toContain("/documents");
     expect(hrefs).toContain("/clients");
@@ -39,6 +40,8 @@ describe("PrivateNavigation", () => {
 
   test("includes required labels", () => {
     const labels = navItems().map((item) => item.label);
+    expect(labels).toContain("대시보드");
+    expect(labels).toContain("승인함");
     expect(labels).toContain("비용 원장");
     expect(labels).toContain("계정과목");
     expect(labels).toContain("에이전트");

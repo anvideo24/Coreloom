@@ -3,6 +3,7 @@ import "server-only";
 import { eq } from "drizzle-orm";
 
 import { listFounderAiProposals } from "@/lib/ai-proposals/repository";
+import { listPendingAgentWorks } from "@/lib/approvals/repository";
 import { listFounderBillings } from "@/lib/billings/repository";
 import { listFounderClientsAndProjects } from "@/lib/clients-projects/repository";
 import { listFounderCompanySetup } from "@/lib/company-setup/repository";
@@ -11,6 +12,7 @@ import { createDatabase } from "@/lib/db/client";
 import { quoteEmailDeliveries } from "@/lib/db/schema";
 import { listFounderVaultDocuments } from "@/lib/documents/repository";
 import { aiProposalKindLabels, aiProposalStatusLabels } from "@/lib/domain/ai-proposals";
+import { buildApprovalInbox } from "@/lib/domain/approvals";
 import { billingKindLabels } from "@/lib/domain/billings";
 import { buildFounderDashboard, calendarDateInTimeZone } from "@/lib/domain/dashboard";
 import { listFounderExpenseLedger } from "@/lib/expenses/repository";
@@ -32,6 +34,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
     expenses,
     tasks,
     documents,
+    agentWorks,
   ] = await Promise.all([
     listFounderCompanySetup(authUserId),
     listFounderQuotes(authUserId),
@@ -43,6 +46,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
     listFounderExpenseLedger(authUserId),
     listFounderTasks(authUserId),
     listFounderVaultDocuments(authUserId),
+    listPendingAgentWorks(authUserId),
   ]);
 
   const latestQuotes = [];
@@ -70,7 +74,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
     return rightTime - leftTime;
   });
 
-  return buildFounderDashboard({
+  const dashboard = buildFounderDashboard({
     today: calendarDateInTimeZone(now),
     setupItems: setup.items.map((item) => ({
       id: item.id,
@@ -146,4 +150,56 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
     })),
     documentCount: documents.documents.length,
   });
+
+  const approvalItems = buildApprovalInbox({
+    expenses: expenses.rows,
+    revenueEntries: revenue.rows.map((row) => ({
+      id: row.id.replace(/^revenue:/, ""),
+      href: row.href,
+      title: row.title,
+      counterparty: row.counterparty,
+      amount: row.amount,
+      settlementDate: row.settlementDate,
+      status: row.status,
+      source: row.source,
+    })),
+    billings: billings.billings.map((item) => ({
+      id: item.id,
+      clientName: item.clientName,
+      contractTitle: item.contractTitle,
+      kindLabel: billingKindLabels[item.kind],
+      amount: item.amount,
+      dueDate: item.dueDate,
+      status: item.status,
+    })),
+    contracts: contracts.contracts.map((item) => ({
+      contractId: item.contractId,
+      title: item.title,
+      clientName: item.clientName,
+      status: item.status,
+      totalAmount: item.totalAmount,
+    })),
+    proposals: proposals.pending.map((item) => ({
+      id: item.id,
+      kindLabel: aiProposalKindLabels[item.kind],
+      body: item.body,
+      clientName: item.clientName,
+      projectName: item.projectName,
+    })),
+    agentWorks: agentWorks.map((item) => ({
+      id: item.id,
+      agentId: item.agentId,
+      agentName: item.agentName,
+      requestNote: item.requestNote,
+      createdAt: item.createdAt.toISOString(),
+    })),
+  });
+
+  return {
+    ...dashboard,
+    vitals: {
+      ...dashboard.vitals,
+      pendingApprovals: approvalItems.length,
+    },
+  };
 }

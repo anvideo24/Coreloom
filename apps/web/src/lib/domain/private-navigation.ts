@@ -17,7 +17,10 @@ export type NavGroup = {
 export const navGroups: NavGroup[] = [
   {
     label: "개요",
-    items: [{ href: "/dashboard", label: "대시보드" }],
+    items: [
+      { href: "/dashboard", label: "대시보드" },
+      { href: "/approvals", label: "승인함" },
+    ],
   },
   {
     label: "회사",

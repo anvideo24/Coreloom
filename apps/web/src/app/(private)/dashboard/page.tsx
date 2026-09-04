@@ -114,7 +114,7 @@ export default async function DashboardPage() {
         <div>
           <p className="auth-eyebrow">CORELOOM / DASHBOARD</p>
           <h1>오늘 확인할 운영</h1>
-          <p>승인 대기·오늘 할 일·진행 프로젝트와 이번 달 입금·지급을 먼저 봅니다. 이 화면은 조회만 하며, 발송·체결·입금 확정·비용 확정은 각 화면에서 대표가 직접 합니다.</p>
+          <p>승인 대기·오늘 할 일·진행 프로젝트와 이번 달 입금·지급을 먼저 봅니다. 승인함에서 대기 목록을 모아서 보고, 발송·체결·입금·비용 확정은 각 상세에서 대표가 직접 합니다.</p>
         </div>
       </header>
 
@@ -122,6 +122,7 @@ export default async function DashboardPage() {
         <div className="dash-vital">
           <p>승인 대기</p>
           <strong>{dashboard.vitals.pendingApprovals}</strong>
+          <Link className="stat-card-link" href="/approvals">승인함 →</Link>
         </div>
         <div className="dash-vital">
           <p>오늘 업무</p>
