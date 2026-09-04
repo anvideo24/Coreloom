@@ -13,12 +13,17 @@ export default async function ExpensesPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { ventures, projects, suppliers, rows, summary } = await listFounderExpenseLedger(session.founder.id);
+  const { ventures, projects, suppliers, accounts, rows, summary } = await listFounderExpenseLedger(session.founder.id);
 
   return (
     <main className="operations-shell">
       <Suspense fallback={<p className="empty-state">비용 원장을 불러오는 중…</p>}>
         <ExpensesPageClient
+          accounts={accounts.map((account) => ({
+            id: account.id,
+            code: account.code,
+            name: account.name,
+          }))}
           projects={projects}
           rows={rows.map((row) => ({
             ...row,

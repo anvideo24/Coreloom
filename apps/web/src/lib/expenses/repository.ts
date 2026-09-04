@@ -3,9 +3,11 @@ import "server-only";
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 
+import { ensureDefaultLedgerAccounts, listFounderLedgerAccounts, resolveLedgerAccountForEntry } from "@/lib/accounts/repository";
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, clientCompanies, expenseEntries, projects, ventures } from "@/lib/db/schema";
 import { clientAllowsPurchase } from "@/lib/domain/clients-projects";
+import { ledgerAccountsForClass } from "@/lib/domain/ledger-accounts";
 import {
   confirmExpenseEntry,
   ledgerRowFromExpenseEntry,
@@ -19,7 +21,9 @@ const supplierClients = alias(clientCompanies, "supplier_clients");
 
 export async function listFounderExpenseLedger(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "expenses");
+  await ensureDefaultLedgerAccounts(workspace.id);
   const database = createDatabase();
+  const accounts = ledgerAccountsForClass(await listFounderLedgerAccounts(authUserId), "expense");
   const ventureRows = await database.select({
     id: ventures.id,
     name: ventures.name,
@@ -76,6 +80,7 @@ export async function listFounderExpenseLedger(authUserId: string) {
     ventures: ventureRows,
     projects: projectRows,
     suppliers: supplierRows.filter((row) => clientAllowsPurchase(row.tradeKind)),
+    accounts,
     rows,
     summary: summarizeExpenses(rows),
   };
@@ -117,10 +122,23 @@ export async function createFounderExpenseEntry(input: {
   accountCategory?: string;
   supplierName?: string;
   supplierClientCompanyId?: string;
+  ledgerAccountId?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "expenses");
+  await ensureDefaultLedgerAccounts(workspace.id);
   const database = createDatabase();
   const draft = normalizeExpenseEntry(input);
+  const resolvedAccount = await resolveLedgerAccountForEntry({
+    workspaceId: workspace.id,
+    ledgerAccountId: draft.ledgerAccountId,
+    expectedClass: "expense",
+  });
+  const accountCategory = draft.accountCategory ?? (
+    resolvedAccount.accountCategory &&
+    ["subcontract", "software", "travel", "office", "marketing", "other"].includes(resolvedAccount.accountCategory)
+      ? resolvedAccount.accountCategory as "subcontract" | "software" | "travel" | "office" | "marketing" | "other"
+      : null
+  );
 
   let clientCompanyId: string | null = null;
   if (draft.projectId) {
@@ -178,7 +196,8 @@ export async function createFounderExpenseEntry(input: {
     currency: draft.currency,
     occurredOn: draft.occurredOn,
     settlementDate: draft.settlementDate,
-    accountCategory: draft.accountCategory,
+    accountCategory,
+    ledgerAccountId: resolvedAccount.ledgerAccountId,
     supplierName,
     supplierClientCompanyId,
     note: draft.note,
@@ -194,6 +213,7 @@ export async function createFounderExpenseEntry(input: {
       ventureId: draft.ventureId,
       amount: draft.amount,
       supplierClientCompanyId,
+      ledgerAccountId: resolvedAccount.ledgerAccountId,
     },
   });
 

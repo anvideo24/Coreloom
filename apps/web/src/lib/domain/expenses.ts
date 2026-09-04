@@ -65,6 +65,7 @@ export function normalizeExpenseEntry(input: {
   accountCategory?: string;
   supplierName?: string;
   supplierClientCompanyId?: string;
+  ledgerAccountId?: string;
 }): {
   projectId: string | null;
   ventureId: string | null;
@@ -76,6 +77,7 @@ export function normalizeExpenseEntry(input: {
   accountCategory: ExpenseAccountCategory | null;
   supplierName: string | null;
   supplierClientCompanyId: string | null;
+  ledgerAccountId: string | null;
 } {
   const projectId = input.projectId?.trim() || null;
   const ventureId = input.ventureId?.trim() || null;
@@ -94,6 +96,7 @@ export function normalizeExpenseEntry(input: {
   const supplierName = input.supplierName?.trim() || null;
   if (supplierName && supplierName.length > 120) throw new Error("Supplier name is too long");
   const supplierClientCompanyId = input.supplierClientCompanyId?.trim() || null;
+  const ledgerAccountId = input.ledgerAccountId?.trim() || null;
   return {
     projectId,
     ventureId,
@@ -105,6 +108,7 @@ export function normalizeExpenseEntry(input: {
     accountCategory,
     supplierName,
     supplierClientCompanyId,
+    ledgerAccountId,
   };
 }
 

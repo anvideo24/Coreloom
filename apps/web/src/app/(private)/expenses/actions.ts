@@ -27,9 +27,9 @@ export async function createExpenseEntryAction(formData: FormData) {
     occurredOn: value(formData, "occurredOn"),
     settlementDate: value(formData, "settlementDate"),
     note: value(formData, "note"),
-    accountCategory: value(formData, "accountCategory"),
     supplierName: value(formData, "supplierName"),
     supplierClientCompanyId: value(formData, "supplierClientCompanyId"),
+    ledgerAccountId: value(formData, "ledgerAccountId"),
   });
   revalidatePath("/expenses");
   revalidatePath("/revenue");

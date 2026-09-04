@@ -72,6 +72,7 @@ export function normalizeRevenueEntry(input: {
   settlementDate: string;
   note?: string;
   accountCategory?: string;
+  ledgerAccountId?: string;
 }): {
   projectId: string | null;
   ventureId: string | null;
@@ -81,6 +82,7 @@ export function normalizeRevenueEntry(input: {
   settlementDate: string;
   note: string | null;
   accountCategory: RevenueAccountCategory | null;
+  ledgerAccountId: string | null;
 } {
   const projectId = input.projectId?.trim() || null;
   const ventureId = input.ventureId?.trim() || null;
@@ -96,6 +98,7 @@ export function normalizeRevenueEntry(input: {
     }
     accountCategory = accountCategoryRaw as RevenueAccountCategory;
   }
+  const ledgerAccountId = input.ledgerAccountId?.trim() || null;
   return {
     projectId,
     ventureId,
@@ -105,6 +108,7 @@ export function normalizeRevenueEntry(input: {
     settlementDate,
     note: input.note?.trim() || null,
     accountCategory,
+    ledgerAccountId,
   };
 }
 

@@ -2,9 +2,11 @@ import "server-only";
 
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
+import { ensureDefaultLedgerAccounts, listFounderLedgerAccounts, resolveLedgerAccountForEntry } from "@/lib/accounts/repository";
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, billings, clientCompanies, contracts, contractVersions, projects, revenueEntries, revenueRefunds, ventures } from "@/lib/db/schema";
 import { billingKindLabels } from "@/lib/domain/billings";
+import { ledgerAccountsForClass } from "@/lib/domain/ledger-accounts";
 import {
   confirmRevenueEntry,
   ledgerRowFromBilling,
@@ -19,7 +21,9 @@ import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 export async function listFounderRevenueLedger(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "revenue");
+  await ensureDefaultLedgerAccounts(workspace.id);
   const database = createDatabase();
+  const accounts = ledgerAccountsForClass(await listFounderLedgerAccounts(authUserId), "revenue");
   const ventureRows = await database.select({
     id: ventures.id,
     name: ventures.name,
@@ -113,6 +117,7 @@ export async function listFounderRevenueLedger(authUserId: string) {
   return {
     ventures: ventureRows,
     projects: projectRows,
+    accounts,
     rows,
     summary: summarizeLedger(rows, refundedTotal),
   };
@@ -184,10 +189,23 @@ export async function createFounderRevenueEntry(input: {
   settlementDate: string;
   note?: string;
   accountCategory?: string;
+  ledgerAccountId?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "revenue");
+  await ensureDefaultLedgerAccounts(workspace.id);
   const database = createDatabase();
   const draft = normalizeRevenueEntry(input);
+  const resolvedAccount = await resolveLedgerAccountForEntry({
+    workspaceId: workspace.id,
+    ledgerAccountId: draft.ledgerAccountId,
+    expectedClass: "revenue",
+  });
+  const accountCategory = draft.accountCategory ?? (
+    resolvedAccount.accountCategory &&
+    ["service", "subscription", "license", "other"].includes(resolvedAccount.accountCategory)
+      ? resolvedAccount.accountCategory as "service" | "subscription" | "license" | "other"
+      : null
+  );
 
   let clientCompanyId: string | null = null;
   if (draft.projectId) {
@@ -223,7 +241,8 @@ export async function createFounderRevenueEntry(input: {
     currency: draft.currency,
     occurredOn: draft.occurredOn,
     settlementDate: draft.settlementDate,
-    accountCategory: draft.accountCategory,
+    accountCategory,
+    ledgerAccountId: resolvedAccount.ledgerAccountId,
     note: draft.note,
   }).returning({ id: revenueEntries.id });
 
@@ -236,6 +255,7 @@ export async function createFounderRevenueEntry(input: {
       projectId: draft.projectId,
       ventureId: draft.ventureId,
       amount: draft.amount,
+      ledgerAccountId: resolvedAccount.ledgerAccountId,
     },
   });
 

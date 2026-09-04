@@ -41,6 +41,7 @@ export const navGroups: NavGroup[] = [
     items: [
       { href: "/revenue", label: "매출 원장" },
       { href: "/expenses", label: "비용 원장" },
+      { href: "/accounts", label: "계정과목" },
     ],
   },
   {

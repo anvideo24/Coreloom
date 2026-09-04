@@ -19,7 +19,7 @@ describe("expense entries", () => {
       note: " 광고비 ",
       accountCategory: "marketing",
       supplierName: " 광고사 ",
-      supplierClientCompanyId: " supplier-1 ",
+      supplierClientCompanyId: "supplier-1",
     })).toEqual({
       projectId: null,
       ventureId: "venture-1",
@@ -31,6 +31,7 @@ describe("expense entries", () => {
       accountCategory: "marketing",
       supplierName: "광고사",
       supplierClientCompanyId: "supplier-1",
+      ledgerAccountId: null,
     });
   });
 
@@ -50,6 +51,7 @@ describe("expense entries", () => {
       accountCategory: null,
       supplierName: null,
       supplierClientCompanyId: null,
+      ledgerAccountId: null,
     });
   });
 

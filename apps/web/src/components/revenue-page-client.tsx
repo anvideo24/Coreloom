@@ -6,9 +6,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createRevenueEntryAction, createVentureAction } from "@/app/(private)/revenue/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
+import { formatLedgerAccountLabel } from "@/lib/domain/ledger-accounts";
 import {
-  revenueAccountCategories,
-  revenueAccountCategoryLabels,
   revenueEntryStatusLabels,
   UNCLASSIFIED_LABEL,
   ventureKindLabels,
@@ -19,6 +18,7 @@ import {
 
 type Project = { id: string; name: string; clientName: string };
 type Venture = { id: string; name: string; kind: VentureKind };
+type Account = { id: string; code: string; name: string };
 type RevenueRow = {
   id: string;
   href: string;
@@ -41,11 +41,13 @@ type PanelMode = "entry" | "venture" | null;
 export function RevenuePageClient({
   ventures,
   projects,
+  accounts,
   rows,
   summary,
 }: {
   ventures: Venture[];
   projects: Project[];
+  accounts: Account[];
   rows: RevenueRow[];
   summary: Summary;
 }) {
@@ -141,8 +143,8 @@ export function RevenuePageClient({
         <form action={createRevenueEntryAction} className="quote-form">
           <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
-            프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 계정과목은 선택입니다. 증빙 파일은
-            문서함에서 연결합니다.
+            프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 계정과목은 계정과목 마스터의 수익
+            과목에서 고릅니다. 증빙 파일은 문서함에서 연결합니다.
           </p>
           <label>
             고객사 프로젝트 (선택)
@@ -170,11 +172,11 @@ export function RevenuePageClient({
           <p className="setup-code quote-form-full">금액</p>
           <label>
             계정과목 (선택)
-            <select defaultValue="" name="accountCategory">
+            <select defaultValue="" name="ledgerAccountId">
               <option value="">미정</option>
-              {revenueAccountCategories.map((category) => (
-                <option key={category} value={category}>
-                  {revenueAccountCategoryLabels[category]}
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {formatLedgerAccountLabel(account)}
                 </option>
               ))}
             </select>
