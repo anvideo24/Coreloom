@@ -4,9 +4,11 @@ import {
   calculatePackageCostAmount,
   calculateQuoteAmounts,
   calculateQuoteCosting,
+  monthlyRateForRole,
   nextQuoteVersionNumber,
   normalizeStoredQuoteItemsForPdf,
   packagesFromStoredItems,
+  quoteRoleRates,
   suggestCustomerSupplyAmount,
 } from "@/lib/domain/quotes";
 
@@ -128,6 +130,10 @@ describe("stored quote items", () => {
     expect(packages[0].amountLocked).toBe(true);
     expect(packages[1].title).toBe("개발");
     expect(packages[1].amountLocked).toBe(false);
+  });
+  it("maps role grades to monthly rates", () => {
+    expect(monthlyRateForRole("시니어 개발")).toBe(6_000_000);
+    expect(quoteRoleRates.some((item) => item.role === "PM")).toBe(true);
   });
 });
 

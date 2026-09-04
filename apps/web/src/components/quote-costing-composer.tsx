@@ -1,11 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 
 import {
   calculatePackageCostAmount,
   calculateQuoteCosting,
   createEmptyQuotePackage,
+  monthlyRateForRole,
+  quoteRoleRates,
   suggestCustomerSupplyAmount,
   type QuotePackage,
   type QuoteVatMode,
@@ -16,7 +18,6 @@ type ComposerProps = {
   initialVatMode?: QuoteVatMode;
   initialTargetMarginPercent?: number;
   initialOperatingCostPercent?: number;
-  /** 폼 바깥에서 vatMode를 관리할 때 전달 */
   vatMode?: QuoteVatMode;
   onVatModeChange?: (mode: QuoteVatMode) => void;
 };
@@ -27,7 +28,6 @@ function won(value: number) {
   return `${Math.max(0, Math.round(value)).toLocaleString("ko-KR")}원`;
 }
 
-/** 원화 금액 표시용. type=number는 콤마를 못 쓰므로 text로 포맷한다. */
 function formatWonDigits(value: number) {
   if (!Number.isFinite(value) || value <= 0) return "";
   return Math.round(value).toLocaleString("ko-KR");
@@ -61,6 +61,39 @@ function WonAmountInput({
   );
 }
 
+function rangeProgress(value: number, min: number, max: number) {
+  if (max <= min) return 0;
+  return Math.min(100, Math.max(0, ((value - min) / (max - min)) * 100));
+}
+
+function PercentRangeInput({
+  value,
+  min,
+  max,
+  onValueChange,
+  "aria-label": ariaLabel,
+}: {
+  value: number;
+  min: number;
+  max: number;
+  onValueChange: (value: number) => void;
+  "aria-label"?: string;
+}) {
+  const progress = rangeProgress(value, min, max);
+  return (
+    <input
+      aria-label={ariaLabel}
+      className="quote-range"
+      max={max}
+      min={min}
+      onChange={(event) => onValueChange(Number(event.target.value))}
+      style={{ "--range-progress": `${progress}%` } as CSSProperties}
+      type="range"
+      value={value}
+    />
+  );
+}
+
 function safeCost(pkg: QuotePackage) {
   try {
     return calculatePackageCostAmount(pkg);
@@ -77,6 +110,12 @@ function suggestedAmount(pkg: QuotePackage, margin: number, operating: number, v
   } catch {
     return 0;
   }
+}
+
+function roleSelectValue(role: string) {
+  if (!role) return "";
+  if (quoteRoleRates.some((item) => item.role === role)) return role;
+  return "__custom__";
 }
 
 export function QuoteCostingComposer({
@@ -155,6 +194,14 @@ export function QuoteCostingComposer({
     );
   };
 
+  const applyRole = (index: number, role: string) => {
+    const rate = monthlyRateForRole(role);
+    updatePackage(index, {
+      role,
+      ...(rate != null ? { monthlyRate: rate, amountLocked: false } : {}),
+    });
+  };
+
   const unlockAndSuggest = (index: number) => {
     setPackages((current) =>
       current.map((pkg, pkgIndex) => {
@@ -170,9 +217,7 @@ export function QuoteCostingComposer({
       <input name="packagesJson" type="hidden" value={JSON.stringify(livePackages)} />
       <input name="targetMarginPercent" type="hidden" value={targetMarginPercent} />
       <input name="operatingCostPercent" type="hidden" value={operatingCostPercent} />
-      {controlledVatMode == null ? (
-        <input name="vatMode" type="hidden" value={vatMode} />
-      ) : null}
+      {controlledVatMode == null ? <input name="vatMode" type="hidden" value={vatMode} /> : null}
 
       <div className="quote-costing-toolbar">
         <div className="quote-costing-tabs" role="tablist" aria-label="견적 보기">
@@ -214,11 +259,11 @@ export function QuoteCostingComposer({
             <span>
               목표 마진 <strong>{targetMarginPercent}%</strong>
             </span>
-            <input
+            <PercentRangeInput
+              aria-label="목표 마진"
               max={90}
               min={0}
-              onChange={(event) => setTargetMarginPercent(Number(event.target.value))}
-              type="range"
+              onValueChange={setTargetMarginPercent}
               value={targetMarginPercent}
             />
           </label>
@@ -226,11 +271,11 @@ export function QuoteCostingComposer({
             <span>
               운영비 <strong>{operatingCostPercent}%</strong>
             </span>
-            <input
+            <PercentRangeInput
+              aria-label="운영비"
               max={50}
               min={0}
-              onChange={(event) => setOperatingCostPercent(Number(event.target.value))}
-              type="range"
+              onValueChange={setOperatingCostPercent}
               value={operatingCostPercent}
             />
           </label>
@@ -252,6 +297,7 @@ export function QuoteCostingComposer({
           ]
             .filter(Boolean)
             .join(" · ");
+          const selectedRole = roleSelectValue(pkg.role);
 
           return (
             <article className={`quote-package ${isOpen ? "is-open" : "is-collapsed"}`} key={index}>
@@ -280,6 +326,27 @@ export function QuoteCostingComposer({
                 <div className="quote-package-inline-edits">
                   {tab === "internal" ? (
                     <>
+                      <label className="quote-package-role">
+                        역할 / 등급
+                        <select
+                          onChange={(event) => {
+                            const next = event.target.value;
+                            if (!next || next === "__custom__") return;
+                            applyRole(index, next);
+                          }}
+                          value={selectedRole === "__custom__" ? "__custom__" : selectedRole}
+                        >
+                          <option value="">선택</option>
+                          {quoteRoleRates.map((item) => (
+                            <option key={item.role} value={item.role}>
+                              {item.role} · {item.monthlyRate.toLocaleString("ko-KR")}원
+                            </option>
+                          ))}
+                          {selectedRole === "__custom__" ? (
+                            <option value="__custom__">{pkg.role} (저장된 값)</option>
+                          ) : null}
+                        </select>
+                      </label>
                       <label>
                         단가
                         <WonAmountInput
@@ -324,16 +391,16 @@ export function QuoteCostingComposer({
                       </label>
                       <label className="quote-package-util">
                         가동률 {pkg.utilizationPercent}%
-                        <input
+                        <PercentRangeInput
+                          aria-label="가동률"
                           max={100}
                           min={1}
-                          onChange={(event) =>
+                          onValueChange={(utilizationPercent) =>
                             updatePackage(index, {
-                              utilizationPercent: Number(event.target.value) || 1,
+                              utilizationPercent: utilizationPercent || 1,
                               amountLocked: false,
                             })
                           }
-                          type="range"
                           value={pkg.utilizationPercent}
                         />
                       </label>
@@ -369,16 +436,6 @@ export function QuoteCostingComposer({
                       value={pkg.customerDescription}
                     />
                   </label>
-                  {tab === "internal" ? (
-                    <label>
-                      역할 / 등급
-                      <input
-                        onChange={(event) => updatePackage(index, { role: event.target.value })}
-                        placeholder="예: 시니어 개발"
-                        value={pkg.role}
-                      />
-                    </label>
-                  ) : null}
                   {packages.length > 1 ? (
                     <button
                       className="quote-item-remove"

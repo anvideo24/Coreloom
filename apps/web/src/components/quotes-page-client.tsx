@@ -110,11 +110,13 @@ export function QuotesPageClient({
 
       <CreatePanel onClose={close} open={open && canCreate} size="xlarge" title="새 견적">
         <form action={saveQuoteVersionAction} className="quote-form quote-form-costing">
-          <QuoteClientProjectFields clients={clients} projects={projects} />
-          <label className="quote-form-full">
-            견적명
-            <input name="title" placeholder="예: 웹사이트 구축 견적" required />
-          </label>
+          <div className="quote-form-meta">
+            <label className="quote-form-title">
+              견적명
+              <input name="title" placeholder="제목 없는 견적" required />
+            </label>
+            <QuoteClientProjectFields clients={clients} projects={projects} />
+          </div>
           <div className="quote-form-full">
             <QuoteCostingComposer />
           </div>

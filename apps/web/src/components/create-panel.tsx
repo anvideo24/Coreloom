@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useId } from "react";
+import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 
 type CreatePanelProps = {
   open: boolean;
@@ -13,6 +14,11 @@ type CreatePanelProps = {
 
 export function CreatePanel({ open, title, onClose, children, size = "wide" }: CreatePanelProps) {
   const titleId = useId();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -22,13 +28,15 @@ export function CreatePanel({ open, title, onClose, children, size = "wide" }: C
     window.addEventListener("keydown", onKey);
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    document.documentElement.dataset.createPanelOpen = "true";
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = previous;
+      delete document.documentElement.dataset.createPanelOpen;
     };
   }, [open, onClose]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
   const panelClass =
     size === "drawer"
@@ -37,7 +45,7 @@ export function CreatePanel({ open, title, onClose, children, size = "wide" }: C
         ? "create-panel create-panel-xlarge"
         : "create-panel create-panel-wide";
 
-  return (
+  return createPortal(
     <div className="create-panel-layer is-open">
       <button aria-label="작성 닫기" className="create-panel-backdrop" onClick={onClose} type="button" />
       <div aria-labelledby={titleId} aria-modal="true" className={panelClass} role="dialog">
@@ -49,6 +57,7 @@ export function CreatePanel({ open, title, onClose, children, size = "wide" }: C
         </div>
         <div className="create-panel-body">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

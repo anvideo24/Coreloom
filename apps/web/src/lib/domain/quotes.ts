@@ -112,13 +112,31 @@ export function suggestCustomerSupplyAmount(
   return Math.max(0, Math.round(withOperating / (1 - margin / 100)));
 }
 
+/** 역할·등급별 월 단가(내부 원가용). 고객 PDF에는 나가지 않는다. */
+export const quoteRoleRates = [
+  { role: "주니어 개발", monthlyRate: 4_000_000 },
+  { role: "미들 개발", monthlyRate: 5_000_000 },
+  { role: "시니어 개발", monthlyRate: 6_000_000 },
+  { role: "리드 개발", monthlyRate: 7_500_000 },
+  { role: "주니어 디자인", monthlyRate: 3_500_000 },
+  { role: "시니어 디자인", monthlyRate: 5_500_000 },
+  { role: "기획", monthlyRate: 5_000_000 },
+  { role: "PM", monthlyRate: 6_000_000 },
+] as const;
+
+export function monthlyRateForRole(role: string) {
+  const matched = quoteRoleRates.find((item) => item.role === role);
+  return matched?.monthlyRate;
+}
+
 export function createEmptyQuotePackage(): QuotePackage {
+  const defaultRole = quoteRoleRates.find((item) => item.role === "시니어 개발") ?? quoteRoleRates[0];
   return {
     title: "",
     customerDescription: "",
     amount: 0,
-    role: "",
-    monthlyRate: 6_000_000,
+    role: defaultRole.role,
+    monthlyRate: defaultRole.monthlyRate,
     months: 1,
     headcount: 1,
     utilizationPercent: 100,
