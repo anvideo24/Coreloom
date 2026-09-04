@@ -21,6 +21,7 @@ export async function listFounderClientsAndProjects(authUserId: string) {
       name: projects.name,
       status: projects.status,
       progressPercent: projects.progressPercent,
+      clientCompanyId: projects.clientCompanyId,
       clientName: clientCompanies.name,
     })
     .from(projects)
@@ -40,6 +41,7 @@ export async function listFounderClientsAndProjects(authUserId: string) {
       email: clientContacts.email,
       phone: clientContacts.phone,
       relationStatus: clientContacts.relationStatus,
+      clientCompanyId: clientContacts.clientCompanyId,
       clientName: clientCompanies.name,
     })
     .from(clientContacts)
@@ -54,6 +56,27 @@ export async function listFounderClientsAndProjects(authUserId: string) {
   return { clients, projects: projectRows, contacts };
 }
 
+export async function listFounderClients(authUserId: string) {
+  const { clients, projects, contacts } = await listFounderClientsAndProjects(authUserId);
+  return clients.map((client) => ({
+    id: client.id,
+    name: client.name,
+    contactCount: contacts.filter((contact) => contact.clientCompanyId === client.id).length,
+    projectCount: projects.filter((project) => project.clientCompanyId === client.id).length,
+  }));
+}
+
+export async function getFounderClient(authUserId: string, clientId: string) {
+  const { clients, projects, contacts } = await listFounderClientsAndProjects(authUserId);
+  const client = clients.find((row) => row.id === clientId);
+  if (!client) return null;
+  return {
+    client,
+    contacts: contacts.filter((contact) => contact.clientCompanyId === clientId),
+    projects: projects.filter((project) => project.clientCompanyId === clientId),
+  };
+}
+
 export async function createFounderClient(input: { actorUserId: string; name: string }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
   const database = createDatabase();
@@ -64,14 +87,18 @@ export async function createFounderClient(input: { actorUserId: string; name: st
     .onConflictDoNothing()
     .returning({ id: clientCompanies.id });
 
-  if (created) {
-    await database.insert(auditEvents).values({
-      workspaceId: workspace.id,
-      actorUserId: input.actorUserId,
-      eventType: "client_company.created",
-      payload: { clientCompanyId: created.id },
-    });
+  if (!created) {
+    throw new Error("같은 이름의 고객사가 이미 있습니다.");
   }
+
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "client_company.created",
+    payload: { clientCompanyId: created.id },
+  });
+
+  return created;
 }
 
 export async function createFounderClientContact(input: {

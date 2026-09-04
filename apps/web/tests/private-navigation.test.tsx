@@ -22,6 +22,7 @@ describe("PrivateNavigation", () => {
     expect(hrefs).toContain("/dashboard");
     expect(hrefs).toContain("/company-setup");
     expect(hrefs).toContain("/documents");
+    expect(hrefs).toContain("/clients");
     expect(hrefs).toContain("/clients-projects");
     expect(hrefs).toContain("/quotes");
     expect(hrefs).toContain("/contracts");
@@ -108,5 +109,14 @@ describe("PrivateNavigation", () => {
   test("does not treat other pages as the dashboard", () => {
     expect(isNavItemActive("/documents", "/dashboard")).toBe(false);
     expect(isNavItemActive("/clients-projects/p1", "/clients-projects")).toBe(true);
+    expect(isNavItemActive("/clients/c1", "/clients")).toBe(true);
+    expect(isNavItemActive("/clients-projects", "/clients")).toBe(false);
+  });
+
+  test("splits client and project destinations in sales nav", () => {
+    const labels = navItems().map((item) => item.label);
+    expect(labels).toContain("고객사");
+    expect(labels).toContain("프로젝트");
+    expect(labels).not.toContain("고객사 · 프로젝트");
   });
 });

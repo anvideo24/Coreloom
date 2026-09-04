@@ -99,7 +99,7 @@ export function QuotesPageClient({
         <section className="empty-state quote-empty">
           <h2>먼저 고객사를 등록해 주세요</h2>
           <p>견적서는 고객사에 연결해 보관합니다.</p>
-          <a className="text-link" href="/clients-projects">
+          <a className="text-link" href="/clients">
             고객사 등록으로 이동
           </a>
         </section>

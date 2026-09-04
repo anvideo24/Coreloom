@@ -59,7 +59,7 @@ export default async function ProjectWorkspacePage({ params }: { params: Promise
           <p>{workspace.project.clientName} · {workspace.project.statusLabel} · 진행률 {workspace.progressPercent}%</p>
         </div>
         <div className="quote-header-links">
-          <Link className="text-link" href="/clients-projects">고객사·프로젝트</Link>
+          <Link className="text-link" href="/clients-projects">프로젝트 목록</Link>
         </div>
       </header>
 

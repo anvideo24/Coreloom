@@ -26,7 +26,7 @@ export default async function TimelinePage() {
         <section className="empty-state quote-empty">
           <h2>먼저 프로젝트를 등록해 주세요</h2>
           <p>근거 기록은 고객사 프로젝트에 연결합니다. 연결할 프로젝트가 없으면 미분류로 두지 않습니다.</p>
-          <a className="text-link" href="/clients-projects">고객사·프로젝트로 이동</a>
+          <a className="text-link" href="/clients-projects">프로젝트로 이동</a>
         </section>
       ) : (
         <section className="quote-editor-card">

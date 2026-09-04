@@ -29,7 +29,8 @@ export const navGroups: NavGroup[] = [
   {
     label: "수주",
     items: [
-      { href: "/clients-projects", label: "고객사 · 프로젝트" },
+      { href: "/clients", label: "고객사" },
+      { href: "/clients-projects", label: "프로젝트" },
       { href: "/quotes", label: "견적서" },
       { href: "/contracts", label: "계약" },
       { href: "/billings", label: "청구" },
