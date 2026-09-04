@@ -73,7 +73,7 @@ export function QuotesPageClient({
           <p className="auth-eyebrow">CORELOOM / QUOTES</p>
           <h1>견적서</h1>
           <p>
-            고객용 탭은 발송될 INVOICE 문서로 편집하고, 내부 원가 탭에서 단가·마진을 잡습니다. 수정은 새
+            고객용 탭은 발송될 INVOICE를 미리보기만 하고, 내부 원가 탭에서 단가·마진을 잡습니다. 수정은 새
             버전으로 남습니다.
           </p>
         </div>
