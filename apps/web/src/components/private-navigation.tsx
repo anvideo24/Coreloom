@@ -31,14 +31,18 @@ function isFineHoverPointer() {
 }
 
 function NavToggleButton({
+  hidden,
   open,
+  placement,
   onHoverEnter,
   onHoverLeave,
   onToggle,
 }: {
+  hidden?: boolean;
   open: boolean;
-  onHoverEnter: () => void;
-  onHoverLeave: () => void;
+  placement: "rail" | "drawer";
+  onHoverEnter?: () => void;
+  onHoverLeave?: () => void;
   onToggle: () => void;
 }) {
   return (
@@ -47,7 +51,8 @@ function NavToggleButton({
       aria-expanded={open}
       aria-keyshortcuts="Control+B Meta+B"
       aria-label={open ? "메뉴 접기" : "메뉴 펼치기"}
-      className="private-menu-button"
+      className={placement === "rail" ? "private-menu-button is-rail" : "private-menu-button is-drawer"}
+      hidden={hidden}
       onClick={onToggle}
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
@@ -126,9 +131,14 @@ export function PrivateNavigation() {
     setOpenTab((current) => (current === tabId ? null : tabId));
   }
 
-  function toggleDrawer() {
+  function openDrawer() {
     setHoverPeek(false);
-    setDrawerOpen((open) => !open);
+    setDrawerOpen(true);
+  }
+
+  function closeDrawer() {
+    setHoverPeek(false);
+    setDrawerOpen(false);
   }
 
   function cancelPeekHide() {
@@ -155,10 +165,12 @@ export function PrivateNavigation() {
   return (
     <>
       <NavToggleButton
+        hidden={navVisible}
         onHoverEnter={showHoverPeek}
         onHoverLeave={hideHoverPeekSoon}
-        onToggle={toggleDrawer}
-        open={navVisible}
+        onToggle={openDrawer}
+        open={false}
+        placement="rail"
       />
 
       <div
@@ -169,6 +181,7 @@ export function PrivateNavigation() {
       >
         <aside aria-labelledby={drawerTitleId} className="private-navigation" id="private-drawer">
           <div className="private-drawer-head">
+            <NavToggleButton onToggle={closeDrawer} open placement="drawer" />
             <Link className="private-navigation-brand" href="/dashboard" id={drawerTitleId}>
               CORELOOM
             </Link>

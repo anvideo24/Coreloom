@@ -275,8 +275,8 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
 .private-drawer-head {
   align-items: center;
   display: flex;
+  gap: var(--space-2);
   min-height: 2.25rem;
-  padding-left: calc(2.25rem + var(--space-2));
 }
 
 .private-navigation-brand {
@@ -433,7 +433,7 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   .private-app-shell:has(.private-drawer-layer.is-open) {
     grid-template-columns: var(--private-sidebar-width) minmax(0, 1fr);
   }
-  .private-menu-button {
+  .private-menu-button.is-rail {
     align-self: start;
     color: var(--ink);
     display: inline-flex;
@@ -442,11 +442,15 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
     justify-self: start;
     margin-left: var(--space-3);
     margin-top: calc(var(--space-5) + env(safe-area-inset-top, 0px));
-    z-index: 50;
+    z-index: 20;
   }
-  .private-app-shell:has(.private-drawer-layer.is-open) .private-menu-button,
-  .private-app-shell:has(.private-drawer-layer.is-peek) .private-menu-button {
-    color: var(--nav-ink);
+  .private-menu-button.is-rail[hidden] {
+    display: none !important;
+  }
+  .private-menu-button.is-drawer {
+    color: inherit;
+    display: inline-flex;
+    margin: 0;
   }
   .private-drawer-layer {
     align-self: stretch;
