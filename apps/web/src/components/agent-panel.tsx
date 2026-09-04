@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState, useTransition } from "react";
 
+import { invokeAgentFromPanelAction } from "@/app/(private)/agents/actions";
 import {
   AGENT_PANEL_OPEN_STORAGE_KEY,
   AGENT_PANEL_SELECTED_STORAGE_KEY,
@@ -22,6 +23,15 @@ export type AgentPanelItem = {
   modelProvider: AiAgentModelProvider;
 };
 
+type PanelMessage = {
+  id: string;
+  role: "user" | "assistant";
+  body: string;
+  packageText?: string;
+  handoffHint?: string;
+  workLogHref?: string;
+};
+
 export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   const pathname = usePathname();
   const titleId = useId();
@@ -30,6 +40,9 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   const [selectedId, setSelectedId] = useState<string>("");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  const [messages, setMessages] = useState<PanelMessage[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const contextTitle = agentPanelContextTitle(pathname);
 
   useEffect(() => {
@@ -72,6 +85,49 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
 
   function toggle() {
     setOpen((value) => !value);
+  }
+
+  function clearThread() {
+    setDraft("");
+    setMessages([]);
+    setError(null);
+  }
+
+  function copyPackage(text: string) {
+    void navigator.clipboard.writeText(text);
+  }
+
+  function send() {
+    if (!selected || !draft.trim() || pending) return;
+    const message = draft.trim();
+    setDraft("");
+    setError(null);
+    setMessages((rows) => [
+      ...rows,
+      { id: `user-${Date.now()}`, role: "user", body: message },
+    ]);
+    startTransition(async () => {
+      try {
+        const result = await invokeAgentFromPanelAction({
+          agentId: selected.id,
+          message,
+          pathname,
+        });
+        setMessages((rows) => [
+          ...rows,
+          {
+            id: result.workLogId,
+            role: "assistant",
+            body: `${result.handoffHint}\n\n작업 이력이 승인 대기로 남았습니다.`,
+            packageText: result.packageText,
+            handoffHint: result.handoffLabel,
+            workLogHref: `/agents/${result.agentId}`,
+          },
+        ]);
+      } catch (caught) {
+        setError(caught instanceof Error ? caught.message : "요청을 남기지 못했습니다.");
+      }
+    });
   }
 
   return (
@@ -133,7 +189,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
               <button
                 aria-label="새 대화"
                 className="agent-panel-icon-button"
-                onClick={() => setDraft("")}
+                onClick={clearThread}
                 type="button"
               >
                 +
@@ -150,41 +206,68 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
           </div>
 
           <div className="agent-panel-body">
-            <div className="agent-panel-hero">
-              <div aria-hidden="true" className="agent-panel-avatar">AI</div>
-              <h2>{selected ? `${selected.name}에게 무엇을 맡길까요?` : "어떤 도움이 필요하세요?"}</h2>
-              <p>{selected?.purpose ?? "에이전트 페이지에서 시스템 계정을 만들면 여기에서 고를 수 있습니다."}</p>
-            </div>
-            <ul className="agent-panel-suggestions">
-              <li>
-                <Link href="/agents?new=1">커스텀 에이전트 만들기</Link>
-              </li>
-              <li>
-                <button
-                  onClick={() => setDraft(`${contextTitle} 화면을 기준으로 지금 할 일을 정리해 주세요.`)}
-                  type="button"
-                >
-                  이 페이지 기준으로 할 일 정리
-                </button>
-              </li>
-              {pathname.startsWith("/quotes") ? (
-                <li>
-                  <button
-                    onClick={() => setDraft("프로젝트 배경을 듣고 견적 초안(항목·부가세·내부 원가 관점)을 제안해 주세요.")}
-                    type="button"
-                  >
-                    견적 초안 문답 시작
-                  </button>
-                </li>
-              ) : null}
-            </ul>
+            {messages.length === 0 ? (
+              <>
+                <div className="agent-panel-hero">
+                  <div aria-hidden="true" className="agent-panel-avatar">AI</div>
+                  <h2>{selected ? `${selected.name}에게 무엇을 맡길까요?` : "어떤 도움이 필요하세요?"}</h2>
+                  <p>{selected?.purpose ?? "에이전트 페이지에서 시스템 계정을 만들면 여기에서 고를 수 있습니다."}</p>
+                </div>
+                <ul className="agent-panel-suggestions">
+                  <li>
+                    <Link href="/agents?new=1">커스텀 에이전트 만들기</Link>
+                  </li>
+                  <li>
+                    <button
+                      onClick={() => setDraft(`${contextTitle} 화면을 기준으로 지금 할 일을 정리해 주세요.`)}
+                      type="button"
+                    >
+                      이 페이지 기준으로 할 일 정리
+                    </button>
+                  </li>
+                  {pathname.startsWith("/quotes") ? (
+                    <li>
+                      <button
+                        onClick={() => setDraft("프로젝트 배경을 듣고 견적 초안(항목·부가세·내부 원가 관점)을 제안해 주세요.")}
+                        type="button"
+                      >
+                        견적 초안 문답 시작
+                      </button>
+                    </li>
+                  ) : null}
+                </ul>
+              </>
+            ) : (
+              <div className="agent-panel-thread" aria-live="polite">
+                {messages.map((message) => (
+                  <article className={`agent-panel-message is-${message.role}`} key={message.id}>
+                    <p>{message.body}</p>
+                    {message.packageText ? (
+                      <div className="agent-panel-package">
+                        <pre>{message.packageText}</pre>
+                        <div className="agent-panel-package-actions">
+                          <button onClick={() => copyPackage(message.packageText ?? "")} type="button">
+                            구독 패키지 복사
+                          </button>
+                          {message.workLogHref ? (
+                            <Link href={message.workLogHref}>이력 보기</Link>
+                          ) : null}
+                        </div>
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+                {pending ? <p className="form-help">구독 패키지를 준비하는 중…</p> : null}
+              </div>
+            )}
+            {error ? <p className="form-help agent-panel-error">{error}</p> : null}
           </div>
 
           <form
             className="agent-panel-composer"
             onSubmit={(event) => {
               event.preventDefault();
-              setDraft("");
+              send();
             }}
           >
             <div className="agent-panel-context-chip" title={pathname}>
@@ -192,7 +275,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
             </div>
             <textarea
               onChange={(event) => setDraft(event.target.value)}
-              placeholder="AI로 무엇이든 시도해 보세요…"
+              placeholder="요청을 적고 구독 패키지를 만드세요…"
               rows={3}
               value={draft}
             />
@@ -203,7 +286,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
               <button
                 aria-label="보내기"
                 className="agent-panel-send"
-                disabled={!draft.trim() || !selected}
+                disabled={!draft.trim() || !selected || pending}
                 type="submit"
               >
                 ↑
@@ -211,7 +294,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
             </div>
           </form>
           <p className="agent-panel-footnote">
-            구독 모델 연결·실행은 이어집니다. 지금은 에이전트 선택과 화면 컨텍스트만 연결합니다.
+            보내면 구독 자리에 붙일 패키지를 만들고 작업 이력을 남깁니다. API 키 호출·자동 실행은 하지 않습니다.
           </p>
         </aside>
       </div>

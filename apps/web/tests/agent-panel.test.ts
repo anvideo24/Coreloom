@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   agentPanelContextTitle,
+  buildAgentPanelWorkNotes,
+  buildAgentSubscriptionPackage,
   isAgentPanelToggleHotkey,
+  normalizeAgentPanelMessage,
   parseAgentPanelOpen,
   serializeAgentPanelOpen,
 } from "@/lib/domain/agent-panel";
@@ -23,6 +26,8 @@ describe("agent panel shell helpers", () => {
     expect(agentPanelContextTitle("/clients/c1")).toBe("고객사");
     expect(agentPanelContextTitle("/clients-projects")).toBe("프로젝트");
     expect(agentPanelContextTitle("/clients-projects/p1")).toBe("프로젝트");
+    expect(agentPanelContextTitle("/approvals")).toBe("승인함");
+    expect(agentPanelContextTitle("/accounts")).toBe("계정과목");
     expect(agentPanelContextTitle("/unknown")).toBe("운영 화면");
   });
 
@@ -30,5 +35,41 @@ describe("agent panel shell helpers", () => {
     expect(isAgentPanelToggleHotkey({ ctrlKey: true, metaKey: false, altKey: false, shiftKey: false, key: "j" } as KeyboardEvent)).toBe(true);
     expect(isAgentPanelToggleHotkey({ ctrlKey: false, metaKey: true, altKey: false, shiftKey: false, key: "J" } as KeyboardEvent)).toBe(true);
     expect(isAgentPanelToggleHotkey({ ctrlKey: true, metaKey: false, altKey: false, shiftKey: false, key: "b" } as KeyboardEvent)).toBe(false);
+  });
+});
+
+describe("agent subscription handoff", () => {
+  it("builds a copy package for the subscription seat without an API call", () => {
+    const packed = buildAgentSubscriptionPackage({
+      agentName: "조사",
+      purpose: "자료 조사",
+      workStyle: "근거 먼저",
+      answerStyle: "짧게",
+      procedure: "1. 확인\n2. 정리",
+      instructions: "추정하지 말 것",
+      allowedWork: ["research", "draft"],
+      modelProvider: "claude_subscription",
+      pathname: "/quotes",
+      contextTitle: "견적서",
+      message: " 견적 초안을 도와 주세요 ",
+    });
+    expect(packed.message).toBe("견적 초안을 도와 주세요");
+    expect(packed.handoffLabel).toBe("Claude 구독");
+    expect(packed.packageText).toContain("에이전트: 조사");
+    expect(packed.packageText).toContain("화면: 견적서 (/quotes)");
+    expect(packed.packageText).toContain("허용 업무: 자료 조사 · 초안 작성");
+    expect(packed.packageText).toContain("견적 초안을 도와 주세요");
+    expect(packed.handoffHint).toContain("API 키");
+    expect(buildAgentPanelWorkNotes({
+      message: packed.message,
+      contextTitle: packed.contextTitle,
+      pathname: packed.pathname,
+      modelLabel: packed.modelLabel,
+      packageText: packed.packageText,
+    }).inputNote).toContain("구독 패키지");
+  });
+
+  it("rejects an empty panel message", () => {
+    expect(() => normalizeAgentPanelMessage(" ")).toThrow("Panel message is required");
   });
 });

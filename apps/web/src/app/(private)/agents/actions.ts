@@ -7,6 +7,7 @@ import {
   approveFounderAgentWork,
   createFounderAgent,
   deactivateFounderAgent,
+  invokeFounderAgentFromPanel,
   recordFounderAgentWork,
   rejectFounderAgentWork,
 } from "@/lib/agents/repository";
@@ -74,6 +75,25 @@ export async function recordAgentWorkAction(formData: FormData) {
   revalidatePath(`/agents/${agentId}`);
   revalidatePath("/agents");
   redirect(`/agents/${agentId}`);
+}
+
+export async function invokeAgentFromPanelAction(input: {
+  agentId: string;
+  message: string;
+  pathname: string;
+}) {
+  const founder = await requireFounder();
+  const result = await invokeFounderAgentFromPanel({
+    actorUserId: founder.id,
+    agentId: input.agentId,
+    message: input.message,
+    pathname: input.pathname,
+  });
+  revalidatePath(`/agents/${result.agentId}`);
+  revalidatePath("/agents");
+  revalidatePath("/approvals");
+  revalidatePath("/dashboard");
+  return result;
 }
 
 export async function approveAgentWorkAction(formData: FormData) {
