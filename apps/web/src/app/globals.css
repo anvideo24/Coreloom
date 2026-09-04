@@ -19,6 +19,7 @@
   --nav-active-ink: #1c1916;
   --private-sidebar-width: 15rem;
   --private-toggle-rail: 2.75rem;
+  --private-peek-z: 90;
   --agent-panel-width: 22rem;
 
   /* 강조 */
@@ -248,7 +249,11 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
 
 .private-drawer-layer.is-peek {
   box-shadow: 12px 0 28px rgb(28 25 22 / 22%);
-  z-index: 40;
+  height: 100dvh;
+  left: 0;
+  position: fixed;
+  top: 0;
+  z-index: var(--private-peek-z);
 }
 
 .private-sheet-backdrop {
@@ -459,6 +464,12 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
     height: 100%;
     justify-self: start;
     min-height: 0;
+  }
+  .private-drawer-layer.is-peek {
+    height: 100dvh;
+    left: 0;
+    position: fixed;
+    top: 0;
   }
   .private-app-content {
     grid-column: 2;
