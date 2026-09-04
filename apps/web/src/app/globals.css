@@ -606,6 +606,30 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   min-height: 0;
   overflow: auto;
   padding: var(--space-5);
+  scrollbar-color: color-mix(in srgb, var(--line-strong), transparent 30%) transparent;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+}
+.create-panel-body::-webkit-scrollbar {
+  width: 0.625rem;
+}
+.create-panel-body::-webkit-scrollbar-track {
+  background: transparent;
+  margin-block: var(--space-3);
+}
+.create-panel-body::-webkit-scrollbar-thumb {
+  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--line-strong), transparent 20%);
+  border: 2px solid transparent;
+  border-radius: 999px;
+}
+.create-panel-body::-webkit-scrollbar-thumb:hover {
+  background-clip: padding-box;
+  background-color: color-mix(in srgb, var(--muted), transparent 35%);
+  border: 2px solid transparent;
+}
+.create-panel-body::-webkit-scrollbar-corner {
+  background: transparent;
 }
 .operations-header-actions {
   align-items: center;
