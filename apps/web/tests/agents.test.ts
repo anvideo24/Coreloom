@@ -33,7 +33,45 @@ describe("ai agent drafts", () => {
       accessScope: "이 프로젝트의 초안과 업무만",
       projectId: "project-1",
       ventureId: null,
+      workStyle: null,
+      answerStyle: null,
+      procedure: null,
+      instructions: null,
+      modelProvider: "claude_subscription",
+      capabilities: {
+        save_records: false,
+        send_external: false,
+        confirm_money: false,
+        change_permissions: false,
+      },
       status: "active",
+    });
+  });
+
+  it("keeps subscription model, instructions, and default-off capabilities", () => {
+    expect(normalizeAiAgentDraft({
+      name: "견적 도우미",
+      purpose: "견적 초안",
+      allowedWork: ["draft"],
+      accessScope: "견적만",
+      modelProvider: "cursor_agent",
+      workStyle: " 질문 후 초안 ",
+      answerStyle: " 표로 ",
+      procedure: " 1) 배경 2) 초안 ",
+      instructions: " 마진은 고객 PDF에 넣지 않는다 ",
+      capabilities: ["save_records", "send_external"],
+    })).toMatchObject({
+      modelProvider: "cursor_agent",
+      workStyle: "질문 후 초안",
+      answerStyle: "표로",
+      procedure: "1) 배경 2) 초안",
+      instructions: "마진은 고객 PDF에 넣지 않는다",
+      capabilities: {
+        save_records: true,
+        send_external: true,
+        confirm_money: false,
+        change_permissions: false,
+      },
     });
   });
 

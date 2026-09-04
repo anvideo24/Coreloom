@@ -12,6 +12,7 @@ export type QuotePdfInput = {
   subtotalAmount: number;
   vatAmount: number;
   totalAmount: number;
+  vatMode?: "exclusive" | "inclusive";
   note?: string | null;
 };
 
@@ -39,8 +40,9 @@ export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
     document.moveDown(1.4);
 
     const amountX = 420;
+    const amountLabel = input.vatMode === "inclusive" ? "금액(부가세 포함)" : "공급가액";
     document.fillColor("#68766f").fontSize(9).text("항목", 52, document.y);
-    document.text("공급가액", amountX, document.y - 11, { align: "right", width: 120 });
+    document.text(amountLabel, amountX, document.y - 11, { align: "right", width: 120 });
     document.moveDown(0.7);
     document.strokeColor("#d7ded9").moveTo(52, document.y).lineTo(543, document.y).stroke();
     document.moveDown(0.6);
@@ -55,7 +57,9 @@ export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
     document.moveDown(1.1);
     document.strokeColor("#17211c").moveTo(343, document.y).lineTo(543, document.y).stroke();
     document.moveDown(0.7);
-    const totals: Array<[string, number]> = [["공급가액", input.subtotalAmount], ["부가세 (10%)", input.vatAmount], ["합계", input.totalAmount]];
+    const totals: Array<[string, number]> = input.vatMode === "inclusive"
+      ? [["공급가액(역산)", input.subtotalAmount], ["부가세 (포함분)", input.vatAmount], ["합계", input.totalAmount]]
+      : [["공급가액", input.subtotalAmount], ["부가세 (10%)", input.vatAmount], ["합계", input.totalAmount]];
     for (const [label, amount] of totals) {
       const y = document.y;
       document.fontSize(label === "합계" ? 12 : 10).fillColor("#17211c").text(label, 343, y);

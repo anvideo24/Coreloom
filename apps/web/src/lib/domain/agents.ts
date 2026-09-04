@@ -9,16 +9,46 @@ export const aiAgentForbiddenWorkKinds = [
 ] as const;
 export const aiAgentStatuses = ["active", "inactive"] as const;
 export const aiAgentWorkLogStatuses = ["pending", "approved", "rejected"] as const;
+export const aiAgentModelProviders = ["claude_subscription", "gpt_codex_subscription", "cursor_agent"] as const;
+export const aiAgentCapabilityKinds = [
+  "save_records",
+  "send_external",
+  "confirm_money",
+  "change_permissions",
+] as const;
 
 export type AiAgentAllowedWork = (typeof aiAgentAllowedWorkKinds)[number];
 export type AiAgentStatus = (typeof aiAgentStatuses)[number];
 export type AiAgentWorkLogStatus = (typeof aiAgentWorkLogStatuses)[number];
+export type AiAgentModelProvider = (typeof aiAgentModelProviders)[number];
+export type AiAgentCapability = (typeof aiAgentCapabilityKinds)[number];
+export type AiAgentCapabilities = Record<AiAgentCapability, boolean>;
 
 export const aiAgentAllowedWorkLabels: Record<AiAgentAllowedWork, string> = {
   research: "자료 조사",
   draft: "초안 작성",
   task_update: "업무 업데이트",
   approval_request: "승인 요청 초안",
+};
+
+export const aiAgentModelProviderLabels: Record<AiAgentModelProvider, string> = {
+  claude_subscription: "Claude 구독",
+  gpt_codex_subscription: "GPT·Codex 구독",
+  cursor_agent: "Cursor",
+};
+
+export const aiAgentCapabilityLabels: Record<AiAgentCapability, string> = {
+  save_records: "기록 저장",
+  send_external: "외부 발송",
+  confirm_money: "금액·계약 확정",
+  change_permissions: "권한 변경",
+};
+
+export const defaultAiAgentCapabilities: AiAgentCapabilities = {
+  save_records: false,
+  send_external: false,
+  confirm_money: false,
+  change_permissions: false,
 };
 
 export const aiAgentStatusLabels: Record<AiAgentStatus, string> = {
@@ -86,6 +116,39 @@ export function isAgentAssignableToProject(agent: {
   return true;
 }
 
+export function normalizeOptionalText(value: string | undefined, max: number, tooLong: string) {
+  const trimmed = value?.trim() || "";
+  if (trimmed.length > max) throw new Error(tooLong);
+  return trimmed || null;
+}
+
+export function normalizeAiAgentModelProvider(value: string | undefined): AiAgentModelProvider {
+  const trimmed = value?.trim() || "claude_subscription";
+  if (!(aiAgentModelProviders as readonly string[]).includes(trimmed)) {
+    throw new Error("Unsupported agent model provider");
+  }
+  return trimmed as AiAgentModelProvider;
+}
+
+export function normalizeAiAgentCapabilities(kinds: string[] | undefined): AiAgentCapabilities {
+  const enabled = new Set((kinds ?? []).map((kind) => kind.trim()).filter(Boolean));
+  for (const kind of enabled) {
+    if (!(aiAgentCapabilityKinds as readonly string[]).includes(kind)) {
+      throw new Error("Unsupported agent capability");
+    }
+  }
+  return {
+    save_records: enabled.has("save_records"),
+    send_external: enabled.has("send_external"),
+    confirm_money: enabled.has("confirm_money"),
+    change_permissions: enabled.has("change_permissions"),
+  };
+}
+
+export function agentHasCapability(capabilities: AiAgentCapabilities | null | undefined, kind: AiAgentCapability) {
+  return Boolean(capabilities?.[kind]);
+}
+
 export function normalizeAiAgentDraft(input: {
   name: string;
   purpose: string;
@@ -93,6 +156,12 @@ export function normalizeAiAgentDraft(input: {
   accessScope: string;
   projectId?: string;
   ventureId?: string;
+  workStyle?: string;
+  answerStyle?: string;
+  procedure?: string;
+  instructions?: string;
+  modelProvider?: string;
+  capabilities?: string[];
 }): {
   name: string;
   purpose: string;
@@ -100,6 +169,12 @@ export function normalizeAiAgentDraft(input: {
   accessScope: string;
   projectId: string | null;
   ventureId: string | null;
+  workStyle: string | null;
+  answerStyle: string | null;
+  procedure: string | null;
+  instructions: string | null;
+  modelProvider: AiAgentModelProvider;
+  capabilities: AiAgentCapabilities;
   status: "active";
 } {
   const projectId = input.projectId?.trim() || null;
@@ -112,6 +187,12 @@ export function normalizeAiAgentDraft(input: {
     accessScope: trimRequired(input.accessScope, "Agent access scope is required", 500, "Agent access scope is too long"),
     projectId,
     ventureId,
+    workStyle: normalizeOptionalText(input.workStyle, 2000, "Work style is too long"),
+    answerStyle: normalizeOptionalText(input.answerStyle, 2000, "Answer style is too long"),
+    procedure: normalizeOptionalText(input.procedure, 4000, "Procedure is too long"),
+    instructions: normalizeOptionalText(input.instructions, 8000, "Instructions are too long"),
+    modelProvider: normalizeAiAgentModelProvider(input.modelProvider),
+    capabilities: normalizeAiAgentCapabilities(input.capabilities),
     status: "active",
   };
 }

@@ -10,6 +10,9 @@ import {
 import { getFounderAgentDetail } from "@/lib/agents/repository";
 import { founderSession } from "@/lib/auth/session";
 import {
+  aiAgentCapabilityKinds,
+  aiAgentCapabilityLabels,
+  aiAgentModelProviderLabels,
   aiAgentStatusLabels,
   aiAgentWorkLogStatusLabels,
   formatAllowedWork,
@@ -43,7 +46,20 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ ag
         <p className="setup-code">계정</p>
         <p>{agent.purpose}</p>
         <p className="form-help">허용 업무 {formatAllowedWork(agent.allowedWork)}</p>
-        <p className="form-help">사람 계정과 다른 시스템 계정입니다. 지출 확정, 계약 체결, 매출 확정, 환불, 권한 변경, 외부 공개는 대표만 합니다.</p>
+        <p className="form-help">모델 {aiAgentModelProviderLabels[agent.modelProvider]} · 구독 채널 (API 키 아님)</p>
+        {agent.workStyle ? <p className="form-help">일하는 방식 {agent.workStyle}</p> : null}
+        {agent.answerStyle ? <p className="form-help">답변 방식 {agent.answerStyle}</p> : null}
+        {agent.procedure ? <p className="form-help">절차 {agent.procedure}</p> : null}
+        {agent.instructions ? <p className="form-help">지침 {agent.instructions}</p> : null}
+        <p className="form-help">
+          능력
+          {" "}
+          {aiAgentCapabilityKinds
+            .filter((kind) => agent.capabilities[kind])
+            .map((kind) => aiAgentCapabilityLabels[kind])
+            .join(" · ") || "없음 (기본)"}
+        </p>
+        <p className="form-help">사람 계정과 다른 시스템 계정입니다. 능력에 켠 항목만 실행할 수 있으며, 기본은 저장·발송·확정이 꺼져 있습니다.</p>
       </section>
       {agent.status === "active" ? (
         <section className="quote-editor-card">

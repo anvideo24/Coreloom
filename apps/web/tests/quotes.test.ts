@@ -15,6 +15,19 @@ describe("quote amounts", () => {
       subtotalAmount: 150000,
       vatAmount: 15000,
       totalAmount: 165000,
+      vatMode: "exclusive",
+    });
+  });
+
+  it("calculates a VAT-inclusive Korean won quote by reversing the tax", () => {
+    expect(calculateQuoteAmounts([
+      { description: "기획", amount: "110000" },
+    ], "inclusive")).toEqual({
+      items: [{ description: "기획", amount: 110000 }],
+      subtotalAmount: 100000,
+      vatAmount: 10000,
+      totalAmount: 110000,
+      vatMode: "inclusive",
     });
   });
 
