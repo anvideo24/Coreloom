@@ -158,4 +158,19 @@ describe("founder dashboard summary", () => {
     expect(dashboard.weekDays.find((day) => day.isToday)?.date).toBe("2026-09-03");
     expect(dashboard.weekDays.find((day) => day.date === "2026-09-01")?.count).toBe(1);
   });
+
+  it("gives unique inbox ids when several setup items share the company-setup href", () => {
+    const dashboard = buildFounderDashboard({
+      ...empty,
+      today: "2026-09-03",
+      setupItems: [
+        { id: "1", title: "사업자등록 신청 준비", status: "in_progress", evidenceReference: null },
+        { id: "2", title: "사업자등록증 보관", status: "not_started", evidenceReference: null },
+        { id: "3", title: "공동사업 여부 확인", status: "in_progress", evidenceReference: null },
+      ],
+    });
+    const setupInbox = dashboard.inbox.filter((item) => item.href === "/company-setup");
+    expect(setupInbox.length).toBeGreaterThan(1);
+    expect(new Set(setupInbox.map((item) => item.id)).size).toBe(setupInbox.length);
+  });
 });

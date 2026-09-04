@@ -25,6 +25,7 @@ export const inboxKindLabels: Record<DashboardInboxKind, string> = {
 };
 
 export type DashboardInboxItem = DashboardLink & {
+  id: string;
   kind: DashboardInboxKind;
   kindLabel: string;
   when: string;
@@ -319,6 +320,7 @@ export function buildFounderDashboard(input: {
   const overdueDeposits = input.billings.filter((item) => item.status === "scheduled" && item.dueDate < today);
   const inbox: DashboardInboxItem[] = [
     ...overdueDeposits.map((item) => ({
+      id: `deposit:${item.id}`,
       href: `/billings/${item.id}`,
       title: item.contractTitle || item.kindLabel,
       detail: `${item.clientName} · ${item.kindLabel} · 입금 예정 ${item.dueDate}`,
@@ -332,6 +334,7 @@ export function buildFounderDashboard(input: {
       .filter((item) => !overdueDeposits.some((row) => `/billings/${row.id}` === item.href))
       .map((item) => ({
         ...item,
+        id: `deposit:${item.href}`,
         kind: "deposit" as const,
         kindLabel: inboxKindLabels.deposit,
         when: today,
@@ -339,6 +342,7 @@ export function buildFounderDashboard(input: {
       })),
     ...quotesToSend.map((item) => ({
       ...item,
+      id: `send:${item.href}`,
       kind: "send" as const,
       kindLabel: inboxKindLabels.send,
       when: "",
@@ -346,6 +350,7 @@ export function buildFounderDashboard(input: {
     })),
     ...contractsToExecute.map((item) => ({
       ...item,
+      id: `sign:${item.href}`,
       kind: "sign" as const,
       kindLabel: inboxKindLabels.sign,
       when: "",
@@ -354,6 +359,7 @@ export function buildFounderDashboard(input: {
     ...input.expenses
       .filter((item) => item.status === "scheduled" && item.settlementDate <= today)
       .map((item) => ({
+        id: `pay:${item.id}`,
         href: `/expenses/${item.id}`,
         title: item.title,
         detail: `${item.counterparty} · 지급 예정 ${item.settlementDate}`,
@@ -365,6 +371,7 @@ export function buildFounderDashboard(input: {
       })),
     ...proposalsToReview.map((item) => ({
       ...item,
+      id: `review:${item.href}`,
       kind: "review" as const,
       kindLabel: inboxKindLabels.review,
       when: "",
@@ -373,6 +380,7 @@ export function buildFounderDashboard(input: {
     ...input.tasks
       .filter((item) => item.status === "open")
       .map((item) => ({
+        id: `task:${item.id}`,
         href: `/tasks/${item.id}`,
         title: item.title,
         detail: `${item.clientName} · ${item.projectName} · 기한 ${item.dueDate}${item.dueDate < today ? " · 지남" : item.dueDate === today ? " · 오늘" : ""}`,
@@ -381,17 +389,26 @@ export function buildFounderDashboard(input: {
         when: item.dueDate,
         overdue: item.dueDate < today,
       })),
-    ...evidenceGaps.map((item) => ({
-      ...item,
-      kind: "setup" as const,
-      kindLabel: inboxKindLabels.setup,
-      when: "",
-      overdue: true,
-    })),
-    ...openSetupItems
-      .filter((item) => !evidenceGaps.some((gap) => gap.title === item.title))
+    ...input.setupItems
+      .filter((item) => (item.status === "complete" || item.status === "in_progress") && !item.evidenceReference)
       .map((item) => ({
-        ...item,
+        id: `setup-gap:${item.id}`,
+        href: "/company-setup",
+        title: item.title,
+        detail: "증빙 위치 없음",
+        kind: "setup" as const,
+        kindLabel: inboxKindLabels.setup,
+        when: "",
+        overdue: true,
+      })),
+    ...input.setupItems
+      .filter((item) => item.status === "not_started" || item.status === "in_progress")
+      .filter((item) => !(item.status === "in_progress" && !item.evidenceReference))
+      .map((item) => ({
+        id: `setup-open:${item.id}`,
+        href: "/company-setup",
+        title: item.title,
+        detail: item.status === "in_progress" ? "진행 중" : "시작 전",
         kind: "setup" as const,
         kindLabel: inboxKindLabels.setup,
         when: "",

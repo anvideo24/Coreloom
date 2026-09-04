@@ -168,10 +168,10 @@ export default async function DashboardPage() {
             <div className="dash-timeline">
               <div className="dash-nodes">
                 {timeline.map((item) => (
-                  <span className="dash-node" key={`${item.href}-node`}><i />{item.kindLabel}</span>
+                  <span className="dash-node" key={item.id}><i />{item.kindLabel}</span>
                 ))}
               </div>
-              {timeline.map((item) => <InboxCard item={item} key={`${item.href}-${item.title}`} />)}
+              {timeline.map((item) => <InboxCard item={item} key={item.id} />)}
             </div>
           )}
         </section>
@@ -222,7 +222,7 @@ export default async function DashboardPage() {
             <span>{dashboard.inbox.length - 3}건</span>
           </div>
           {dashboard.inbox.slice(3).map((item) => (
-            <Link className="quote-row" href={item.href} key={`${item.href}-more`}>
+            <Link className="quote-row" href={item.href} key={item.id}>
               <div>
                 <p>{item.kindLabel} · {item.detail}</p>
                 <h3>{item.title}</h3>
