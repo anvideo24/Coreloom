@@ -607,6 +607,36 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   overflow: auto;
   padding: var(--space-5);
 }
+.operations-header-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: flex-end;
+}
+.client-profile-card {
+  margin-bottom: var(--space-5);
+}
+.client-profile-grid {
+  display: grid;
+  gap: var(--space-3) var(--space-5);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: var(--space-3) 0 0;
+}
+.client-profile-grid dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.25rem;
+}
+.client-profile-grid dd {
+  margin: 0;
+  word-break: break-word;
+}
+.client-profile-full {
+  grid-column: 1 / -1;
+}
 
 .agent-panel-toggle {
   align-items: center;
@@ -2117,7 +2147,7 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
   }
   .operations-header,
   .setup-card-heading { flex-direction: column; }
-  .setup-form, .registration-grid, .project-row, .project-update-form, .quote-form, .quote-item-labels, .quote-item-inputs, .project-workspace, .quote-costing-sliders, .quote-form-meta, .quote-costing-doc-meta, .quote-invoice-header, .quote-invoice-summary, .quote-invoice-footer { grid-template-columns: 1fr; }
+  .setup-form, .registration-grid, .project-row, .project-update-form, .quote-form, .quote-item-labels, .quote-item-inputs, .project-workspace, .quote-costing-sliders, .quote-form-meta, .quote-costing-doc-meta, .quote-invoice-header, .quote-invoice-summary, .quote-invoice-footer, .client-profile-grid { grid-template-columns: 1fr; }
   .create-panel-xlarge {
     bottom: 0;
     border-radius: var(--radius-card) var(--radius-card) 0 0;
