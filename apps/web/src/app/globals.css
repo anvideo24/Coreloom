@@ -602,6 +602,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--line-strong);
   border-radius: 999px;
+  bottom: calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
   box-shadow: var(--shadow-card);
   color: var(--ink);
   cursor: pointer;
@@ -614,7 +615,6 @@ body {
   letter-spacing: 0.06em;
   position: fixed;
   right: var(--space-5);
-  top: calc(var(--space-5) + env(safe-area-inset-top, 0px));
   width: 2.5rem;
   z-index: 45;
 }
