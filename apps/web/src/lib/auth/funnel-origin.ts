@@ -1,5 +1,7 @@
 import { FUNNEL_PUBLIC_HTTPS_PORT } from "@/lib/pwa/tailscale-funnel";
 
+const LOOPBACK_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
 export function isCoreloomFunnelOrigin(value: string | null | undefined) {
   if (!value) return false;
   try {
@@ -8,6 +10,27 @@ export function isCoreloomFunnelOrigin(value: string | null | undefined) {
   } catch {
     return false;
   }
+}
+
+export function isLoopbackHost(hostname: string | null | undefined) {
+  if (!hostname) return false;
+  return LOOPBACK_HOSTS.has(hostname.trim().toLowerCase().replace(/^\[|\]$/g, ""));
+}
+
+export function isLoopbackOrigin(value: string | null | undefined) {
+  if (!value) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" && isLoopbackHost(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
+export function neonTrustedLoopbackOrigin(value: string | null | undefined) {
+  if (!isLoopbackOrigin(value)) return null;
+  const url = new URL(value as string);
+  return url.port ? `http://localhost:${url.port}` : "http://localhost";
 }
 
 function headerOrigin(value: string | null) {
@@ -19,22 +42,44 @@ function headerOrigin(value: string | null) {
   }
 }
 
+function rewriteLoopbackUrl(value: string, trustedOrigin: string) {
+  const rewritten = new URL(value);
+  const trusted = new URL(trustedOrigin);
+  rewritten.protocol = trusted.protocol;
+  rewritten.host = trusted.host;
+  return rewritten.toString();
+}
+
 export function authRequestForUpstream(request: Request) {
-  const origin = request.headers.get("origin");
-  const referer = request.headers.get("referer");
-  if (!isCoreloomFunnelOrigin(origin) && !isCoreloomFunnelOrigin(headerOrigin(referer))) {
-    return request;
+  const headers = new Headers(request.headers);
+  let changed = false;
+
+  const origin = headers.get("origin");
+  const referer = headers.get("referer");
+  if (isCoreloomFunnelOrigin(origin) || isCoreloomFunnelOrigin(headerOrigin(referer))) {
+    const localOrigin = new URL(request.url).origin;
+    if (isCoreloomFunnelOrigin(origin)) {
+      headers.set("origin", localOrigin);
+      changed = true;
+    }
+    if (referer && isCoreloomFunnelOrigin(headerOrigin(referer))) {
+      headers.set("referer", rewriteLoopbackUrl(referer, localOrigin));
+      changed = true;
+    }
   }
 
-  const localOrigin = new URL(request.url).origin;
-  const headers = new Headers(request.headers);
-  if (isCoreloomFunnelOrigin(origin)) headers.set("origin", localOrigin);
-  if (referer && isCoreloomFunnelOrigin(headerOrigin(referer))) {
-    const rewritten = new URL(referer);
-    const local = new URL(localOrigin);
-    rewritten.protocol = local.protocol;
-    rewritten.host = local.host;
-    headers.set("referer", rewritten.toString());
+  const trustedOrigin = neonTrustedLoopbackOrigin(headers.get("origin"));
+  if (trustedOrigin && headers.get("origin") !== trustedOrigin) {
+    headers.set("origin", trustedOrigin);
+    changed = true;
   }
-  return new Request(request, { headers });
+
+  const currentReferer = headers.get("referer");
+  const trustedRefererOrigin = neonTrustedLoopbackOrigin(headerOrigin(currentReferer));
+  if (currentReferer && trustedRefererOrigin && headerOrigin(currentReferer) !== trustedRefererOrigin) {
+    headers.set("referer", rewriteLoopbackUrl(currentReferer, trustedRefererOrigin));
+    changed = true;
+  }
+
+  return changed ? new Request(request, { headers }) : request;
 }
