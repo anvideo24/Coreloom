@@ -24,12 +24,12 @@ export function SignInForm() {
     try {
       const { error: signInError } = await authClient.signIn.email({ email, password });
       if (signInError) {
-        setError(signInFailureMessage(signInError));
+        setError(signInFailureMessage(signInError, window.location.hostname));
         return;
       }
       router.push("/dashboard");
     } catch {
-      setError(signInFailureMessage({ status: 0 }));
+      setError(signInFailureMessage({ status: 0 }, window.location.hostname));
     } finally {
       setIsSubmitting(false);
     }
