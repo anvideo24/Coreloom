@@ -235,9 +235,15 @@ body {
   width: var(--private-sidebar-width);
 }
 
-.private-drawer-layer.is-open {
+.private-drawer-layer.is-open,
+.private-drawer-layer.is-peek {
   pointer-events: auto;
   transform: translateX(0);
+}
+
+.private-drawer-layer.is-peek {
+  box-shadow: 12px 0 28px rgb(28 25 22 / 22%);
+  z-index: 40;
 }
 
 .private-sheet-backdrop {
@@ -439,7 +445,8 @@ body {
     margin-top: calc(var(--space-5) + env(safe-area-inset-top, 0px));
     z-index: 50;
   }
-  .private-app-shell:has(.private-drawer-layer.is-open) .private-menu-button {
+  .private-app-shell:has(.private-drawer-layer.is-open) .private-menu-button,
+  .private-app-shell:has(.private-drawer-layer.is-peek) .private-menu-button {
     color: var(--nav-ink);
   }
   .private-drawer-layer {
@@ -455,6 +462,8 @@ body {
     grid-row: 1;
     min-height: 0;
     overflow: auto;
+    position: relative;
+    z-index: 0;
   }
   .agent-panel-layer {
     align-self: stretch;

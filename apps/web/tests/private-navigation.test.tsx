@@ -1,9 +1,12 @@
 import { describe, expect, test } from "vitest";
 
 import {
+  canHoverPeekWideNav,
   isEditableHotkeyTarget,
   isNavItemActive,
   isNavToggleHotkey,
+  NAV_HOVER_HIDE_MS,
+  NAV_HOVER_PEEK_MEDIA,
   NAV_WIDE_MEDIA,
   navItems,
   navItemsForTab,
@@ -68,6 +71,15 @@ describe("PrivateNavigation", () => {
     expect(isEditableHotkeyTarget({ tagName: "DIV", isContentEditable: true })).toBe(true);
     expect(isEditableHotkeyTarget({ tagName: "BUTTON" })).toBe(false);
     expect(isEditableHotkeyTarget(null)).toBe(false);
+  });
+
+  test("allows hover peek only when the wide sidebar is not pinned and the pointer can hover", () => {
+    expect(canHoverPeekWideNav(false, true)).toBe(true);
+    expect(canHoverPeekWideNav(true, true)).toBe(false);
+    expect(canHoverPeekWideNav(false, false)).toBe(false);
+    expect(canHoverPeekWideNav(true, false)).toBe(false);
+    expect(NAV_HOVER_PEEK_MEDIA).toBe("(hover: hover) and (pointer: fine)");
+    expect(NAV_HOVER_HIDE_MS).toBe(180);
   });
 
   test("remembers whether the wide sidebar was open", () => {
