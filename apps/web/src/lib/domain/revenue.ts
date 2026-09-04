@@ -4,10 +4,12 @@ export const UNCLASSIFIED_LABEL = "미분류";
 export const ventureKinds = ["app", "subscription"] as const;
 export const revenueEntryStatuses = ["scheduled", "confirmed"] as const;
 export const ledgerSources = ["billing", "revenue_entry"] as const;
+export const revenueAccountCategories = ["service", "subscription", "license", "other"] as const;
 
 export type VentureKind = (typeof ventureKinds)[number];
 export type RevenueEntryStatus = (typeof revenueEntryStatuses)[number];
 export type LedgerSource = (typeof ledgerSources)[number];
+export type RevenueAccountCategory = (typeof revenueAccountCategories)[number];
 
 export const ventureKindLabels: Record<VentureKind, string> = {
   app: "앱",
@@ -17,6 +19,13 @@ export const ventureKindLabels: Record<VentureKind, string> = {
 export const revenueEntryStatusLabels: Record<RevenueEntryStatus, string> = {
   scheduled: "예정",
   confirmed: "확정",
+};
+
+export const revenueAccountCategoryLabels: Record<RevenueAccountCategory, string> = {
+  service: "용역 매출",
+  subscription: "구독 매출",
+  license: "라이선스",
+  other: "기타 매출",
 };
 
 export type RevenueLedgerRow = {
@@ -62,6 +71,7 @@ export function normalizeRevenueEntry(input: {
   occurredOn: string;
   settlementDate: string;
   note?: string;
+  accountCategory?: string;
 }): {
   projectId: string | null;
   ventureId: string | null;
@@ -70,6 +80,7 @@ export function normalizeRevenueEntry(input: {
   occurredOn: string;
   settlementDate: string;
   note: string | null;
+  accountCategory: RevenueAccountCategory | null;
 } {
   const projectId = input.projectId?.trim() || null;
   const ventureId = input.ventureId?.trim() || null;
@@ -77,6 +88,14 @@ export function normalizeRevenueEntry(input: {
   const occurredOn = parseIsoDate(input.occurredOn, "Occurred date is required");
   const settlementDate = parseIsoDate(input.settlementDate, "Settlement date is required");
   if (settlementDate < occurredOn) throw new Error("Settlement date cannot be earlier than occurred date");
+  const accountCategoryRaw = input.accountCategory?.trim() || "";
+  let accountCategory: RevenueAccountCategory | null = null;
+  if (accountCategoryRaw) {
+    if (!revenueAccountCategories.includes(accountCategoryRaw as RevenueAccountCategory)) {
+      throw new Error("Unsupported revenue account category");
+    }
+    accountCategory = accountCategoryRaw as RevenueAccountCategory;
+  }
   return {
     projectId,
     ventureId,
@@ -85,6 +104,7 @@ export function normalizeRevenueEntry(input: {
     occurredOn,
     settlementDate,
     note: input.note?.trim() || null,
+    accountCategory,
   };
 }
 
@@ -129,6 +149,7 @@ export function ledgerRowFromRevenueEntry(input: {
   ventureKind: string | null;
   clientName: string | null;
   projectName: string | null;
+  accountCategory?: string | null;
   amount: number;
   currency: string;
   occurredOn: string;
@@ -141,6 +162,10 @@ export function ledgerRowFromRevenueEntry(input: {
     : unclassified
       ? UNCLASSIFIED_LABEL
       : "고객사 프로젝트";
+  const categoryLabel =
+    input.accountCategory && revenueAccountCategories.includes(input.accountCategory as RevenueAccountCategory)
+      ? revenueAccountCategoryLabels[input.accountCategory as RevenueAccountCategory]
+      : null;
   const counterparty = unclassified
     ? UNCLASSIFIED_LABEL
     : input.ventureName ?? (input.projectName ? `${input.clientName} · ${input.projectName}` : input.clientName ?? UNCLASSIFIED_LABEL);
@@ -149,7 +174,7 @@ export function ledgerRowFromRevenueEntry(input: {
     id: `revenue:${input.id}`,
     href: `/revenue/${input.id}`,
     source: "revenue_entry",
-    sourceLabel,
+    sourceLabel: categoryLabel ? `${sourceLabel} · ${categoryLabel}` : sourceLabel,
     title: input.projectName ?? input.ventureName ?? UNCLASSIFIED_LABEL,
     counterparty,
     amount: input.amount,

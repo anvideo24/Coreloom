@@ -28,6 +28,8 @@ export async function createBillingAction(formData: FormData) {
     billingDate: value(formData, "billingDate"),
     dueDate: value(formData, "dueDate"),
     note: value(formData, "note"),
+    billingNumber: value(formData, "billingNumber"),
+    poNumber: value(formData, "poNumber"),
   });
   revalidatePath("/billings");
   revalidatePath("/contracts");

@@ -25,6 +25,11 @@ describe("client company profile", () => {
         phone: " 02-0000-0000 ",
         email: " office@example.com ",
         businessRegistrationRef: " docs/reg.pdf ",
+        taxType: "general",
+        bankName: " 국민은행 ",
+        bankAccount: " 123-45-6789 ",
+        accountHolder: " 주식회사 예시 ",
+        bankBookRef: " docs/bank.pdf ",
       }),
     ).toEqual({
       name: "주식회사 예시",
@@ -37,7 +42,18 @@ describe("client company profile", () => {
       phone: "02-0000-0000",
       email: "office@example.com",
       businessRegistrationRef: "docs/reg.pdf",
+      taxType: "general",
+      bankName: "국민은행",
+      bankAccount: "123-45-6789",
+      accountHolder: "주식회사 예시",
+      bankBookRef: "docs/bank.pdf",
     });
+  });
+
+  it("rejects an unsupported tax type", () => {
+    expect(() => normalizeClientCompanyProfile({ name: "예시", taxType: "unknown" })).toThrow(
+      "Unsupported client tax type",
+    );
   });
 
   it("rejects a business registration number that is not 10 digits", () => {
@@ -49,10 +65,11 @@ describe("client company profile", () => {
       formatClientListMeta({
         businessRegistrationNumber: "123-45-67890",
         representativeName: "홍길동",
+        taxType: "general",
         contactCount: 2,
         projectCount: 1,
       }),
-    ).toBe("123-45-67890 · 대표 홍길동 · 담당자 2명 · 프로젝트 1개");
+    ).toBe("123-45-67890 · 대표 홍길동 · 일반과세 · 담당자 2명 · 프로젝트 1개");
   });
 });
 

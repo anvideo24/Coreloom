@@ -35,11 +35,13 @@ export async function createVaultDocumentAction(formData: FormData) {
     kind: value(formData, "kind"),
     originalReference: value(formData, "originalReference"),
     projectId: value(formData, "projectId"),
+    clientCompanyId: value(formData, "clientCompanyId"),
     note: value(formData, "note"),
     file: await uploadedFile(formData),
   });
   revalidatePath("/documents");
   revalidatePath("/company-setup");
+  revalidatePath("/clients");
   redirect(`/documents/${result.documentId}`);
 }
 

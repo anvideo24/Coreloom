@@ -37,6 +37,7 @@ export async function createRevenueEntryAction(formData: FormData) {
     occurredOn: value(formData, "occurredOn"),
     settlementDate: value(formData, "settlementDate"),
     note: value(formData, "note"),
+    accountCategory: value(formData, "accountCategory"),
   });
   revalidatePath("/revenue");
   revalidatePath("/billings");

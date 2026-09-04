@@ -29,6 +29,8 @@ type BillingRow = {
   status: BillingStatus;
   dueDate: string;
   amount: number;
+  billingNumber: string | null;
+  poNumber: string | null;
 };
 
 type SeriesRow = {
@@ -168,6 +170,8 @@ export function BillingsPageClient({
                 <p>
                   {billing.clientName} · {billingKindLabels[billing.kind]} · {billingStatusLabels[billing.status]} · 예정{" "}
                   {billing.dueDate}
+                  {billing.billingNumber ? ` · ${billing.billingNumber}` : ""}
+                  {billing.poNumber ? ` · PO ${billing.poNumber}` : ""}
                 </p>
                 <h3>{billing.contractTitle}</h3>
               </div>
@@ -215,9 +219,17 @@ export function BillingsPageClient({
               입금 예정일
               <input name="dueDate" required type="date" />
             </label>
+            <label>
+              청구번호 (선택)
+              <input name="billingNumber" placeholder="내부 청구번호" />
+            </label>
+            <label>
+              PO·발주번호 (선택)
+              <input name="poNumber" placeholder="고객사 발주번호" />
+            </label>
             <label className="quote-form-full">
               메모 (선택)
-              <textarea name="note" placeholder="입금 계좌나 조건. 청구번호·PO·세금계산서 연계는 이후" />
+              <textarea name="note" placeholder="입금 계좌나 조건" />
             </label>
             <button className="auth-submit" type="submit">
               청구 일정 저장

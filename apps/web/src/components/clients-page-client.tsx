@@ -7,13 +7,14 @@ import { createClientAction } from "@/app/(private)/clients-projects/actions";
 import { ClientCompanyFields } from "@/components/client-company-fields";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
-import { formatClientListMeta } from "@/lib/domain/clients-projects";
+import { formatClientListMeta, type ClientTaxType } from "@/lib/domain/clients-projects";
 
 type ClientRow = {
   id: string;
   name: string;
   businessRegistrationNumber: string | null;
   representativeName: string | null;
+  taxType: ClientTaxType | null;
   contactCount: number;
   projectCount: number;
 };

@@ -40,6 +40,8 @@ export async function listFounderExpenseLedger(authUserId: string) {
     occurredOn: expenseEntries.occurredOn,
     settlementDate: expenseEntries.settlementDate,
     status: expenseEntries.status,
+    accountCategory: expenseEntries.accountCategory,
+    supplierName: expenseEntries.supplierName,
     ventureName: ventures.name,
     ventureKind: ventures.kind,
     clientName: clientCompanies.name,
@@ -93,6 +95,8 @@ export async function createFounderExpenseEntry(input: {
   occurredOn: string;
   settlementDate: string;
   note?: string;
+  accountCategory?: string;
+  supplierName?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "expenses");
   const database = createDatabase();
@@ -132,6 +136,8 @@ export async function createFounderExpenseEntry(input: {
     currency: draft.currency,
     occurredOn: draft.occurredOn,
     settlementDate: draft.settlementDate,
+    accountCategory: draft.accountCategory,
+    supplierName: draft.supplierName,
     note: draft.note,
   }).returning({ id: expenseEntries.id });
 

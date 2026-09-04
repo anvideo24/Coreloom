@@ -31,6 +31,7 @@ describe("revenue entries", () => {
       occurredOn: "2026-09-01",
       settlementDate: "2026-09-05",
       note: " 9월 정산 ",
+      accountCategory: "subscription",
     })).toEqual({
       projectId: null,
       ventureId: "venture-1",
@@ -39,6 +40,7 @@ describe("revenue entries", () => {
       occurredOn: "2026-09-01",
       settlementDate: "2026-09-05",
       note: "9월 정산",
+      accountCategory: "subscription",
     });
   });
 
@@ -55,6 +57,7 @@ describe("revenue entries", () => {
       occurredOn: "2026-09-02",
       settlementDate: "2026-09-02",
       note: null,
+      accountCategory: null,
     });
   });
 

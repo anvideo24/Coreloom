@@ -17,6 +17,8 @@ describe("billing drafts", () => {
       billingDate: "2026-09-10",
       dueDate: "2026-09-20",
       note: " 착수금 ",
+      billingNumber: " INV-001 ",
+      poNumber: " PO-9 ",
     })).toEqual({
       kind: "down_payment",
       amount: 110000,
@@ -24,6 +26,8 @@ describe("billing drafts", () => {
       billingDate: "2026-09-10",
       dueDate: "2026-09-20",
       note: "착수금",
+      billingNumber: "INV-001",
+      poNumber: "PO-9",
     });
   });
 

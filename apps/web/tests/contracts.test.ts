@@ -4,6 +4,7 @@ import {
   assertContractAmendmentSource,
   executeContract,
   nextContractVersionNumber,
+  normalizeContractTerms,
   recordContractOriginal,
 } from "@/lib/domain/contracts";
 
@@ -25,6 +26,41 @@ describe("contract originals", () => {
   it("rejects an empty original or a change to an executed contract", () => {
     expect(() => recordContractOriginal({ status: "draft", originalReference: " " })).toThrow("Stamped original reference is required");
     expect(() => recordContractOriginal({ status: "executed", originalReference: "문서함/날인본.pdf" })).toThrow("Executed contracts cannot be changed");
+  });
+});
+
+describe("contract terms", () => {
+  it("keeps optional effective dates and auto-renew on a draft", () => {
+    expect(
+      normalizeContractTerms({
+        status: "draft",
+        effectiveStartOn: "2026-09-01",
+        effectiveEndOn: "2027-08-31",
+        autoRenew: "true",
+        contractNumber: " C-2026-01 ",
+      }),
+    ).toEqual({
+      effectiveStartOn: "2026-09-01",
+      effectiveEndOn: "2027-08-31",
+      autoRenew: true,
+      contractNumber: "C-2026-01",
+    });
+  });
+
+  it("rejects an end before the start or a change after execution", () => {
+    expect(() =>
+      normalizeContractTerms({
+        status: "draft",
+        effectiveStartOn: "2027-01-01",
+        effectiveEndOn: "2026-01-01",
+      }),
+    ).toThrow("Effective end date must be on or after start date");
+    expect(() =>
+      normalizeContractTerms({
+        status: "executed",
+        effectiveStartOn: "2026-09-01",
+      }),
+    ).toThrow("Executed contracts cannot be changed");
   });
 });
 

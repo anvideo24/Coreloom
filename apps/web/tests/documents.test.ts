@@ -29,8 +29,39 @@ describe("private document drafts", () => {
       kind: "company_setup",
       originalReference: "회사 문서함/설립/사업자등록증.pdf",
       projectId: null,
+      clientCompanyId: null,
       note: "발급본",
     });
+  });
+
+  it("links a client without a project for company evidence", () => {
+    expect(
+      normalizeVaultDocumentDraft({
+        title: "사업자등록증",
+        kind: "company_setup",
+        originalReference: "docs/reg.pdf",
+        clientCompanyId: "client-1",
+      }),
+    ).toEqual({
+      title: "사업자등록증",
+      kind: "company_setup",
+      originalReference: "docs/reg.pdf",
+      projectId: null,
+      clientCompanyId: "client-1",
+      note: null,
+    });
+  });
+
+  it("rejects linking both a project and a client", () => {
+    expect(() =>
+      normalizeVaultDocumentDraft({
+        title: "사업자등록증",
+        kind: "company_setup",
+        originalReference: "docs/reg.pdf",
+        projectId: "project-1",
+        clientCompanyId: "client-1",
+      }),
+    ).toThrow("Link to a project or a client, not both");
   });
 
   it("rejects a missing title, kind, or original location", () => {

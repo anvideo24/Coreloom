@@ -37,6 +37,8 @@ export async function listFounderBillings(authUserId: string) {
     billingDate: billings.billingDate,
     dueDate: billings.dueDate,
     status: billings.status,
+    billingNumber: billings.billingNumber,
+    poNumber: billings.poNumber,
     clientName: clientCompanies.name,
     createdAt: billings.createdAt,
   }).from(billings)
@@ -124,6 +126,8 @@ export async function getFounderBillingDetail(authUserId: string, billingId: str
     billingDate: billings.billingDate,
     dueDate: billings.dueDate,
     status: billings.status,
+    billingNumber: billings.billingNumber,
+    poNumber: billings.poNumber,
     note: billings.note,
     depositedAt: billings.depositedAt,
     clientName: clientCompanies.name,
@@ -144,6 +148,8 @@ export async function createFounderBilling(input: {
   billingDate: string;
   dueDate: string;
   note?: string;
+  billingNumber?: string;
+  poNumber?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "billings");
   const database = createDatabase();

@@ -41,11 +41,17 @@ export function normalizeBillingDraft(input: {
   billingDate: string;
   dueDate: string;
   note?: string;
+  billingNumber?: string;
+  poNumber?: string;
 }) {
   if (!billingKinds.includes(input.kind as (typeof billingKinds)[number])) throw new Error("Unsupported billing kind");
   const billingDate = parseIsoDate(input.billingDate, "Billing date is required");
   const dueDate = parseIsoDate(input.dueDate, "Due date is required");
   if (dueDate < billingDate) throw new Error("Due date cannot be earlier than billing date");
+  const billingNumber = input.billingNumber?.trim() || null;
+  const poNumber = input.poNumber?.trim() || null;
+  if (billingNumber && billingNumber.length > 80) throw new Error("Billing number is too long");
+  if (poNumber && poNumber.length > 80) throw new Error("PO number is too long");
   return {
     kind: input.kind as (typeof billingKinds)[number],
     amount: parseAmount(input.amount),
@@ -53,6 +59,8 @@ export function normalizeBillingDraft(input: {
     billingDate,
     dueDate,
     note: input.note?.trim() || null,
+    billingNumber,
+    poNumber,
   };
 }
 

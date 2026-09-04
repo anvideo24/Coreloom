@@ -2,12 +2,30 @@ import { UNCLASSIFIED_LABEL, ventureKindLabels } from "@/lib/domain/revenue";
 
 export const EXPENSE_CURRENCY = "KRW";
 export const expenseEntryStatuses = ["scheduled", "confirmed"] as const;
+export const expenseAccountCategories = [
+  "subcontract",
+  "software",
+  "travel",
+  "office",
+  "marketing",
+  "other",
+] as const;
 
 export type ExpenseEntryStatus = (typeof expenseEntryStatuses)[number];
+export type ExpenseAccountCategory = (typeof expenseAccountCategories)[number];
 
 export const expenseEntryStatusLabels: Record<ExpenseEntryStatus, string> = {
   scheduled: "예정",
   confirmed: "확정",
+};
+
+export const expenseAccountCategoryLabels: Record<ExpenseAccountCategory, string> = {
+  subcontract: "외주",
+  software: "소프트웨어",
+  travel: "여비·교통",
+  office: "사무·비품",
+  marketing: "마케팅",
+  other: "기타 비용",
 };
 
 export type ExpenseLedgerRow = {
@@ -44,6 +62,8 @@ export function normalizeExpenseEntry(input: {
   occurredOn: string;
   settlementDate: string;
   note?: string;
+  accountCategory?: string;
+  supplierName?: string;
 }): {
   projectId: string | null;
   ventureId: string | null;
@@ -52,6 +72,8 @@ export function normalizeExpenseEntry(input: {
   occurredOn: string;
   settlementDate: string;
   note: string | null;
+  accountCategory: ExpenseAccountCategory | null;
+  supplierName: string | null;
 } {
   const projectId = input.projectId?.trim() || null;
   const ventureId = input.ventureId?.trim() || null;
@@ -59,6 +81,16 @@ export function normalizeExpenseEntry(input: {
   const occurredOn = parseIsoDate(input.occurredOn, "Occurred date is required");
   const settlementDate = parseIsoDate(input.settlementDate, "Settlement date is required");
   if (settlementDate < occurredOn) throw new Error("Settlement date cannot be earlier than occurred date");
+  const accountCategoryRaw = input.accountCategory?.trim() || "";
+  let accountCategory: ExpenseAccountCategory | null = null;
+  if (accountCategoryRaw) {
+    if (!expenseAccountCategories.includes(accountCategoryRaw as ExpenseAccountCategory)) {
+      throw new Error("Unsupported expense account category");
+    }
+    accountCategory = accountCategoryRaw as ExpenseAccountCategory;
+  }
+  const supplierName = input.supplierName?.trim() || null;
+  if (supplierName && supplierName.length > 120) throw new Error("Supplier name is too long");
   return {
     projectId,
     ventureId,
@@ -67,6 +99,8 @@ export function normalizeExpenseEntry(input: {
     occurredOn,
     settlementDate,
     note: input.note?.trim() || null,
+    accountCategory,
+    supplierName,
   };
 }
 
@@ -83,6 +117,8 @@ export function ledgerRowFromExpenseEntry(input: {
   ventureKind: string | null;
   clientName: string | null;
   projectName: string | null;
+  supplierName?: string | null;
+  accountCategory?: string | null;
   amount: number;
   currency: string;
   occurredOn: string;
@@ -95,15 +131,21 @@ export function ledgerRowFromExpenseEntry(input: {
     : unclassified
       ? UNCLASSIFIED_LABEL
       : "고객사 프로젝트";
-  const counterparty = unclassified
-    ? UNCLASSIFIED_LABEL
-    : input.ventureName ?? (input.projectName ? `${input.clientName} · ${input.projectName}` : input.clientName ?? UNCLASSIFIED_LABEL);
+  const categoryLabel =
+    input.accountCategory && expenseAccountCategories.includes(input.accountCategory as ExpenseAccountCategory)
+      ? expenseAccountCategoryLabels[input.accountCategory as ExpenseAccountCategory]
+      : null;
+  const counterparty = input.supplierName?.trim()
+    ? input.supplierName.trim()
+    : unclassified
+      ? UNCLASSIFIED_LABEL
+      : input.ventureName ?? (input.projectName ? `${input.clientName} · ${input.projectName}` : input.clientName ?? UNCLASSIFIED_LABEL);
 
   return {
     id: input.id,
     href: `/expenses/${input.id}`,
-    sourceLabel,
-    title: input.projectName ?? input.ventureName ?? UNCLASSIFIED_LABEL,
+    sourceLabel: categoryLabel ? `${sourceLabel} · ${categoryLabel}` : sourceLabel,
+    title: input.projectName ?? input.ventureName ?? input.supplierName?.trim() ?? UNCLASSIFIED_LABEL,
     counterparty,
     amount: input.amount,
     currency: input.currency,

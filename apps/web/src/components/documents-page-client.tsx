@@ -13,6 +13,7 @@ import {
 } from "@/lib/domain/documents";
 
 type Project = { id: string; name: string; clientName: string };
+type Client = { id: string; name: string };
 type DocumentRow = {
   documentId: string;
   title: string;
@@ -24,9 +25,11 @@ type DocumentRow = {
 
 export function DocumentsPageClient({
   projects,
+  clients,
   documents,
 }: {
   projects: Project[];
+  clients: Client[];
   documents: DocumentRow[];
 }) {
   const router = useRouter();
@@ -96,8 +99,9 @@ export function DocumentsPageClient({
       <CreatePanel onClose={close} open={open} size="wide" title="원본 등록">
         <form action={createVaultDocumentAction} className="quote-form">
           <p className="form-help quote-form-full">
-            원본 파일을 올리거나, 안전한 회사 문서함 경로·링크를 적습니다. 둘 중 하나는 있어야 합니다. 프로젝트를 비우면
-            회사 공통으로 보관합니다. PDF와 이미지(JPEG, PNG, WebP)만 올리며, 한 파일은 20MB까지입니다.
+            원본 파일을 올리거나, 안전한 회사 문서함 경로·링크를 적습니다. 둘 중 하나는 있어야 합니다. 고객사만
+            고르면 사업자등록증처럼 프로젝트 없이 연결합니다. 프로젝트와 고객사는 동시에 고르지 마세요. PDF와
+            이미지(JPEG, PNG, WebP)만 올리며, 한 파일은 20MB까지입니다.
           </p>
           <p className="setup-code quote-form-full">분류</p>
           <label>
@@ -106,6 +110,17 @@ export function DocumentsPageClient({
               {vaultDocumentKinds.map((kind) => (
                 <option key={kind} value={kind}>
                   {vaultDocumentKindLabels[kind]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            고객사 (선택)
+            <select defaultValue="" name="clientCompanyId">
+              <option value="">회사 공통 / 프로젝트로 연결</option>
+              {clients.map((client) => (
+                <option key={client.id} value={client.id}>
+                  {client.name}
                 </option>
               ))}
             </select>
