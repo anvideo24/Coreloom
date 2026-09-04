@@ -41,6 +41,7 @@ describe("revenue entries", () => {
       settlementDate: "2026-09-05",
       note: "9월 정산",
       accountCategory: "subscription",
+      ledgerAccountId: null,
     });
   });
 
@@ -58,6 +59,7 @@ describe("revenue entries", () => {
       settlementDate: "2026-09-02",
       note: null,
       accountCategory: null,
+      ledgerAccountId: null,
     });
   });
 

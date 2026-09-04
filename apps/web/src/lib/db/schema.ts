@@ -29,6 +29,13 @@ export const aiAgentModelProvider = pgEnum("ai_agent_model_provider", [
 export const quoteVatMode = pgEnum("quote_vat_mode", ["exclusive", "inclusive"]);
 export const clientTaxType = pgEnum("client_tax_type", ["general", "simplified", "exempt"]);
 export const clientTradeKind = pgEnum("client_trade_kind", ["sales", "purchase", "both"]);
+export const ledgerAccountClass = pgEnum("ledger_account_class", [
+  "asset",
+  "liability",
+  "equity",
+  "revenue",
+  "expense",
+]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -475,6 +482,26 @@ export const ventures = pgTable(
   ],
 );
 
+/** 워크스페이스 계정과목 마스터. 분개·전표는 두지 않고 원장 선택용이다. */
+export const ledgerAccounts = pgTable(
+  "ledger_accounts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+    code: text("code").notNull(),
+    name: text("name").notNull(),
+    accountClass: ledgerAccountClass("account_class").notNull(),
+    categoryKey: text("category_key"),
+    createdAt,
+    updatedAt,
+    deletedAt,
+  },
+  (table) => [
+    uniqueIndex("ledger_accounts_workspace_code_idx").on(table.workspaceId, table.code),
+    index("ledger_accounts_workspace_class_idx").on(table.workspaceId, table.accountClass),
+  ],
+);
+
 export const revenueEntries = pgTable(
   "revenue_entries",
   {
@@ -489,6 +516,7 @@ export const revenueEntries = pgTable(
     settlementDate: date("settlement_date", { mode: "string" }).notNull(),
     status: revenueEntryStatus("status").notNull().default("scheduled"),
     accountCategory: text("account_category"),
+    ledgerAccountId: uuid("ledger_account_id").references(() => ledgerAccounts.id),
     note: text("note"),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     createdAt,
@@ -532,6 +560,7 @@ export const expenseEntries = pgTable(
     settlementDate: date("settlement_date", { mode: "string" }).notNull(),
     status: expenseEntryStatus("status").notNull().default("scheduled"),
     accountCategory: text("account_category"),
+    ledgerAccountId: uuid("ledger_account_id").references(() => ledgerAccounts.id),
     supplierName: text("supplier_name"),
     supplierClientCompanyId: uuid("supplier_client_company_id").references(() => clientCompanies.id),
     note: text("note"),

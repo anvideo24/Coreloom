@@ -12,12 +12,17 @@ export default async function RevenuePage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { ventures, projects, rows, summary } = await listFounderRevenueLedger(session.founder.id);
+  const { ventures, projects, accounts, rows, summary } = await listFounderRevenueLedger(session.founder.id);
 
   return (
     <main className="operations-shell">
       <Suspense fallback={<p className="empty-state">매출 원장을 불러오는 중…</p>}>
         <RevenuePageClient
+          accounts={accounts.map((account) => ({
+            id: account.id,
+            code: account.code,
+            name: account.name,
+          }))}
           projects={projects}
           rows={rows.map((row) => ({
             ...row,

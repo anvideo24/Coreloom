@@ -6,17 +6,14 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createExpenseEntryAction } from "@/app/(private)/expenses/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
-import {
-  expenseAccountCategories,
-  expenseAccountCategoryLabels,
-  expenseEntryStatusLabels,
-  type ExpenseEntryStatus,
-} from "@/lib/domain/expenses";
+import { expenseEntryStatusLabels, type ExpenseEntryStatus } from "@/lib/domain/expenses";
+import { formatLedgerAccountLabel } from "@/lib/domain/ledger-accounts";
 import { UNCLASSIFIED_LABEL, ventureKindLabels, type VentureKind } from "@/lib/domain/revenue";
 
 type Project = { id: string; name: string; clientName: string };
 type Venture = { id: string; name: string; kind: VentureKind };
 type Supplier = { id: string; name: string };
+type Account = { id: string; code: string; name: string };
 type ExpenseRow = {
   id: string;
   href: string;
@@ -37,12 +34,14 @@ export function ExpensesPageClient({
   ventures,
   projects,
   suppliers,
+  accounts,
   rows,
   summary,
 }: {
   ventures: Venture[];
   projects: Project[];
   suppliers: Supplier[];
+  accounts: Account[];
   rows: ExpenseRow[];
   summary: Summary;
 }) {
@@ -151,11 +150,11 @@ export function ExpensesPageClient({
           <p className="setup-code quote-form-full">금액·매입</p>
           <label>
             계정과목 (선택)
-            <select defaultValue="" name="accountCategory">
+            <select defaultValue="" name="ledgerAccountId">
               <option value="">미정</option>
-              {expenseAccountCategories.map((category) => (
-                <option key={category} value={category}>
-                  {expenseAccountCategoryLabels[category]}
+              {accounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {formatLedgerAccountLabel(account)}
                 </option>
               ))}
             </select>

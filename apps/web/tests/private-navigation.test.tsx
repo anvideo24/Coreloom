@@ -29,6 +29,7 @@ describe("PrivateNavigation", () => {
     expect(hrefs).toContain("/billings");
     expect(hrefs).toContain("/revenue");
     expect(hrefs).toContain("/expenses");
+    expect(hrefs).toContain("/accounts");
     expect(hrefs).toContain("/tasks");
     expect(hrefs).toContain("/agents");
     expect(hrefs).toContain("/timeline");
@@ -39,6 +40,7 @@ describe("PrivateNavigation", () => {
   test("includes required labels", () => {
     const labels = navItems().map((item) => item.label);
     expect(labels).toContain("비용 원장");
+    expect(labels).toContain("계정과목");
     expect(labels).toContain("에이전트");
     // /admin/manual은 이제 한 권의 책이 아니라 고르는 입구다.
     expect(labels).toContain("매뉴얼");
