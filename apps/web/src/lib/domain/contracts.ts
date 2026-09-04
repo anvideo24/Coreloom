@@ -44,3 +44,34 @@ export function executeContract(input: { status: string; originalReference: stri
 export function assertContractAmendmentSource(status: string) {
   if (status !== "executed") throw new Error("Only an executed contract can start an amendment");
 }
+
+function parseOptionalIsoDate(value: string | undefined, message: string) {
+  const date = value?.trim() || "";
+  if (!date) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new Error(message);
+  if (Number.isNaN(new Date(`${date}T00:00:00.000Z`).getTime())) throw new Error(message);
+  return date;
+}
+
+/** 초안·원본 보관 단계에서만 기간·자동갱신을 고친다. 체결본은 수정본으로만 이어간다. */
+export function normalizeContractTerms(input: {
+  status: string;
+  effectiveStartOn?: string;
+  effectiveEndOn?: string;
+  autoRenew?: boolean | string;
+}) {
+  if (input.status === "executed") throw new Error("Executed contracts cannot be changed");
+  if (input.status !== "draft" && input.status !== "original_recorded") {
+    throw new Error("Unsupported contract status");
+  }
+  const effectiveStartOn = parseOptionalIsoDate(input.effectiveStartOn, "Effective start date is invalid");
+  const effectiveEndOn = parseOptionalIsoDate(input.effectiveEndOn, "Effective end date is invalid");
+  if (effectiveStartOn && effectiveEndOn && effectiveEndOn < effectiveStartOn) {
+    throw new Error("Effective end date must be on or after start date");
+  }
+  return {
+    effectiveStartOn,
+    effectiveEndOn,
+    autoRenew: input.autoRenew === true || input.autoRenew === "true" || input.autoRenew === "on",
+  };
+}

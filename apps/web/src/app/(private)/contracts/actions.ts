@@ -9,6 +9,7 @@ import {
   createFounderContractFromQuote,
   executeFounderContract,
   recordFounderContractOriginal,
+  updateFounderContractTerms,
 } from "@/lib/contracts/repository";
 
 function value(formData: FormData, key: string) {
@@ -27,10 +28,28 @@ export async function createContractFromQuoteAction(formData: FormData) {
   const result = await createFounderContractFromQuote({
     actorUserId: founder.id,
     quoteVersionId: value(formData, "quoteVersionId"),
+    effectiveStartOn: value(formData, "effectiveStartOn"),
+    effectiveEndOn: value(formData, "effectiveEndOn"),
+    autoRenew: value(formData, "autoRenew"),
   });
   revalidatePath("/contracts");
   revalidatePath("/quotes");
   redirect(`/contracts/${result.contractId}`);
+}
+
+export async function updateContractTermsAction(formData: FormData) {
+  const founder = await requireFounder();
+  const contractId = value(formData, "contractId");
+  await updateFounderContractTerms({
+    actorUserId: founder.id,
+    contractId,
+    effectiveStartOn: value(formData, "effectiveStartOn"),
+    effectiveEndOn: value(formData, "effectiveEndOn"),
+    autoRenew: value(formData, "autoRenew"),
+  });
+  revalidatePath(`/contracts/${contractId}`);
+  revalidatePath("/contracts");
+  redirect(`/contracts/${contractId}`);
 }
 
 export async function recordContractOriginalAction(formData: FormData) {

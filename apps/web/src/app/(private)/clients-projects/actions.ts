@@ -29,6 +29,11 @@ function companyProfileFromForm(formData: FormData) {
     phone: value(formData, "phone"),
     email: value(formData, "email"),
     businessRegistrationRef: value(formData, "businessRegistrationRef"),
+    taxType: value(formData, "taxType"),
+    bankName: value(formData, "bankName"),
+    bankAccount: value(formData, "bankAccount"),
+    accountHolder: value(formData, "accountHolder"),
+    bankBookRef: value(formData, "bankBookRef"),
   };
 }
 

@@ -37,6 +37,13 @@ export default async function BillingDetailPage({ params }: { params: Promise<{ 
         <p className="setup-code">금액과 일정</p>
         <p>{billing.currency} · {billing.amount.toLocaleString("ko-KR")}원</p>
         <p className="form-help">청구일 {billing.billingDate} · 입금 예정일 {billing.dueDate}{billing.depositedAt ? ` · 입금 확인 ${billing.depositedAt.toLocaleDateString("ko-KR")}` : ""}</p>
+        {billing.billingNumber || billing.poNumber ? (
+          <p className="form-help">
+            {billing.billingNumber ? `청구번호 ${billing.billingNumber}` : null}
+            {billing.billingNumber && billing.poNumber ? " · " : null}
+            {billing.poNumber ? `PO ${billing.poNumber}` : null}
+          </p>
+        ) : null}
         {billing.note ? <p className="form-help">{billing.note}</p> : null}
       </section>
       {billing.status === "scheduled" ? (

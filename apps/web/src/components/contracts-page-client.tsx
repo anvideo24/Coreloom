@@ -114,8 +114,8 @@ export function ContractsPageClient({
           <form action={createContractFromQuoteAction} className="quote-form">
             <p className="setup-code quote-form-full">견적에서 초안</p>
             <p className="form-help quote-form-full">
-              선택한 견적 버전의 금액·항목이 계약 초안으로 복사됩니다. 날인 원본 위치·체결은 상세에서 이어갑니다. 계약
-              기간·자동갱신·전자서명은 이후 필드입니다.
+              선택한 견적 버전의 금액·항목이 계약 초안으로 복사됩니다. 날인 원본 위치·체결은 상세에서 이어갑니다.
+              전자서명 공급자는 아직 연결하지 않습니다.
             </p>
             <label className="quote-form-full">
               견적 버전
@@ -127,6 +127,19 @@ export function ContractsPageClient({
                   </option>
                 ))}
               </select>
+            </label>
+            <p className="setup-code quote-form-full">기간 (선택)</p>
+            <label>
+              효력 시작일
+              <input name="effectiveStartOn" type="date" />
+            </label>
+            <label>
+              효력 종료일
+              <input name="effectiveEndOn" type="date" />
+            </label>
+            <label className="quote-email-approval quote-form-full">
+              <input name="autoRenew" type="checkbox" value="true" />
+              기간 종료 후 자동갱신
             </label>
             <button className="auth-submit" type="submit">
               계약 초안 저장

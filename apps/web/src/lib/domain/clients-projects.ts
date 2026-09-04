@@ -1,8 +1,10 @@
 export const projectStatuses = ["planned", "active", "on_hold", "complete"] as const;
 export const contactRelationStatuses = ["active", "inactive"] as const;
+export const clientTaxTypes = ["general", "simplified", "exempt"] as const;
 
 export type ProjectStatus = (typeof projectStatuses)[number];
 export type ContactRelationStatus = (typeof contactRelationStatuses)[number];
+export type ClientTaxType = (typeof clientTaxTypes)[number];
 
 export const projectStatusLabels: Record<ProjectStatus, string> = {
   planned: "예정",
@@ -16,6 +18,12 @@ export const contactRelationStatusLabels: Record<ContactRelationStatus, string> 
   inactive: "비활성",
 };
 
+export const clientTaxTypeLabels: Record<ClientTaxType, string> = {
+  general: "일반과세",
+  simplified: "간이과세",
+  exempt: "면세",
+};
+
 export type ClientCompanyProfile = {
   name: string;
   businessRegistrationNumber: string | null;
@@ -27,6 +35,11 @@ export type ClientCompanyProfile = {
   phone: string | null;
   email: string | null;
   businessRegistrationRef: string | null;
+  taxType: ClientTaxType | null;
+  bankName: string | null;
+  bankAccount: string | null;
+  accountHolder: string | null;
+  bankBookRef: string | null;
 };
 
 function optionalText(value: string | undefined, max: number, label: string) {
@@ -78,7 +91,18 @@ export function normalizeClientCompanyProfile(input: {
   phone?: string;
   email?: string;
   businessRegistrationRef?: string;
+  taxType?: string;
+  bankName?: string;
+  bankAccount?: string;
+  accountHolder?: string;
+  bankBookRef?: string;
 }): ClientCompanyProfile {
+  const taxTypeRaw = input.taxType?.trim() || "";
+  let taxType: ClientTaxType | null = null;
+  if (taxTypeRaw) {
+    if (!clientTaxTypes.includes(taxTypeRaw as ClientTaxType)) throw new Error("Unsupported client tax type");
+    taxType = taxTypeRaw as ClientTaxType;
+  }
   return {
     name: normalizeClientName(input.name),
     businessRegistrationNumber: normalizeBusinessRegistrationNumber(input.businessRegistrationNumber),
@@ -90,18 +114,25 @@ export function normalizeClientCompanyProfile(input: {
     phone: optionalText(input.phone, 40, "Phone"),
     email: optionalEmail(input.email),
     businessRegistrationRef: optionalText(input.businessRegistrationRef, 400, "Business registration reference"),
+    taxType,
+    bankName: optionalText(input.bankName, 80, "Bank name"),
+    bankAccount: optionalText(input.bankAccount, 80, "Bank account"),
+    accountHolder: optionalText(input.accountHolder, 80, "Account holder"),
+    bankBookRef: optionalText(input.bankBookRef, 400, "Bank book reference"),
   };
 }
 
 export function formatClientListMeta(client: {
   businessRegistrationNumber?: string | null;
   representativeName?: string | null;
+  taxType?: ClientTaxType | null;
   contactCount: number;
   projectCount: number;
 }) {
   const parts = [
     client.businessRegistrationNumber?.trim() || null,
     client.representativeName?.trim() ? `대표 ${client.representativeName.trim()}` : null,
+    client.taxType ? clientTaxTypeLabels[client.taxType] : null,
     `담당자 ${client.contactCount}명`,
     `프로젝트 ${client.projectCount}개`,
   ].filter(Boolean);

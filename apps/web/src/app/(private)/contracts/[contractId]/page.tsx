@@ -5,6 +5,7 @@ import {
   createContractAmendmentAction,
   executeContractAction,
   recordContractOriginalAction,
+  updateContractTermsAction,
 } from "@/app/(private)/contracts/actions";
 import { founderSession } from "@/lib/auth/session";
 import { getFounderContractDetail } from "@/lib/contracts/repository";
@@ -22,6 +23,14 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   if (!detail) notFound();
   const latest = detail.versions[0];
   const items = normalizeStoredQuoteItemsForPdf(latest.items);
+  const periodLabel = [
+    latest.effectiveStartOn || latest.effectiveEndOn
+      ? `${latest.effectiveStartOn ?? "시작 미정"} ~ ${latest.effectiveEndOn ?? "종료 미정"}`
+      : null,
+    latest.autoRenew ? "자동갱신" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
 
   return (
     <main className="operations-shell">
@@ -29,23 +38,65 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
         <div>
           <p className="auth-eyebrow">CORELOOM / CONTRACT HISTORY</p>
           <h1>{latest.title}</h1>
-          <p>{detail.contract.clientName} · 현재 v{latest.versionNumber} · {contractStatusLabels[latest.status]} · {latest.currency}</p>
+          <p>
+            {detail.contract.clientName} · 현재 v{latest.versionNumber} · {contractStatusLabels[latest.status]} ·{" "}
+            {latest.currency}
+            {periodLabel ? ` · ${periodLabel}` : ""}
+          </p>
         </div>
         <div className="quote-header-links">
-          {latest.status === "executed" ? <Link className="text-link" href="/billings">분할 청구</Link> : null}
-          <Link className="text-link" href="/contracts">계약 목록</Link>
+          {latest.status === "executed" ? (
+            <Link className="text-link" href="/billings">
+              분할 청구
+            </Link>
+          ) : null}
+          <Link className="text-link" href="/contracts">
+            계약 목록
+          </Link>
         </div>
       </header>
+
+      {latest.status !== "executed" ? (
+        <section className="quote-editor-card">
+          <p className="setup-code">계약 기간</p>
+          <form action={updateContractTermsAction} className="quote-form">
+            <input name="contractId" type="hidden" value={detail.contract.id} />
+            <label>
+              효력 시작일
+              <input defaultValue={latest.effectiveStartOn ?? ""} name="effectiveStartOn" type="date" />
+            </label>
+            <label>
+              효력 종료일
+              <input defaultValue={latest.effectiveEndOn ?? ""} name="effectiveEndOn" type="date" />
+            </label>
+            <label className="quote-email-approval quote-form-full">
+              <input defaultChecked={latest.autoRenew} name="autoRenew" type="checkbox" value="true" />
+              기간 종료 후 자동갱신
+            </label>
+            <button className="auth-submit" type="submit">
+              기간 저장
+            </button>
+          </form>
+        </section>
+      ) : null}
 
       {latest.status !== "executed" ? (
         <section className="quote-editor-card">
           <p className="setup-code">날인 원본 위치</p>
           <form action={recordContractOriginalAction} className="quote-form">
             <input name="contractId" type="hidden" value={detail.contract.id} />
-            <label className="quote-form-full">원본 경로 또는 링크
-              <input defaultValue={latest.originalReference ?? ""} name="originalReference" placeholder="예: 회사 문서함/계약/고객사-날인본.pdf" required />
+            <label className="quote-form-full">
+              원본 경로 또는 링크
+              <input
+                defaultValue={latest.originalReference ?? ""}
+                name="originalReference"
+                placeholder="예: 회사 문서함/계약/고객사-날인본.pdf"
+                required
+              />
             </label>
-            <button className="auth-submit" type="submit">날인 원본 위치 저장</button>
+            <button className="auth-submit" type="submit">
+              날인 원본 위치 저장
+            </button>
           </form>
         </section>
       ) : null}

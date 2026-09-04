@@ -27,6 +27,7 @@ export const aiAgentModelProvider = pgEnum("ai_agent_model_provider", [
   "cursor_agent",
 ]);
 export const quoteVatMode = pgEnum("quote_vat_mode", ["exclusive", "inclusive"]);
+export const clientTaxType = pgEnum("client_tax_type", ["general", "simplified", "exempt"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -134,6 +135,11 @@ export const clientCompanies = pgTable(
     phone: text("phone"),
     email: text("email"),
     businessRegistrationRef: text("business_registration_ref"),
+    taxType: clientTaxType("tax_type"),
+    bankName: text("bank_name"),
+    bankAccount: text("bank_account"),
+    accountHolder: text("account_holder"),
+    bankBookRef: text("bank_book_ref"),
     createdAt,
     updatedAt,
     deletedAt,
@@ -290,6 +296,9 @@ export const contractVersions = pgTable(
     status: contractStatus("status").notNull().default("draft"),
     executionMethod: contractExecutionMethod("execution_method").notNull().default("stamped_original"),
     originalReference: text("original_reference"),
+    effectiveStartOn: date("effective_start_on", { mode: "string" }),
+    effectiveEndOn: date("effective_end_on", { mode: "string" }),
+    autoRenew: boolean("auto_renew").notNull().default(false),
     note: text("note"),
     executedAt: timestamp("executed_at", { withTimezone: true }),
     createdAt,
@@ -341,6 +350,8 @@ export const billings = pgTable(
     billingDate: date("billing_date", { mode: "string" }).notNull(),
     dueDate: date("due_date", { mode: "string" }).notNull(),
     status: billingStatus("status").notNull().default("scheduled"),
+    billingNumber: text("billing_number"),
+    poNumber: text("po_number"),
     note: text("note"),
     depositedAt: timestamp("deposited_at", { withTimezone: true }),
     createdAt,

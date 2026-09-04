@@ -9,6 +9,7 @@ import {
   CONTRACT_CURRENCY,
   executeContract,
   nextContractVersionNumber,
+  normalizeContractTerms,
   recordContractOriginal,
 } from "@/lib/domain/contracts";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
@@ -101,7 +102,13 @@ export async function getFounderContractForQuote(authUserId: string, quoteId: st
   return contract ?? null;
 }
 
-export async function createFounderContractFromQuote(input: { actorUserId: string; quoteVersionId: string }) {
+export async function createFounderContractFromQuote(input: {
+  actorUserId: string;
+  quoteVersionId: string;
+  effectiveStartOn?: string;
+  effectiveEndOn?: string;
+  autoRenew?: boolean | string;
+}) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "contracts");
   const database = createDatabase();
   const [version] = await database.select().from(quoteVersions)
@@ -122,6 +129,13 @@ export async function createFounderContractFromQuote(input: { actorUserId: strin
     .limit(1);
   if (existing) throw new Error("Contract already exists for this quote");
 
+  const terms = normalizeContractTerms({
+    status: "draft",
+    effectiveStartOn: input.effectiveStartOn,
+    effectiveEndOn: input.effectiveEndOn,
+    autoRenew: input.autoRenew,
+  });
+
   const [contract] = await database.insert(contracts).values({
     workspaceId: workspace.id,
     clientCompanyId: quote.clientCompanyId,
@@ -141,6 +155,7 @@ export async function createFounderContractFromQuote(input: { actorUserId: strin
     totalAmount: version.totalAmount,
     currency: CONTRACT_CURRENCY,
     note: version.note,
+    ...terms,
   }).returning({ id: contractVersions.id });
 
   await database.insert(auditEvents).values({
@@ -148,6 +163,38 @@ export async function createFounderContractFromQuote(input: { actorUserId: strin
     actorUserId: input.actorUserId,
     eventType: "contract.created",
     payload: { contractId: contract.id, contractVersionId: contractVersion.id, quoteId: quote.id, quoteVersionId: version.id },
+  });
+  return { contractId: contract.id };
+}
+
+export async function updateFounderContractTerms(input: {
+  actorUserId: string;
+  contractId: string;
+  effectiveStartOn?: string;
+  effectiveEndOn?: string;
+  autoRenew?: boolean | string;
+}) {
+  const workspace = await ensureFounderWorkspace(input.actorUserId, "contracts");
+  const database = createDatabase();
+  const [contract] = await database.select({ id: contracts.id }).from(contracts)
+    .where(and(eq(contracts.id, input.contractId), eq(contracts.workspaceId, workspace.id), isNull(contracts.deletedAt)))
+    .limit(1);
+  if (!contract) throw new Error("Contract was not found");
+  const version = await latestContractVersion(database, contract.id);
+  if (!version) throw new Error("Contract version was not found");
+  const terms = normalizeContractTerms({
+    status: version.status,
+    effectiveStartOn: input.effectiveStartOn,
+    effectiveEndOn: input.effectiveEndOn,
+    autoRenew: input.autoRenew,
+  });
+  await database.update(contractVersions).set({ ...terms, updatedAt: new Date() }).where(eq(contractVersions.id, version.id));
+  await database.update(contracts).set({ updatedAt: new Date() }).where(eq(contracts.id, contract.id));
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "contract.terms_updated",
+    payload: { contractId: contract.id, contractVersionId: version.id, ...terms },
   });
   return { contractId: contract.id };
 }
@@ -217,6 +264,9 @@ export async function createFounderContractAmendment(input: { actorUserId: strin
     totalAmount: version.totalAmount,
     currency: version.currency,
     note: version.note,
+    effectiveStartOn: version.effectiveStartOn,
+    effectiveEndOn: version.effectiveEndOn,
+    autoRenew: version.autoRenew,
   }).returning({ id: contractVersions.id });
   await database.update(contracts).set({ updatedAt: new Date() }).where(eq(contracts.id, contract.id));
   await database.insert(auditEvents).values({

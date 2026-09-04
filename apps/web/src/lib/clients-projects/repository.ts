@@ -25,6 +25,11 @@ const clientCompanyColumns = {
   phone: clientCompanies.phone,
   email: clientCompanies.email,
   businessRegistrationRef: clientCompanies.businessRegistrationRef,
+  taxType: clientCompanies.taxType,
+  bankName: clientCompanies.bankName,
+  bankAccount: clientCompanies.bankAccount,
+  accountHolder: clientCompanies.accountHolder,
+  bankBookRef: clientCompanies.bankBookRef,
 } as const;
 
 export async function listFounderClientsAndProjects(authUserId: string) {
