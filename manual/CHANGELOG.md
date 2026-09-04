@@ -1,5 +1,6 @@
 # 매뉴얼 변경 기록
 
+- 전역 AI 패널을 Notion AI 채팅처럼 세로 공간을 넓히고, 하단 안내 문구를 없앴습니다. 답변은 짧은 안내와 패키지 복사·접힌 미리보기로 바꿨습니다.
 - Cursor Cloud Agent는 브라우저 시각 확인(로그인·스크린샷·녹화)을 하지 않도록 바꿨습니다. 화면 확인은 개발 PC에서 대표가 합니다.
 - 전역 AI 에이전트 패널 보내기 칸에 구독 모델 선택을 두었습니다. Claude/GPT·Codex/Cursor를 고르면 그 자리용 패키지가 만들어지며, 에이전트를 바꾸면 기본 모델로 맞춥니다. API 키 호출은 하지 않습니다.
 - 배포본 포장을 두었습니다. Next `output: "standalone"`과 저장소 뿌리 Dockerfile로 이미지를 싸며, 진입점은 `apps/web/server.js`입니다. 절차 정본은 `docs/operations/deploy-packaging.md`입니다. `.env*`는 이미지에 넣지 않습니다.

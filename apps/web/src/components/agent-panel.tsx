@@ -32,7 +32,7 @@ type PanelMessage = {
   role: "user" | "assistant";
   body: string;
   packageText?: string;
-  handoffHint?: string;
+  handoffLabel?: string;
   workLogHref?: string;
 };
 
@@ -46,6 +46,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<PanelMessage[]>([]);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const contextTitle = agentPanelContextTitle(pathname);
@@ -100,11 +101,17 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   function clearThread() {
     setDraft("");
     setMessages([]);
+    setCopiedId(null);
     setError(null);
   }
 
-  function copyPackage(text: string) {
-    void navigator.clipboard.writeText(text);
+  function copyPackage(messageId: string, text: string) {
+    void navigator.clipboard.writeText(text).then(() => {
+      setCopiedId(messageId);
+      window.setTimeout(() => {
+        setCopiedId((current) => (current === messageId ? null : current));
+      }, 1800);
+    });
   }
 
   function send() {
@@ -129,9 +136,9 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
           {
             id: result.workLogId,
             role: "assistant",
-            body: `${result.handoffHint}\n\n작업 이력이 승인 대기로 남았습니다.`,
+            body: `${result.handoffLabel}에 붙여넣을 패키지를 준비했습니다. 복사한 뒤 구독 채팅에 넣으세요.`,
             packageText: result.packageText,
-            handoffHint: result.handoffLabel,
+            handoffLabel: result.handoffLabel,
             workLogHref: `/agents/${result.agentId}`,
           },
         ]);
@@ -218,16 +225,10 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
 
           <div className="agent-panel-body">
             {messages.length === 0 ? (
-              <>
-                <div className="agent-panel-hero">
-                  <div aria-hidden="true" className="agent-panel-avatar">AI</div>
-                  <h2>{selected ? `${selected.name}에게 무엇을 맡길까요?` : "어떤 도움이 필요하세요?"}</h2>
-                  <p>{selected?.purpose ?? "에이전트 페이지에서 시스템 계정을 만들면 여기에서 고를 수 있습니다."}</p>
-                </div>
+              <div className="agent-panel-empty-state">
+                <h2>{selected ? `${selected.name}에게 무엇을 맡길까요?` : "어떤 도움이 필요하세요?"}</h2>
+                <p>{selected?.purpose ?? "에이전트 페이지에서 시스템 계정을 만들면 여기에서 고를 수 있습니다."}</p>
                 <ul className="agent-panel-suggestions">
-                  <li>
-                    <Link href="/agents?new=1">커스텀 에이전트 만들기</Link>
-                  </li>
                   <li>
                     <button
                       onClick={() => setDraft(`${contextTitle} 화면을 기준으로 지금 할 일을 정리해 주세요.`)}
@@ -246,8 +247,11 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
                       </button>
                     </li>
                   ) : null}
+                  <li>
+                    <Link href="/agents?new=1">커스텀 에이전트 만들기</Link>
+                  </li>
                 </ul>
-              </>
+              </div>
             ) : (
               <div className="agent-panel-thread" aria-live="polite">
                 {messages.map((message) => (
@@ -255,20 +259,29 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
                     <p>{message.body}</p>
                     {message.packageText ? (
                       <div className="agent-panel-package">
-                        <pre>{message.packageText}</pre>
                         <div className="agent-panel-package-actions">
-                          <button onClick={() => copyPackage(message.packageText ?? "")} type="button">
-                            구독 패키지 복사
+                          <button
+                            className="agent-panel-copy-primary"
+                            onClick={() => copyPackage(message.id, message.packageText ?? "")}
+                            type="button"
+                          >
+                            {copiedId === message.id ? "복사됨" : `${message.handoffLabel ?? "구독"} 패키지 복사`}
                           </button>
                           {message.workLogHref ? (
-                            <Link href={message.workLogHref}>이력 보기</Link>
+                            <Link className="agent-panel-secondary-link" href={message.workLogHref}>
+                              이력
+                            </Link>
                           ) : null}
                         </div>
+                        <details className="agent-panel-package-details">
+                          <summary>패키지 미리보기</summary>
+                          <pre>{message.packageText}</pre>
+                        </details>
                       </div>
                     ) : null}
                   </article>
                 ))}
-                {pending ? <p className="form-help">구독 패키지를 준비하는 중…</p> : null}
+                {pending ? <p className="agent-panel-pending">패키지 준비 중…</p> : null}
               </div>
             )}
             {error ? <p className="form-help agent-panel-error">{error}</p> : null}
@@ -281,43 +294,48 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
               send();
             }}
           >
-            <div className="agent-panel-context-chip" title={pathname}>
-              {contextTitle}
-            </div>
-            <textarea
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder="요청을 적고 구독 패키지를 만드세요…"
-              rows={3}
-              value={draft}
-            />
-            <div className="agent-panel-composer-bar">
-              <label className="agent-panel-model">
-                <select
-                  aria-label="구독 모델"
-                  disabled={!selected || pending}
-                  onChange={(event) => setModelProvider(event.target.value as AiAgentModelProvider)}
-                  value={modelProvider}
+            <div className="agent-panel-composer-shell">
+              <div className="agent-panel-context-chip" title={pathname}>
+                {contextTitle}
+              </div>
+              <textarea
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" && !event.shiftKey) {
+                    event.preventDefault();
+                    send();
+                  }
+                }}
+                placeholder="요청을 입력하세요…"
+                rows={2}
+                value={draft}
+              />
+              <div className="agent-panel-composer-bar">
+                <label className="agent-panel-model">
+                  <select
+                    aria-label="구독 모델"
+                    disabled={!selected || pending}
+                    onChange={(event) => setModelProvider(event.target.value as AiAgentModelProvider)}
+                    value={modelProvider}
+                  >
+                    {aiAgentModelProviders.map((provider) => (
+                      <option key={provider} value={provider}>
+                        {aiAgentModelProviderLabels[provider]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  aria-label="보내기"
+                  className="agent-panel-send"
+                  disabled={!draft.trim() || !selected || pending}
+                  type="submit"
                 >
-                  {aiAgentModelProviders.map((provider) => (
-                    <option key={provider} value={provider}>
-                      {aiAgentModelProviderLabels[provider]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <button
-                aria-label="보내기"
-                className="agent-panel-send"
-                disabled={!draft.trim() || !selected || pending}
-                type="submit"
-              >
-                ↑
-              </button>
+                  ↑
+                </button>
+              </div>
             </div>
           </form>
-          <p className="agent-panel-footnote">
-            보내면 구독 자리에 붙일 패키지를 만들고 작업 이력을 남깁니다. API 키 호출·자동 실행은 하지 않습니다.
-          </p>
         </aside>
       </div>
     </>
