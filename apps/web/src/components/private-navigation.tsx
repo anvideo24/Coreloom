@@ -2,13 +2,16 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import {
+  canHoverPeekWideNav,
   compactTabs,
   isEditableHotkeyTarget,
   isNavItemActive,
   isNavToggleHotkey,
+  NAV_HOVER_HIDE_MS,
+  NAV_HOVER_PEEK_MEDIA,
   NAV_WIDE_MEDIA,
   navGroups,
   navItemsForTab,
@@ -23,7 +26,21 @@ function isWideNavigationViewport() {
   return window.matchMedia(NAV_WIDE_MEDIA).matches;
 }
 
-function NavToggleButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+function isFineHoverPointer() {
+  return window.matchMedia(NAV_HOVER_PEEK_MEDIA).matches;
+}
+
+function NavToggleButton({
+  open,
+  onHoverEnter,
+  onHoverLeave,
+  onToggle,
+}: {
+  open: boolean;
+  onHoverEnter: () => void;
+  onHoverLeave: () => void;
+  onToggle: () => void;
+}) {
   return (
     <button
       aria-controls="private-drawer"
@@ -32,6 +49,8 @@ function NavToggleButton({ open, onToggle }: { open: boolean; onToggle: () => vo
       aria-label={open ? "메뉴 접기" : "메뉴 펼치기"}
       className="private-menu-button"
       onClick={onToggle}
+      onMouseEnter={onHoverEnter}
+      onMouseLeave={onHoverLeave}
       title="Ctrl+B 또는 ⌘B"
       type="button"
     >
@@ -43,7 +62,10 @@ function NavToggleButton({ open, onToggle }: { open: boolean; onToggle: () => vo
 export function PrivateNavigation() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [hoverPeek, setHoverPeek] = useState(false);
   const [sidebarReady, setSidebarReady] = useState(false);
+  const hidePeekTimer = useRef(0);
+  const navVisible = drawerOpen || hoverPeek;
   const [openTab, setOpenTab] = useState<CompactTabId | null>(null);
   const drawerTitleId = useId();
   const sheetTitleId = useId();
@@ -63,12 +85,22 @@ export function PrivateNavigation() {
 
   useEffect(() => {
     setOpenTab(null);
+    setHoverPeek(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (drawerOpen) setHoverPeek(false);
+  }, [drawerOpen]);
+
+  useEffect(() => {
+    return () => window.clearTimeout(hidePeekTimer.current);
+  }, []);
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
         setDrawerOpen(false);
+        setHoverPeek(false);
         setOpenTab(null);
         return;
       }
@@ -95,14 +127,46 @@ export function PrivateNavigation() {
   }
 
   function toggleDrawer() {
+    setHoverPeek(false);
     setDrawerOpen((open) => !open);
   }
 
+  function cancelPeekHide() {
+    window.clearTimeout(hidePeekTimer.current);
+  }
+
+  function showHoverPeek() {
+    if (!isWideNavigationViewport()) return;
+    if (!canHoverPeekWideNav(drawerOpen, isFineHoverPointer())) return;
+    cancelPeekHide();
+    setHoverPeek(true);
+  }
+
+  function hideHoverPeekSoon() {
+    if (drawerOpen) return;
+    cancelPeekHide();
+    hidePeekTimer.current = window.setTimeout(() => setHoverPeek(false), NAV_HOVER_HIDE_MS);
+  }
+
+  const layerClass = ["private-drawer-layer"];
+  if (drawerOpen) layerClass.push("is-open");
+  if (!drawerOpen && hoverPeek) layerClass.push("is-peek");
+
   return (
     <>
-      <NavToggleButton onToggle={toggleDrawer} open={drawerOpen} />
+      <NavToggleButton
+        onHoverEnter={showHoverPeek}
+        onHoverLeave={hideHoverPeekSoon}
+        onToggle={toggleDrawer}
+        open={navVisible}
+      />
 
-      <div className={drawerOpen ? "private-drawer-layer is-open" : "private-drawer-layer"} inert={!drawerOpen}>
+      <div
+        className={layerClass.join(" ")}
+        inert={!navVisible}
+        onMouseEnter={showHoverPeek}
+        onMouseLeave={hideHoverPeekSoon}
+      >
         <aside aria-labelledby={drawerTitleId} className="private-navigation" id="private-drawer">
           <div className="private-drawer-head">
             <Link className="private-navigation-brand" href="/dashboard" id={drawerTitleId}>

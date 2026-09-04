@@ -1,5 +1,7 @@
 export const NAV_COMPACT_MAX_PX = 640;
 export const NAV_WIDE_MEDIA = "(min-width: 40rem)";
+export const NAV_HOVER_PEEK_MEDIA = "(hover: hover) and (pointer: fine)";
+export const NAV_HOVER_HIDE_MS = 180;
 export const WIDE_NAV_OPEN_STORAGE_KEY = "coreloom.wide-nav-open";
 
 export type NavItem = {
@@ -108,6 +110,10 @@ export function parseWideNavOpen(raw: string | null, fallback = true) {
 
 export function serializeWideNavOpen(open: boolean) {
   return open ? "1" : "0";
+}
+
+export function canHoverPeekWideNav(pinned: boolean, hoverCapable: boolean) {
+  return hoverCapable && !pinned;
 }
 
 export function isNavToggleHotkey(event: {
