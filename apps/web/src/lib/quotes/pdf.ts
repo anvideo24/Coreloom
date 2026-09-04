@@ -44,11 +44,11 @@ const MUTED = "#68766f";
 const RULE = "#d7ded9";
 
 const COL = {
-  title: { x: PAGE_MARGIN, w: 88 },
-  desc: { x: PAGE_MARGIN + 92, w: 188 },
-  qty: { x: PAGE_MARGIN + 284, w: 36 },
-  unit: { x: PAGE_MARGIN + 324, w: 78 },
-  amount: { x: PAGE_MARGIN + 406, w: CONTENT_WIDTH - 406 },
+  title: { x: PAGE_MARGIN, w: 74 },
+  desc: { x: PAGE_MARGIN + 78, w: 228 },
+  qty: { x: PAGE_MARGIN + 310, w: 28 },
+  unit: { x: PAGE_MARGIN + 342, w: 68 },
+  amount: { x: PAGE_MARGIN + 414, w: CONTENT_WIDTH - 414 },
 } as const;
 
 function won(value: number) {
@@ -100,111 +100,111 @@ export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
 
     // Header: left title / right brand + meta
     const headerTop = PAGE_MARGIN;
-    document.fillColor(INK).fontSize(28).text("INVOICE", PAGE_MARGIN, headerTop, { width: 260, lineGap: 2 });
+    document.fillColor(INK).fontSize(22).text("INVOICE", PAGE_MARGIN, headerTop, { width: 260, lineGap: 1 });
     document
       .fillColor(MUTED)
-      .fontSize(9)
-      .text("아래와 같이 견적드립니다. 검토 후 회신 부탁드립니다.", PAGE_MARGIN, headerTop + 38, {
-        width: 260,
-        lineGap: 2,
+      .fontSize(8)
+      .text("아래와 같이 견적드립니다. 검토 후 회신 부탁드립니다.", PAGE_MARGIN, headerTop + 30, {
+        width: 250,
+        lineGap: 1,
       });
 
     const metaX = PAGE_MARGIN + 280;
     const metaW = CONTENT_WIDTH - 280;
-    document.fillColor(ACCENT).fontSize(14).text(quoteIssuerProfile.brandName, metaX, headerTop, {
+    document.fillColor(ACCENT).fontSize(12).text(quoteIssuerProfile.brandName, metaX, headerTop, {
       width: metaW,
       align: "right",
     });
-    let metaY = headerTop + 22;
+    let metaY = headerTop + 18;
     const metaRows: Array<[string, string]> = [
       ["견적번호", documentNumber],
       ["발행일", formatDate(issuedOn)],
       ["유효기간", formatDate(validUntil)],
     ];
     for (const [label, value] of metaRows) {
-      document.fillColor(MUTED).fontSize(8).text(label, metaX, metaY, { width: 56 });
-      document.fillColor(INK).fontSize(9).text(value, metaX + 56, metaY, { width: metaW - 56, align: "right" });
-      metaY += 14;
+      document.fillColor(MUTED).fontSize(7).text(label, metaX, metaY, { width: 52 });
+      document.fillColor(INK).fontSize(8).text(value, metaX + 52, metaY, { width: metaW - 52, align: "right" });
+      metaY += 12;
     }
 
-    let y = Math.max(headerTop + 72, metaY + 8);
-    hairline(document, y);
-    y += 16;
-
-    // Recipient band
-    document.fillColor(MUTED).fontSize(8).text("수신", PAGE_MARGIN, y);
-    y += 14;
-    document.fillColor(INK).fontSize(12).text(input.clientName, PAGE_MARGIN, y, { width: CONTENT_WIDTH });
-    y += 18;
-    if (input.contactName?.trim()) {
-      document.fillColor(MUTED).fontSize(9).text(`담당자  ${input.contactName.trim()}`, PAGE_MARGIN, y, {
-        width: CONTENT_WIDTH,
-      });
-      y += 14;
-    }
-    if (input.title.trim()) {
-      document.fillColor(MUTED).fontSize(9).text(input.title.trim(), PAGE_MARGIN, y, { width: CONTENT_WIDTH });
-      y += 14;
-    }
-    y += 6;
+    let y = Math.max(headerTop + 58, metaY + 6);
     hairline(document, y);
     y += 12;
 
+    // Recipient band
+    document.fillColor(MUTED).fontSize(7).text("수신", PAGE_MARGIN, y);
+    y += 11;
+    document.fillColor(INK).fontSize(11).text(input.clientName, PAGE_MARGIN, y, { width: CONTENT_WIDTH });
+    y += 15;
+    if (input.contactName?.trim()) {
+      document.fillColor(MUTED).fontSize(8).text(`담당자  ${input.contactName.trim()}`, PAGE_MARGIN, y, {
+        width: CONTENT_WIDTH,
+      });
+      y += 12;
+    }
+    if (input.title.trim()) {
+      document.fillColor(MUTED).fontSize(8).text(input.title.trim(), PAGE_MARGIN, y, { width: CONTENT_WIDTH });
+      y += 12;
+    }
+    y += 4;
+    hairline(document, y);
+    y += 10;
+
     // Table header
-    document.fillColor(MUTED).fontSize(8);
+    document.fillColor(MUTED).fontSize(7);
     document.text("항목", COL.title.x, y, { width: COL.title.w });
     document.text("설명", COL.desc.x, y, { width: COL.desc.w });
     document.text("수량", COL.qty.x, y, { width: COL.qty.w, align: "right" });
     document.text("단가", COL.unit.x, y, { width: COL.unit.w, align: "right" });
     document.text("공급가액", COL.amount.x, y, { width: COL.amount.w, align: "right" });
-    y += 14;
+    y += 12;
     hairline(document, y);
-    y += 10;
+    y += 8;
 
     const lines = asCustomerLines(input.items);
     for (const item of lines) {
-      if (y > 680) {
+      if (y > 700) {
         document.addPage();
         y = PAGE_MARGIN;
       }
       const rowTop = y;
-      document.fillColor(INK).fontSize(9).text(item.title, COL.title.x, rowTop, {
+      document.fillColor(INK).fontSize(8).text(item.title, COL.title.x, rowTop, {
         width: COL.title.w,
         lineGap: 1,
       });
       const titleBottom = document.y;
-      document.fillColor(MUTED).fontSize(8).text(item.customerDescription || "—", COL.desc.x, rowTop, {
+      document.fillColor(MUTED).fontSize(7).text(item.customerDescription || "—", COL.desc.x, rowTop, {
         width: COL.desc.w,
         lineGap: 1,
       });
       const descBottom = document.y;
-      document.fillColor(INK).fontSize(9);
+      document.fillColor(INK).fontSize(8);
       document.text(String(item.quantity), COL.qty.x, rowTop, { width: COL.qty.w, align: "right" });
       document.text(won(item.unitPrice), COL.unit.x, rowTop, { width: COL.unit.w, align: "right" });
       document.text(won(item.amount), COL.amount.x, rowTop, { width: COL.amount.w, align: "right" });
-      y = Math.max(titleBottom, descBottom, rowTop + 14) + 10;
+      y = Math.max(titleBottom, descBottom, rowTop + 12) + 7;
     }
 
-    y += 4;
+    y += 2;
     hairline(document, y);
-    y += 14;
+    y += 10;
 
     // VAT note + optional freeform note
     document
       .fillColor(MUTED)
-      .fontSize(8)
+      .fontSize(7)
       .text(`상기 금액은 ${quoteVatModeLabels[vatMode]}입니다.`, PAGE_MARGIN, y, { width: CONTENT_WIDTH * 0.55 });
     if (input.note?.trim()) {
-      y = document.y + 6;
-      document.fillColor(MUTED).fontSize(8).text(input.note.trim(), PAGE_MARGIN, y, {
+      y = document.y + 4;
+      document.fillColor(MUTED).fontSize(7).text(input.note.trim(), PAGE_MARGIN, y, {
         width: CONTENT_WIDTH * 0.55,
-        lineGap: 2,
+        lineGap: 1,
       });
     }
 
     // Totals (right column)
     const totalsX = PAGE_MARGIN + 300;
-    const totalsLabelW = 90;
+    const totalsLabelW = 80;
     const totalsValueW = CONTENT_WIDTH - 300 - totalsLabelW;
     let totalsY = y;
     const totals: Array<[string, number, boolean]> = [
@@ -213,32 +213,32 @@ export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
       ["합계", input.totalAmount, true],
     ];
     for (const [label, amount, strong] of totals) {
-      document.fillColor(strong ? INK : MUTED).fontSize(strong ? 11 : 9).text(label, totalsX, totalsY, {
+      document.fillColor(strong ? INK : MUTED).fontSize(strong ? 10 : 8).text(label, totalsX, totalsY, {
         width: totalsLabelW,
       });
-      document.fillColor(INK).fontSize(strong ? 11 : 9).text(won(amount), totalsX + totalsLabelW, totalsY, {
+      document.fillColor(INK).fontSize(strong ? 10 : 8).text(won(amount), totalsX + totalsLabelW, totalsY, {
         width: totalsValueW,
         align: "right",
       });
-      totalsY += strong ? 18 : 15;
+      totalsY += strong ? 15 : 12;
     }
 
-    y = Math.max(document.y, totalsY) + 18;
-    if (y > 720) {
+    y = Math.max(document.y, totalsY) + 12;
+    if (y > 735) {
       document.addPage();
       y = PAGE_MARGIN;
     }
     hairline(document, y);
-    y += 16;
+    y += 12;
 
     // Footer: payment | supplier
-    const halfW = (CONTENT_WIDTH - 24) / 2;
+    const halfW = (CONTENT_WIDTH - 20) / 2;
     const leftX = PAGE_MARGIN;
-    const rightX = PAGE_MARGIN + halfW + 24;
+    const rightX = PAGE_MARGIN + halfW + 20;
     const footerTop = y;
 
-    document.fillColor(MUTED).fontSize(8).text("입금 안내", leftX, footerTop);
-    let leftY = footerTop + 14;
+    document.fillColor(MUTED).fontSize(7).text("입금 안내", leftX, footerTop);
+    let leftY = footerTop + 11;
     const bankRows: Array<[string, string]> = [
       ["은행", dash(quoteIssuerProfile.bankName)],
       ["계좌", dash(quoteIssuerProfile.bankAccount)],
@@ -246,30 +246,30 @@ export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
       ["SWIFT", dash(quoteIssuerProfile.swift)],
     ];
     for (const [label, value] of bankRows) {
-      document.fillColor(MUTED).fontSize(8).text(label, leftX, leftY, { width: 40 });
-      document.fillColor(INK).fontSize(8).text(value, leftX + 44, leftY, { width: halfW - 44 });
-      leftY += 13;
+      document.fillColor(MUTED).fontSize(7).text(label, leftX, leftY, { width: 36 });
+      document.fillColor(INK).fontSize(7).text(value, leftX + 40, leftY, { width: halfW - 40 });
+      leftY += 11;
     }
 
-    document.fillColor(MUTED).fontSize(8).text("공급자", rightX, footerTop);
-    let rightY = footerTop + 14;
-    document.fillColor(ACCENT).fontSize(12).text(quoteIssuerProfile.brandName, rightX, rightY, {
-      width: halfW,
-    });
-    rightY += 18;
-    document.fillColor(MUTED).fontSize(8).text("사업자등록번호", rightX, rightY, { width: halfW });
-    rightY += 12;
-    document.fillColor(INK).fontSize(9).text(dash(quoteIssuerProfile.businessRegistrationNumber), rightX, rightY, {
+    document.fillColor(MUTED).fontSize(7).text("공급자", rightX, footerTop);
+    let rightY = footerTop + 11;
+    document.fillColor(ACCENT).fontSize(11).text(quoteIssuerProfile.brandName, rightX, rightY, {
       width: halfW,
     });
     rightY += 14;
-    document.fillColor(INK).fontSize(8).text(dash(quoteIssuerProfile.email), rightX, rightY, { width: halfW });
-    rightY += 16;
+    document.fillColor(MUTED).fontSize(7).text("사업자등록번호", rightX, rightY, { width: halfW });
+    rightY += 10;
+    document.fillColor(INK).fontSize(8).text(dash(quoteIssuerProfile.businessRegistrationNumber), rightX, rightY, {
+      width: halfW,
+    });
+    rightY += 11;
+    document.fillColor(INK).fontSize(7).text(dash(quoteIssuerProfile.email), rightX, rightY, { width: halfW });
+    rightY += 12;
 
     const signaturePath = path.join(process.cwd(), "public/brand/signature.png");
     try {
       if (fs.existsSync(signaturePath)) {
-        document.image(signaturePath, rightX, rightY, { width: 96 });
+        document.image(signaturePath, rightX, rightY, { width: 84 });
       }
     } catch {
       // optional signature — ignore missing or unreadable image
