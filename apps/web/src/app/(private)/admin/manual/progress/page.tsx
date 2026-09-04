@@ -23,11 +23,11 @@ export default async function AdminManualProgressPage() {
   return (
     <AdminManualFrame
       blocks={page.blocks}
-      currentHref="/admin/manual/progress"
       deployCommit={page.deployCommit}
       deployVersion={page.deployVersion}
       intro="기능별 구현 상태를 추적합니다. 기능이 추가되거나 상태가 바뀌면 같은 커밋에서 이 표를 갱신합니다."
       manualCommit={page.manualCommit}
+      sourceLabel="manual/system-progress.md"
       title={page.title}
     />
   );

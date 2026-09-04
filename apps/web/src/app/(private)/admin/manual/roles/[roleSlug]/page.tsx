@@ -25,11 +25,11 @@ export default async function AdminManualRolePage({ params }: { params: Promise<
   return (
     <AdminManualFrame
       blocks={page.blocks}
-      currentHref="/admin/manual/roles"
       deployCommit={page.deployCommit}
       deployVersion={page.deployVersion}
       intro="이 문서는 역할 목록의 원본입니다. 운영 절차는 운영 매뉴얼을 정본으로 둡니다."
       manualCommit={page.manualCommit}
+      sourceLabel={`manual/roles/${page.title}.md`}
       title={page.title}
     />
   );
