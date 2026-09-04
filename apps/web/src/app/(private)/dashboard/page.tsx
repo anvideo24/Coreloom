@@ -3,40 +3,87 @@ import { redirect } from "next/navigation";
 
 import { founderSession } from "@/lib/auth/session";
 import { getFounderDashboard } from "@/lib/dashboard/repository";
-import type { DashboardLink } from "@/lib/domain/dashboard";
+import type { DashboardCashWeek, DashboardInboxItem, DashboardProjectCard } from "@/lib/domain/dashboard";
 
 export const dynamic = "force-dynamic";
 
-function DashboardList({
-  code,
-  heading,
-  items,
-  empty,
-}: {
-  code: string;
-  heading: string;
-  items: DashboardLink[];
-  empty: string;
-}) {
+function formatWon(amount: number) {
+  return `${amount.toLocaleString("ko-KR")}원`;
+}
+
+function CashWeekChart({ weeks }: { weeks: DashboardCashWeek[] }) {
+  const max = Math.max(1, ...weeks.flatMap((week) => [week.inflow, week.outflow]));
+  const width = 360;
+  const height = 150;
+  const left = 8;
+  const right = 8;
+  const top = 12;
+  const bottom = 24;
+  const innerWidth = width - left - right;
+  const innerHeight = height - top - bottom;
+  const step = weeks.length > 1 ? innerWidth / (weeks.length - 1) : innerWidth;
+  const points = weeks.map((week, index) => ({
+    x: left + index * step,
+    inflowY: top + innerHeight - (week.inflow / max) * innerHeight,
+    outflowY: top + innerHeight - (week.outflow / max) * innerHeight,
+    label: week.label,
+  }));
+  const inflowLine = points.map((point) => `${point.x},${point.inflowY}`).join(" ");
+  const outflowLine = points.map((point) => `${point.x},${point.outflowY}`).join(" ");
+  const area = `${left},${top + innerHeight} ${inflowLine} ${left + innerWidth},${top + innerHeight}`;
+
   return (
-    <section aria-label={heading} className="quote-list">
-      <div className="list-heading">
-        <div>
-          <p className="setup-code">{code}</p>
-          <h2>{heading}</h2>
-        </div>
-        <span>{items.length}건</span>
-      </div>
-      {items.length === 0 ? <p className="empty-state">{empty}</p> : items.map((item) => (
-        <Link className="quote-row" href={item.href} key={`${item.href}-${item.title}-${item.detail}`}>
-          <div>
-            <p>{item.detail}</p>
-            <h3>{item.title}</h3>
-          </div>
-          {typeof item.amount === "number" ? <strong>{item.amount.toLocaleString("ko-KR")}원</strong> : null}
-        </Link>
+    <svg aria-hidden="true" className="dash-area" viewBox={`0 0 ${width} ${height}`}>
+      <polygon className="inflow" points={area} />
+      <polyline className="inflow" fill="none" points={inflowLine} />
+      <polyline className="outflow" points={outflowLine} />
+      {points.map((point) => (
+        <text key={point.label} x={point.x} y={height - 6}>{point.label}</text>
       ))}
-    </section>
+    </svg>
+  );
+}
+
+function ProgressRing({ value }: { value: number }) {
+  const radius = 28;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference * (1 - Math.min(100, Math.max(0, value)) / 100);
+  return (
+    <svg aria-hidden="true" className="dash-ring" viewBox="0 0 72 72">
+      <circle className="track" cx="36" cy="36" r={radius} />
+      <circle className="value" cx="36" cy="36" r={radius} strokeDasharray={circumference} strokeDashoffset={offset} />
+      <text x="36" y="41">{value}%</text>
+    </svg>
+  );
+}
+
+function InboxCard({ item }: { item: DashboardInboxItem }) {
+  return (
+    <Link className="dash-inbox-item" href={item.href}>
+      <span className={item.overdue ? "dash-chip dash-chip-overdue" : "dash-chip"}>{item.kindLabel}</span>
+      {item.when ? <time dateTime={item.when}>{item.overdue ? `${item.when} · 지남` : item.when}</time> : null}
+      <h3>{item.title}</h3>
+      <p>{item.detail}</p>
+      {typeof item.amount === "number" ? <strong>{formatWon(item.amount)}</strong> : null}
+    </Link>
+  );
+}
+
+function ProjectCard({ project }: { project: DashboardProjectCard }) {
+  return (
+    <Link className="dash-project" href={project.href}>
+      <div>
+        <p>{project.clientName} · {project.statusLabel}</p>
+        <h3>{project.title}</h3>
+        <div className="dash-stages">
+          <span className="dash-stage" data-done={project.stages.quote}> <i />견적</span>
+          <span className="dash-stage" data-done={project.stages.contract}> <i />계약</span>
+          <span className="dash-stage" data-done={project.stages.billing}> <i />청구</span>
+        </div>
+        <p>다음 할 일 · {project.nextAction}</p>
+      </div>
+      <ProgressRing value={project.progressPercent} />
+    </Link>
   );
 }
 
@@ -57,65 +104,151 @@ export default async function DashboardPage() {
   }
 
   const dashboard = await getFounderDashboard(session.founder.id);
+  const inflowTotal = dashboard.cashWeeks.reduce((sum, week) => sum + week.inflow, 0);
+  const outflowTotal = dashboard.cashWeeks.reduce((sum, week) => sum + week.outflow, 0);
+  const timeline = dashboard.inbox.slice(0, 3);
 
   return (
-    <main className="operations-shell">
+    <main className="operations-shell dash-shell">
       <header className="operations-header">
         <div>
           <p className="auth-eyebrow">CORELOOM / DASHBOARD</p>
           <h1>오늘 확인할 운영</h1>
-          <p>설립 준비와 오늘 확인할 견적·계약·청구·비용 지급·AI 제안을 먼저 봅니다. 이 화면은 조회만 하며, 발송·체결·입금 확정·비용 확정은 각 화면에서 대표가 직접 합니다.</p>
+          <p>승인 대기·오늘 할 일·진행 프로젝트와 이번 달 입금·지급을 먼저 봅니다. 이 화면은 조회만 하며, 발송·체결·입금 확정·비용 확정은 각 화면에서 대표가 직접 합니다.</p>
         </div>
       </header>
 
-      <section aria-label="설립 준비 진행률" className="progress-card">
-        <div>
-          <p>설립 준비 · {dashboard.today}</p>
-          <strong>{dashboard.setupProgress}%</strong>
+      <section aria-label="운영 바이탈" className="dash-vitals">
+        <div className="dash-vital">
+          <p>승인 대기</p>
+          <strong>{dashboard.vitals.pendingApprovals}</strong>
         </div>
-        <div aria-hidden="true" className="progress-track"><span style={{ width: `${dashboard.setupProgress}%` }} /></div>
-        <Link className="text-link" href="/company-setup">설립 준비 화면으로 이동</Link>
+        <div className="dash-vital">
+          <p>오늘 업무</p>
+          <strong>{dashboard.vitals.todayTasks}</strong>
+        </div>
+        <div className="dash-vital">
+          <p>연체 입금</p>
+          <strong>{dashboard.vitals.overdueDeposits}</strong>
+        </div>
+        <div className="dash-vital">
+          <p>미분류</p>
+          <strong>{dashboard.vitals.unclassified}</strong>
+        </div>
+        <div className="dash-vital">
+          <p>현금 리듬</p>
+          <strong>{dashboard.vitals.cashRhythm === "watch" ? "주의" : "정상"}</strong>
+          <svg aria-hidden="true" className="dash-pulse" viewBox="0 0 72 24">
+            <polyline fill="none" points="0,14 10,14 14,6 20,20 26,12 36,12 40,4 48,18 54,12 72,12" stroke="currentColor" strokeWidth="2" />
+          </svg>
+          <span>{dashboard.vitals.cashRhythm === "watch" ? "기한이 지난 입금 또는 업무가 있습니다" : "기한이 지난 입금·업무가 없습니다"}</span>
+        </div>
       </section>
 
-      <DashboardList code="증빙" heading="증빙 누락" items={dashboard.evidenceGaps} empty="증빙 위치가 비어 있는 진행·완료 항목이 없습니다." />
-      <DashboardList code="설립 준비" heading="확인할 설립 항목" items={dashboard.openSetupItems} empty="시작 전이거나 진행 중인 설립 항목이 없습니다." />
+      <div className="dash-main">
+        <section aria-label="이번 달 입금과 지급" className="dash-card dash-chart">
+          <div className="dash-card-head">
+            <h2>이번 달 입금 · 지급</h2>
+            <span>{dashboard.today.slice(0, 7)}</span>
+          </div>
+          <CashWeekChart weeks={dashboard.cashWeeks} />
+          <div className="dash-chart-totals">
+            <strong>입금 예정 {formatWon(inflowTotal)}</strong>
+            <p>지급 예정 {formatWon(outflowTotal)} · 확정 매출 {formatWon(dashboard.revenue.confirmedAmount)}</p>
+            <Link className="stat-card-link" href="/revenue">매출 원장 →</Link>
+          </div>
+        </section>
 
-      <DashboardList code="오늘" heading="견적 발송" items={dashboard.quotesToSend} empty="메일 요청이 없는 최신 견적 버전이 없습니다." />
-      <DashboardList code="오늘" heading="계약 체결" items={dashboard.contractsToExecute} empty="체결 전 계약이 없습니다." />
-      <DashboardList code="오늘" heading="청구 · 입금" items={dashboard.billingsToCheck} empty="오늘 확인할 청구·입금 예정이 없습니다." />
-      <DashboardList code="오늘" heading="비용 지급" items={dashboard.expensesToCheck} empty="오늘 확인할 비용 지급 예정이 없습니다." />
-      <DashboardList code="오늘" heading="AI 확인 요청" items={dashboard.proposalsToReview} empty="확정 전 AI 제안이 없습니다." />
-
-      <div aria-label="재무 요약" className="stat-grid">
-        <div className="stat-card">
-          <p className="stat-card-label">매출 확정</p>
-          <p className="stat-card-value">{dashboard.revenue.confirmedAmount.toLocaleString("ko-KR")}원</p>
-          <p className="stat-card-sub">예정 {dashboard.revenue.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.revenue.unclassifiedCount}건</p>
-          <Link className="stat-card-link" href="/revenue">매출 원장 →</Link>
-        </div>
-        <div className="stat-card">
-          <p className="stat-card-label">비용 확정</p>
-          <p className="stat-card-value">{dashboard.expenses.confirmedAmount.toLocaleString("ko-KR")}원</p>
-          <p className="stat-card-sub">예정 {dashboard.expenses.scheduledAmount.toLocaleString("ko-KR")}원 · 미분류 {dashboard.expenses.unclassifiedCount}건</p>
-          <Link className="stat-card-link" href="/expenses">비용 원장 →</Link>
-        </div>
-        <div className="stat-card">
-          <p className="stat-card-label">진행 중 프로젝트</p>
-          <p className="stat-card-value">{dashboard.activeProjects.length}건</p>
-          <p className="stat-card-sub">대기 업무 {dashboard.schedule.length}개</p>
-          <Link className="stat-card-link" href="/clients-projects">프로젝트 →</Link>
-        </div>
-        <div className="stat-card">
-          <p className="stat-card-label">문서함</p>
-          <p className="stat-card-value">{dashboard.documentCount}건</p>
-          <p className="stat-card-sub">비공개 원본 보관</p>
-          <Link className="stat-card-link" href="/documents">문서함 →</Link>
-        </div>
+        <section aria-label="오늘 할 일" className="dash-card">
+          <div className="dash-card-head">
+            <h2>오늘 할 일</h2>
+            <span>{dashboard.inbox.length}건</span>
+          </div>
+          {timeline.length === 0 ? <p className="empty-state">오늘 확인할 견적·계약·청구·업무가 없습니다.</p> : (
+            <div className="dash-timeline">
+              <div className="dash-nodes">
+                {timeline.map((item) => (
+                  <span className="dash-node" key={`${item.href}-node`}><i />{item.kindLabel}</span>
+                ))}
+              </div>
+              {timeline.map((item) => <InboxCard item={item} key={`${item.href}-${item.title}`} />)}
+            </div>
+          )}
+        </section>
       </div>
 
-      <DashboardList code="프로젝트" heading="진행 중 고객사 프로젝트" items={dashboard.activeProjects} empty="진행·예정·보류 중인 프로젝트가 없습니다." />
-      <DashboardList code="일정" heading="업무 일정" items={dashboard.schedule} empty="진행 중인 업무가 없습니다." />
-      <DashboardList code="결정" heading="최근 결정" items={dashboard.recentDecisions} empty="확정하거나 반려한 AI 제안이 아직 없습니다." />
+      <section aria-label="진행 중 프로젝트" className="dash-section">
+        <div className="list-heading">
+          <h2>진행 중 프로젝트</h2>
+          <span>{dashboard.projectCards.length}건</span>
+        </div>
+        {dashboard.projectCards.length === 0 ? (
+          <p className="empty-state">진행·예정·보류 중인 프로젝트가 없습니다.</p>
+        ) : (
+          <div className="dash-projects">
+            {dashboard.projectCards.map((project) => <ProjectCard key={project.href} project={project} />)}
+          </div>
+        )}
+      </section>
+
+      <section aria-label="이번 주 일정" className="dash-week">
+        <p className="stat-card-label">이번 주 일정</p>
+        <div className="dash-week-days">
+          {dashboard.weekDays.map((day) => (
+            <span className="dash-week-day" data-today={day.isToday} key={day.date}>
+              {day.label}
+              <b>{day.count}</b>
+            </span>
+          ))}
+        </div>
+        <Link className="text-link" href="/tasks">전체 일정 보기</Link>
+      </section>
+
+      {dashboard.setupProgress < 100 ? (
+        <section aria-label="설립 준비 진행률" className="progress-card">
+          <div>
+            <p>설립 준비 · {dashboard.today}</p>
+            <strong>{dashboard.setupProgress}%</strong>
+          </div>
+          <div aria-hidden="true" className="progress-track"><span style={{ width: `${dashboard.setupProgress}%` }} /></div>
+          <Link className="text-link" href="/company-setup">설립 준비 화면으로 이동</Link>
+        </section>
+      ) : null}
+
+      {dashboard.inbox.length > 3 ? (
+        <section aria-label="나머지 할 일" className="quote-list dash-decisions">
+          <div className="list-heading">
+            <h2>이어서 확인할 일</h2>
+            <span>{dashboard.inbox.length - 3}건</span>
+          </div>
+          {dashboard.inbox.slice(3).map((item) => (
+            <Link className="quote-row" href={item.href} key={`${item.href}-more`}>
+              <div>
+                <p>{item.kindLabel} · {item.detail}</p>
+                <h3>{item.title}</h3>
+              </div>
+              {typeof item.amount === "number" ? <strong>{formatWon(item.amount)}</strong> : null}
+            </Link>
+          ))}
+        </section>
+      ) : null}
+
+      {dashboard.recentDecisions.length > 0 ? (
+        <section aria-label="최근 결정" className="quote-list dash-decisions">
+          <div className="list-heading">
+            <h2>최근 결정</h2>
+            <span>{dashboard.recentDecisions.length}건</span>
+          </div>
+          {dashboard.recentDecisions.map((item) => (
+            <Link className="quote-row" href={item.href} key={item.href}>
+              <div>
+                <p>{item.detail}</p>
+                <h3>{item.title}</h3>
+              </div>
+            </Link>
+          ))}
+        </section>
+      ) : null}
     </main>
   );
 }

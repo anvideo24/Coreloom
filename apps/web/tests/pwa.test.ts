@@ -58,7 +58,7 @@ describe("Coreloom web app manifest", () => {
       start_url: "/dashboard",
       display: "standalone",
       lang: "ko",
-      theme_color: "#0b684c",
+      theme_color: "#1c1916",
     });
   });
 

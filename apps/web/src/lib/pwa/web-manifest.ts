@@ -9,8 +9,8 @@ export function coreloomWebManifest(): MetadataRoute.Manifest {
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",
-    background_color: "#f2f5f0",
-    theme_color: "#0b684c",
+    background_color: "#f3eee6",
+    theme_color: "#1c1916",
     lang: "ko",
     icons: [
       { src: "/icon", sizes: "512x512", type: "image/png", purpose: "any" },

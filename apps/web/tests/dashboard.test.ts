@@ -107,4 +107,55 @@ describe("founder dashboard summary", () => {
     expect(dashboard.documentCount).toBe(4);
     expect(dashboard.revenue.unclassifiedCount).toBe(1);
   });
+
+  it("builds one inbox, vitals, cash weeks, and project cards", () => {
+    const dashboard = buildFounderDashboard({
+      ...empty,
+      today: "2026-09-03",
+      setupItems: [
+        { id: "1", title: "사업자등록 신청 준비", status: "in_progress", evidenceReference: null },
+      ],
+      quotes: [
+        { quoteId: "q1", versionId: "v2", versionNumber: 2, title: "유지보수", clientName: "고객A", totalAmount: 3000, emailRequested: false },
+      ],
+      contracts: [
+        { contractId: "c1", title: "날인 대기", clientName: "고객A", status: "original_recorded", totalAmount: 3000 },
+      ],
+      billings: [
+        { id: "b1", clientName: "고객A", contractTitle: "유지보수", kindLabel: "반복 청구", amount: 3000, billingDate: "2026-09-01", dueDate: "2026-09-02", status: "scheduled" },
+      ],
+      pendingProposals: [
+        { id: "p1", kindLabel: "다음 할 일", body: "일정 조율이 필요합니다", clientName: "고객A", projectName: "브랜드 사이트" },
+      ],
+      projects: [
+        { id: "pr1", name: "진행 프로젝트", clientName: "고객A", status: "active", progressPercent: 40 },
+      ],
+      tasks: [
+        { id: "t1", title: "지난 업무", dueDate: "2026-09-01", status: "open", clientName: "고객A", projectName: "사이트" },
+        { id: "t2", title: "오늘 업무", dueDate: "2026-09-03", status: "open", clientName: "고객A", projectName: "사이트" },
+      ],
+      revenue: { confirmedAmount: 3000, scheduledAmount: 1000, unclassifiedCount: 1 },
+      expenses: [
+        { id: "ex1", title: "광고비", counterparty: "미분류", amount: 4000, settlementDate: "2026-09-03", status: "scheduled", unclassified: true },
+      ],
+    });
+    expect(dashboard.inbox[0]).toMatchObject({ kind: "deposit", overdue: true, title: "유지보수" });
+    expect(dashboard.inbox.map((item) => item.kind)).toContain("task");
+    expect(dashboard.vitals).toEqual({
+      pendingApprovals: 2,
+      todayTasks: 1,
+      overdueDeposits: 1,
+      unclassified: 2,
+      cashRhythm: "watch",
+    });
+    expect(dashboard.cashWeeks[0]).toEqual({ label: "1주", inflow: 3000, outflow: 4000 });
+    expect(dashboard.projectCards[0]).toMatchObject({
+      title: "진행 프로젝트",
+      stages: { quote: true, contract: false, billing: true },
+      nextAction: "입금 · 유지보수",
+    });
+    expect(dashboard.weekDays.map((day) => day.label)).toEqual(["월", "화", "수", "목", "금", "토", "일"]);
+    expect(dashboard.weekDays.find((day) => day.isToday)?.date).toBe("2026-09-03");
+    expect(dashboard.weekDays.find((day) => day.date === "2026-09-01")?.count).toBe(1);
+  });
 });
