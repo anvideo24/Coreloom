@@ -31,7 +31,7 @@
 | 운영 빌드 | `next build` | 완료 | 추적 기준을 저장소 뿌리로. `manual/`·뿌리 `RULES.md`가 배포 목록에 오름. `.env*`는 제외 |
 | 배포본 포장 | — | 미착수 | `output: "standalone"`·Dockerfile·호스팅 모두 없음. 기준을 올렸으므로 포장하면 진입점이 `apps/web/server.js`가 된다 |
 | 휴대폰 Funnel 웹앱 | — | PC 확인 필요 | HTTPS `:8443` → 로컬 3000, 로그인 Origin 허용 |
-| 개발 DB 스키마 | — | PC 확인 필요 | 0017·0018은 2026-09-04 적용. 0019–0024는 코드에 있고 PC에서 `npm run db:migrate` 필요 |
+| 개발 DB 스키마 | — | 완료 | 0000–0024 전부 `ai-development`에 적용됨. 2026-09-04 스키마를 직접 조회해 확인 |
 
 ## 회사 설립
 
