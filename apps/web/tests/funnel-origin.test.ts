@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { authRequestForUpstream, isCoreloomFunnelOrigin } from "@/lib/auth/funnel-origin";
+import {
+  authRequestForUpstream,
+  isCoreloomFunnelOrigin,
+  isLoopbackHost,
+  isLoopbackOrigin,
+  neonTrustedLoopbackOrigin,
+} from "@/lib/auth/funnel-origin";
 
 describe("Coreloom Funnel auth origin", () => {
   it("accepts only HTTPS Funnel :8443 hosts", () => {
@@ -11,7 +17,7 @@ describe("Coreloom Funnel auth origin", () => {
     expect(isCoreloomFunnelOrigin("https://example.com:8443")).toBe(false);
   });
 
-  it("rewrites Funnel Origin to the local Next origin before Neon Auth", () => {
+  it("rewrites Funnel Origin to the Neon-trusted localhost origin", () => {
     const request = authRequestForUpstream(new Request("http://127.0.0.1:3000/api/auth/sign-in/email", {
       method: "POST",
       headers: {
@@ -19,8 +25,28 @@ describe("Coreloom Funnel auth origin", () => {
         referer: "https://office.tailnet.ts.net:8443/sign-in",
       },
     }));
-    expect(request.headers.get("origin")).toBe("http://127.0.0.1:3000");
-    expect(request.headers.get("referer")).toBe("http://127.0.0.1:3000/sign-in");
+    expect(request.headers.get("origin")).toBe("http://localhost:3000");
+    expect(request.headers.get("referer")).toBe("http://localhost:3000/sign-in");
+  });
+
+  it("rewrites the PC 127.0.0.1 origin to localhost before Neon Auth", () => {
+    const request = authRequestForUpstream(new Request("http://127.0.0.1:3000/api/auth/sign-in/email", {
+      method: "POST",
+      headers: {
+        origin: "http://127.0.0.1:3000",
+        referer: "http://127.0.0.1:3000/sign-in",
+      },
+    }));
+    expect(request.headers.get("origin")).toBe("http://localhost:3000");
+    expect(request.headers.get("referer")).toBe("http://localhost:3000/sign-in");
+  });
+
+  it("leaves an already-localhost origin unchanged", () => {
+    const request = authRequestForUpstream(new Request("http://127.0.0.1:3000/api/auth/sign-in/email", {
+      method: "POST",
+      headers: { origin: "http://localhost:3000" },
+    }));
+    expect(request.headers.get("origin")).toBe("http://localhost:3000");
   });
 
   it("leaves other origins unchanged", () => {
@@ -29,5 +55,22 @@ describe("Coreloom Funnel auth origin", () => {
       headers: { origin: "https://example.com" },
     }));
     expect(request.headers.get("origin")).toBe("https://example.com");
+  });
+});
+
+describe("PC loopback auth origin", () => {
+  it("treats localhost, 127.0.0.1, and IPv6 loopback as the same PC host", () => {
+    expect(isLoopbackHost("127.0.0.1")).toBe(true);
+    expect(isLoopbackHost("localhost")).toBe(true);
+    expect(isLoopbackHost("::1")).toBe(true);
+    expect(isLoopbackHost("[::1]")).toBe(true);
+    expect(isLoopbackHost("office.tailnet.ts.net")).toBe(false);
+    expect(isLoopbackOrigin("http://127.0.0.1:3000")).toBe(true);
+    expect(isLoopbackOrigin("http://localhost:3000")).toBe(true);
+    expect(isLoopbackOrigin("https://127.0.0.1:3000")).toBe(false);
+    expect(neonTrustedLoopbackOrigin("http://127.0.0.1:3000")).toBe("http://localhost:3000");
+    expect(neonTrustedLoopbackOrigin("http://[::1]:3000")).toBe("http://localhost:3000");
+    expect(neonTrustedLoopbackOrigin("http://localhost:3000")).toBe("http://localhost:3000");
+    expect(neonTrustedLoopbackOrigin("https://office.tailnet.ts.net:8443")).toBe(null);
   });
 });

@@ -21,4 +21,9 @@ describe("signInFailureMessage", () => {
     expect(signInFailureMessage({ status: 403 })).toContain("휴대폰 HTTPS 주소");
     expect(signInFailureMessage({ code: "INVALID_ORIGIN" })).toContain("휴대폰 HTTPS 주소");
   });
+
+  it("explains a blocked PC loopback origin without mentioning the phone address", () => {
+    expect(signInFailureMessage({ status: 0 }, "127.0.0.1")).toContain("http://localhost:3000/sign-in");
+    expect(signInFailureMessage({ code: "INVALID_ORIGIN" }, "localhost")).not.toContain("휴대폰 HTTPS 주소");
+  });
 });

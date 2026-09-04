@@ -27,5 +27,5 @@ Coreloom에서 무엇을 하든 먼저 [RULES.md](RULES.md)를 읽는다. 이 �
 
 ## 3. 개발 PC와 스키마
 
-- 개발 Windows PC의 로컬 저장소는 `C:\dev\Coreloom`이다. 정식 기동은 `apps/web`에서 `npm run up`이다. 로컬은 HTTP `http://127.0.0.1:3000`만 쓰고, 휴대폰 Funnel은 HTTPS `:8443`이다. 숫자 없는 `443`은 끄고, `:10000`은 다른 앱이므로 건드리지 않는다. 상세는 매뉴얼 정본을 따른다.
+- 개발 Windows PC의 로컬 저장소는 `C:\dev\Coreloom`이다. 정식 기동은 `apps/web`에서 `npm run up`이다. 로컬은 HTTP `http://127.0.0.1:3000`만 쓰고, 로그인 Origin은 `localhost`와 같게 본다. 휴대폰 Funnel은 HTTPS `:8443`이다. 숫자 없는 `443`은 끄고, `:10000`은 다른 앱이므로 건드리지 않는다. 상세는 매뉴얼 정본을 따른다.
 - 스키마를 바꾸면 같은 변경에 drizzle 마이그레이션을 둔다. 개발 PC에서 `npm run db:migrate`(또는 `tsx scripts/migrate.ts`)가 필요하면 그 안내를 빠뜨리지 않는다.
