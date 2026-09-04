@@ -30,6 +30,7 @@ export function QuoteNewVersionForm({
   validUntil,
   clientContactId,
   versions,
+  issuer,
 }: {
   quoteId: string;
   clientId: string;
@@ -47,6 +48,7 @@ export function QuoteNewVersionForm({
   validUntil?: Date | string | null;
   clientContactId?: string | null;
   versions?: QuoteComposerVersion[];
+  issuer?: import("@/lib/quotes/issuer").QuoteIssuerProfile | null;
 }) {
   const initialPackages: QuotePackage[] = packagesFromStoredItems(items);
   const issuedValue =
@@ -81,6 +83,7 @@ export function QuoteNewVersionForm({
           initialTitle={title}
           initialValidUntil={validValue}
           initialVatMode={vatMode}
+          issuer={issuer}
           versionNumber={nextVersionNumber}
           versions={versions}
         />

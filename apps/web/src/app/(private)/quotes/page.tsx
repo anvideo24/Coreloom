@@ -11,7 +11,7 @@ export default async function QuotesPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { clients, projects, contacts, versions } = await listFounderQuotes(session.founder.id);
+  const { clients, projects, contacts, versions, issuer } = await listFounderQuotes(session.founder.id);
 
   return (
     <main className="operations-shell">
@@ -19,6 +19,7 @@ export default async function QuotesPage() {
         <QuotesPageClient
           clients={clients}
           contacts={contacts}
+          issuer={issuer}
           projects={projects}
           versions={versions}
         />

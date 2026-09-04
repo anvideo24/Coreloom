@@ -48,6 +48,7 @@ export default async function QuotePrintPage({
         contactName={version.contactName || contact?.name}
         contactPhone={contact?.phone}
         issuedOn={issuedOn}
+        issuer={detail.issuer}
         items={items}
         note={version.note}
         subtotalAmount={version.subtotalAmount}

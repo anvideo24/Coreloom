@@ -16,6 +16,7 @@ import {
   type QuotePackage,
   type QuoteVatMode,
 } from "@/lib/domain/quotes";
+import type { QuoteIssuerProfile } from "@/lib/quotes/issuer";
 
 export type QuoteComposerContact = {
   id: string;
@@ -50,6 +51,7 @@ type ComposerProps = {
   contacts?: QuoteComposerContact[];
   versionNumber?: number;
   versions?: QuoteComposerVersion[];
+  issuer?: QuoteIssuerProfile | null;
   note?: string;
   onNoteChange?: (note: string) => void;
   vatMode?: QuoteVatMode;
@@ -177,6 +179,7 @@ export function QuoteCostingComposer({
   contacts = [],
   versionNumber = 1,
   versions = [],
+  issuer = null,
   note: controlledNote,
   onNoteChange,
   vatMode: controlledVatMode,
@@ -508,6 +511,7 @@ export function QuoteCostingComposer({
                 contactName={selectedContact?.name}
                 contactPhone={selectedContact?.phone}
                 issuedOn={issuedOnDate}
+                issuer={issuer}
                 items={customerPreviewItems}
                 note={note}
                 subtotalAmount={preview.subtotalAmount}

@@ -30,6 +30,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ quot
     note: version.note,
     issuedOn: version.issuedOn,
     validUntil: version.validUntil,
+    issuer: detail.issuer,
   });
 
   return new NextResponse(new Uint8Array(pdf), {

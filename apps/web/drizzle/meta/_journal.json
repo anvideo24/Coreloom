@@ -155,6 +155,13 @@
       "when": 1788506400000,
       "tag": "0021_quote_invoice_document",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788510000000,
+      "tag": "0022_workspace_company_profile",
+      "breakpoints": true
     }
   ]
 }

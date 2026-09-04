@@ -3,8 +3,13 @@ import "server-only";
 import { and, asc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
-import { auditEvents, companySetupItems } from "@/lib/db/schema";
+import { auditEvents, companySetupItems, workspaceCompanyProfiles } from "@/lib/db/schema";
 import { companySetupTemplates, normalizeCompanySetupUpdate } from "@/lib/domain/company-setup";
+import {
+  normalizeWorkspaceCompanyProfileInput,
+  resolveQuoteIssuerProfile,
+  type WorkspaceCompanyProfileInput,
+} from "@/lib/quotes/issuer";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 async function ensureCompanySetupItems(workspaceId: string, actorUserId: string) {
@@ -44,7 +49,59 @@ async function ensureCompanySetupItems(workspaceId: string, actorUserId: string)
 export async function listFounderCompanySetup(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId);
   const items = await ensureCompanySetupItems(workspace.id, authUserId);
-  return { workspace, items };
+  const companyProfile = await getFounderCompanyProfile(authUserId);
+  return { workspace, items, companyProfile };
+}
+
+export async function getFounderCompanyProfile(authUserId: string) {
+  const workspace = await ensureFounderWorkspace(authUserId, "quotes");
+  const database = createDatabase();
+  const [row] = await database
+    .select()
+    .from(workspaceCompanyProfiles)
+    .where(eq(workspaceCompanyProfiles.workspaceId, workspace.id))
+    .limit(1);
+  return resolveQuoteIssuerProfile(row ?? null);
+}
+
+export async function upsertFounderCompanyProfile(input: {
+  actorUserId: string;
+} & WorkspaceCompanyProfileInput) {
+  const workspace = await ensureFounderWorkspace(input.actorUserId);
+  const database = createDatabase();
+  const normalized = normalizeWorkspaceCompanyProfileInput(input);
+  const [existing] = await database
+    .select({ id: workspaceCompanyProfiles.id })
+    .from(workspaceCompanyProfiles)
+    .where(eq(workspaceCompanyProfiles.workspaceId, workspace.id))
+    .limit(1);
+
+  const saved = existing
+    ? (
+        await database
+          .update(workspaceCompanyProfiles)
+          .set({ ...normalized, updatedAt: new Date() })
+          .where(eq(workspaceCompanyProfiles.id, existing.id))
+          .returning()
+      )[0]
+    : (
+        await database
+          .insert(workspaceCompanyProfiles)
+          .values({ workspaceId: workspace.id, ...normalized })
+          .returning()
+      )[0];
+
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "company_profile.upserted",
+    payload: {
+      hasBusinessRegistrationNumber: Boolean(normalized.businessRegistrationNumber),
+      hasBankAccount: Boolean(normalized.bankAccount),
+    },
+  });
+
+  return resolveQuoteIssuerProfile(saved);
 }
 
 export async function updateFounderCompanySetupItem(input: {
