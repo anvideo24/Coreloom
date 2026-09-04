@@ -6,6 +6,7 @@
     "predev": "tsx scripts/sync-main.ts",
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "up": "tsx scripts/dev-up.ts",
+    "stay": "tsx scripts/stay-up.ts",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3000",
     "lan": "tsx scripts/print-lan-urls.ts",

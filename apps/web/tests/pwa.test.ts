@@ -8,7 +8,7 @@ import {
   LOCAL_MDNS_PATTERN,
   TAILSCALE_MAGICDNS_PATTERN,
 } from "@/lib/pwa/dev-origins";
-import { decideLocalMainSync, formatLocalUpBanner, PC_DEV_DASHBOARD } from "@/lib/pwa/local-up";
+import { decideLocalMainSync, decideStayUpTick, formatLocalUpBanner, PC_DEV_DASHBOARD } from "@/lib/pwa/local-up";
 import { funnelAuthDomainHint, funnelHttpsOrigins, tailscaleFunnelArgs, tailscaleFunnelDisableRootArgs } from "@/lib/pwa/tailscale-funnel";
 import { coreloomWebManifest } from "@/lib/pwa/web-manifest";
 
@@ -89,5 +89,16 @@ describe("local PC always-up", () => {
     expect(banner).toContain(PC_DEV_DASHBOARD);
     expect(banner).toContain("https://office.tailnet.ts.net");
     expect(banner).toContain("PC에서는 Tailscale 없이");
+  });
+
+  it("restarts the PC server when main moved or the server is down", () => {
+    expect(decideStayUpTick({ branch: "main", dirty: false, behindMain: true, serverRunning: true })).toEqual({
+      pull: true,
+      restart: true,
+      message: "origin/main을 받아 PC와 휴대폰이 같은 최신 화면을 보게 합니다. 서버를 다시 켭니다.",
+    });
+    expect(decideStayUpTick({ branch: "main", dirty: false, behindMain: false, serverRunning: false }).restart).toBe(true);
+    expect(decideStayUpTick({ branch: "main", dirty: false, behindMain: false, serverRunning: true }).restart).toBe(false);
+    expect(decideStayUpTick({ branch: "main", dirty: true, behindMain: true, serverRunning: true }).pull).toBe(false);
   });
 });
