@@ -28,6 +28,7 @@ export const aiAgentModelProvider = pgEnum("ai_agent_model_provider", [
 ]);
 export const quoteVatMode = pgEnum("quote_vat_mode", ["exclusive", "inclusive"]);
 export const clientTaxType = pgEnum("client_tax_type", ["general", "simplified", "exempt"]);
+export const clientTradeKind = pgEnum("client_trade_kind", ["sales", "purchase", "both"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -136,6 +137,7 @@ export const clientCompanies = pgTable(
     email: text("email"),
     businessRegistrationRef: text("business_registration_ref"),
     taxType: clientTaxType("tax_type"),
+    tradeKind: clientTradeKind("trade_kind").notNull().default("sales"),
     bankName: text("bank_name"),
     bankAccount: text("bank_account"),
     accountHolder: text("account_holder"),
@@ -531,6 +533,7 @@ export const expenseEntries = pgTable(
     status: expenseEntryStatus("status").notNull().default("scheduled"),
     accountCategory: text("account_category"),
     supplierName: text("supplier_name"),
+    supplierClientCompanyId: uuid("supplier_client_company_id").references(() => clientCompanies.id),
     note: text("note"),
     confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
     createdAt,

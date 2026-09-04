@@ -1,9 +1,11 @@
 import "server-only";
 
-import { and, asc, desc, eq, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, clientCompanies, expenseEntries, projects, ventures } from "@/lib/db/schema";
+import { clientAllowsPurchase } from "@/lib/domain/clients-projects";
 import {
   confirmExpenseEntry,
   ledgerRowFromExpenseEntry,
@@ -12,6 +14,8 @@ import {
   summarizeExpenses,
 } from "@/lib/domain/expenses";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
+
+const supplierClients = alias(clientCompanies, "supplier_clients");
 
 export async function listFounderExpenseLedger(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "expenses");
@@ -33,6 +37,18 @@ export async function listFounderExpenseLedger(authUserId: string) {
     .where(and(eq(projects.workspaceId, workspace.id), isNull(projects.deletedAt), isNull(clientCompanies.deletedAt)))
     .orderBy(asc(clientCompanies.name), asc(projects.name));
 
+  const supplierRows = await database.select({
+    id: clientCompanies.id,
+    name: clientCompanies.name,
+    tradeKind: clientCompanies.tradeKind,
+  }).from(clientCompanies)
+    .where(and(
+      eq(clientCompanies.workspaceId, workspace.id),
+      isNull(clientCompanies.deletedAt),
+      inArray(clientCompanies.tradeKind, ["purchase", "both"]),
+    ))
+    .orderBy(asc(clientCompanies.name));
+
   const entryRows = await database.select({
     id: expenseEntries.id,
     amount: expenseEntries.amount,
@@ -42,6 +58,7 @@ export async function listFounderExpenseLedger(authUserId: string) {
     status: expenseEntries.status,
     accountCategory: expenseEntries.accountCategory,
     supplierName: expenseEntries.supplierName,
+    supplierClientName: supplierClients.name,
     ventureName: ventures.name,
     ventureKind: ventures.kind,
     clientName: clientCompanies.name,
@@ -50,6 +67,7 @@ export async function listFounderExpenseLedger(authUserId: string) {
     .leftJoin(ventures, eq(expenseEntries.ventureId, ventures.id))
     .leftJoin(projects, eq(expenseEntries.projectId, projects.id))
     .leftJoin(clientCompanies, eq(expenseEntries.clientCompanyId, clientCompanies.id))
+    .leftJoin(supplierClients, eq(expenseEntries.supplierClientCompanyId, supplierClients.id))
     .where(and(eq(expenseEntries.workspaceId, workspace.id), isNull(expenseEntries.deletedAt)))
     .orderBy(desc(expenseEntries.occurredOn));
 
@@ -57,6 +75,7 @@ export async function listFounderExpenseLedger(authUserId: string) {
   return {
     ventures: ventureRows,
     projects: projectRows,
+    suppliers: supplierRows.filter((row) => clientAllowsPurchase(row.tradeKind)),
     rows,
     summary: summarizeExpenses(rows),
   };
@@ -97,6 +116,7 @@ export async function createFounderExpenseEntry(input: {
   note?: string;
   accountCategory?: string;
   supplierName?: string;
+  supplierClientCompanyId?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "expenses");
   const database = createDatabase();
@@ -127,6 +147,28 @@ export async function createFounderExpenseEntry(input: {
     if (!venture) throw new Error("Venture was not found");
   }
 
+  let supplierName = draft.supplierName;
+  let supplierClientCompanyId = draft.supplierClientCompanyId;
+  if (supplierClientCompanyId) {
+    const [supplier] = await database.select({
+      id: clientCompanies.id,
+      name: clientCompanies.name,
+      tradeKind: clientCompanies.tradeKind,
+    }).from(clientCompanies)
+      .where(and(
+        eq(clientCompanies.id, supplierClientCompanyId),
+        eq(clientCompanies.workspaceId, workspace.id),
+        isNull(clientCompanies.deletedAt),
+      ))
+      .limit(1);
+    if (!supplier) throw new Error("Supplier client was not found");
+    if (!clientAllowsPurchase(supplier.tradeKind)) {
+      throw new Error("Supplier client must allow purchase trade");
+    }
+    supplierClientCompanyId = supplier.id;
+    if (!supplierName) supplierName = supplier.name;
+  }
+
   const [created] = await database.insert(expenseEntries).values({
     workspaceId: workspace.id,
     ventureId: draft.ventureId,
@@ -137,7 +179,8 @@ export async function createFounderExpenseEntry(input: {
     occurredOn: draft.occurredOn,
     settlementDate: draft.settlementDate,
     accountCategory: draft.accountCategory,
-    supplierName: draft.supplierName,
+    supplierName,
+    supplierClientCompanyId,
     note: draft.note,
   }).returning({ id: expenseEntries.id });
 
@@ -150,6 +193,7 @@ export async function createFounderExpenseEntry(input: {
       projectId: draft.projectId,
       ventureId: draft.ventureId,
       amount: draft.amount,
+      supplierClientCompanyId,
     },
   });
 

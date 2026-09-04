@@ -64,6 +64,7 @@ export function normalizeExpenseEntry(input: {
   note?: string;
   accountCategory?: string;
   supplierName?: string;
+  supplierClientCompanyId?: string;
 }): {
   projectId: string | null;
   ventureId: string | null;
@@ -74,6 +75,7 @@ export function normalizeExpenseEntry(input: {
   note: string | null;
   accountCategory: ExpenseAccountCategory | null;
   supplierName: string | null;
+  supplierClientCompanyId: string | null;
 } {
   const projectId = input.projectId?.trim() || null;
   const ventureId = input.ventureId?.trim() || null;
@@ -91,6 +93,7 @@ export function normalizeExpenseEntry(input: {
   }
   const supplierName = input.supplierName?.trim() || null;
   if (supplierName && supplierName.length > 120) throw new Error("Supplier name is too long");
+  const supplierClientCompanyId = input.supplierClientCompanyId?.trim() || null;
   return {
     projectId,
     ventureId,
@@ -101,6 +104,7 @@ export function normalizeExpenseEntry(input: {
     note: input.note?.trim() || null,
     accountCategory,
     supplierName,
+    supplierClientCompanyId,
   };
 }
 
@@ -118,6 +122,7 @@ export function ledgerRowFromExpenseEntry(input: {
   clientName: string | null;
   projectName: string | null;
   supplierName?: string | null;
+  supplierClientName?: string | null;
   accountCategory?: string | null;
   amount: number;
   currency: string;
@@ -135,8 +140,9 @@ export function ledgerRowFromExpenseEntry(input: {
     input.accountCategory && expenseAccountCategories.includes(input.accountCategory as ExpenseAccountCategory)
       ? expenseAccountCategoryLabels[input.accountCategory as ExpenseAccountCategory]
       : null;
-  const counterparty = input.supplierName?.trim()
-    ? input.supplierName.trim()
+  const supplierLabel = input.supplierName?.trim() || input.supplierClientName?.trim() || null;
+  const counterparty = supplierLabel
+    ? supplierLabel
     : unclassified
       ? UNCLASSIFIED_LABEL
       : input.ventureName ?? (input.projectName ? `${input.clientName} · ${input.projectName}` : input.clientName ?? UNCLASSIFIED_LABEL);
@@ -145,7 +151,7 @@ export function ledgerRowFromExpenseEntry(input: {
     id: input.id,
     href: `/expenses/${input.id}`,
     sourceLabel: categoryLabel ? `${sourceLabel} · ${categoryLabel}` : sourceLabel,
-    title: input.projectName ?? input.ventureName ?? input.supplierName?.trim() ?? UNCLASSIFIED_LABEL,
+    title: input.projectName ?? input.ventureName ?? supplierLabel ?? UNCLASSIFIED_LABEL,
     counterparty,
     amount: input.amount,
     currency: input.currency,

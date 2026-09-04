@@ -19,6 +19,7 @@ describe("expense entries", () => {
       note: " 광고비 ",
       accountCategory: "marketing",
       supplierName: " 광고사 ",
+      supplierClientCompanyId: " supplier-1 ",
     })).toEqual({
       projectId: null,
       ventureId: "venture-1",
@@ -29,6 +30,7 @@ describe("expense entries", () => {
       note: "광고비",
       accountCategory: "marketing",
       supplierName: "광고사",
+      supplierClientCompanyId: "supplier-1",
     });
   });
 
@@ -47,6 +49,29 @@ describe("expense entries", () => {
       note: null,
       accountCategory: null,
       supplierName: null,
+      supplierClientCompanyId: null,
+    });
+  });
+
+  it("uses supplier client name as counterparty when the free-text name is empty", () => {
+    expect(
+      ledgerRowFromExpenseEntry({
+        id: "expense-s",
+        ventureName: null,
+        ventureKind: null,
+        clientName: null,
+        projectName: null,
+        supplierName: null,
+        supplierClientName: "오피스디포",
+        amount: 5000,
+        currency: "KRW",
+        occurredOn: "2026-09-04",
+        settlementDate: "2026-09-05",
+        status: "scheduled",
+      }),
+    ).toMatchObject({
+      counterparty: "오피스디포",
+      title: "오피스디포",
     });
   });
 

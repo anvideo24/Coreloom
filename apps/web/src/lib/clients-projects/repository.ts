@@ -26,6 +26,7 @@ const clientCompanyColumns = {
   email: clientCompanies.email,
   businessRegistrationRef: clientCompanies.businessRegistrationRef,
   taxType: clientCompanies.taxType,
+  tradeKind: clientCompanies.tradeKind,
   bankName: clientCompanies.bankName,
   bankAccount: clientCompanies.bankAccount,
   accountHolder: clientCompanies.accountHolder,

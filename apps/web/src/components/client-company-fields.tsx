@@ -1,5 +1,10 @@
-import type { ClientCompanyProfile, ClientTaxType } from "@/lib/domain/clients-projects";
-import { clientTaxTypeLabels, clientTaxTypes } from "@/lib/domain/clients-projects";
+import type { ClientCompanyProfile, ClientTaxType, ClientTradeKind } from "@/lib/domain/clients-projects";
+import {
+  clientTaxTypeLabels,
+  clientTaxTypes,
+  clientTradeKindLabels,
+  clientTradeKinds,
+} from "@/lib/domain/clients-projects";
 
 type ClientCompanyFieldsProps = {
   defaults?: Partial<ClientCompanyProfile>;
@@ -36,6 +41,16 @@ export function ClientCompanyFields({ defaults, includeFirstContact = false }: C
           {clientTaxTypes.map((type) => (
             <option key={type} value={type}>
               {clientTaxTypeLabels[type as ClientTaxType]}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        거래 유형
+        <select defaultValue={defaults?.tradeKind ?? "sales"} name="tradeKind">
+          {clientTradeKinds.map((kind) => (
+            <option key={kind} value={kind}>
+              {clientTradeKindLabels[kind as ClientTradeKind]}
             </option>
           ))}
         </select>

@@ -30,6 +30,7 @@ function companyProfileFromForm(formData: FormData) {
     email: value(formData, "email"),
     businessRegistrationRef: value(formData, "businessRegistrationRef"),
     taxType: value(formData, "taxType"),
+    tradeKind: value(formData, "tradeKind"),
     bankName: value(formData, "bankName"),
     bankAccount: value(formData, "bankAccount"),
     accountHolder: value(formData, "accountHolder"),

@@ -16,6 +16,7 @@ import { UNCLASSIFIED_LABEL, ventureKindLabels, type VentureKind } from "@/lib/d
 
 type Project = { id: string; name: string; clientName: string };
 type Venture = { id: string; name: string; kind: VentureKind };
+type Supplier = { id: string; name: string };
 type ExpenseRow = {
   id: string;
   href: string;
@@ -35,11 +36,13 @@ type Summary = {
 export function ExpensesPageClient({
   ventures,
   projects,
+  suppliers,
   rows,
   summary,
 }: {
   ventures: Venture[];
   projects: Project[];
+  suppliers: Supplier[];
   rows: ExpenseRow[];
   summary: Summary;
 }) {
@@ -119,7 +122,8 @@ export function ExpensesPageClient({
           <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
             프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 사업은 매출 원장에서 먼저 등록합니다.
-            매입처 이름은 고객사와 별도로 적을 수 있습니다. 증빙 파일은 문서함에서 연결합니다.
+            매입처는 거래 유형이 매입 또는 매출·매입인 고객사만 고를 수 있고, 이름을 비우면 그 상호로 채웁니다. 고객사에 없는
+            거래처는 이름만 적어도 됩니다. 증빙 파일은 문서함에서 연결합니다.
           </p>
           <label>
             고객사 프로젝트 (선택)
@@ -157,8 +161,19 @@ export function ExpensesPageClient({
             </select>
           </label>
           <label>
-            매입처 (선택)
-            <input name="supplierName" placeholder="공급 거래처 상호" />
+            매입처 고객사 (선택)
+            <select defaultValue="" name="supplierClientCompanyId">
+              <option value="">선택 안 함</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            매입처 이름 (선택)
+            <input name="supplierName" placeholder="고객사 미연결 시 또는 병기" />
           </label>
           <label>
             금액 (원)
