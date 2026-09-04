@@ -8,6 +8,7 @@ import {
   LOCAL_MDNS_PATTERN,
   TAILSCALE_MAGICDNS_PATTERN,
 } from "@/lib/pwa/dev-origins";
+import { decideLocalMainSync, formatLocalUpBanner, PC_DEV_DASHBOARD } from "@/lib/pwa/local-up";
 import { funnelAuthDomainHint, funnelHttpsOrigins, tailscaleFunnelArgs } from "@/lib/pwa/tailscale-funnel";
 import { coreloomWebManifest } from "@/lib/pwa/web-manifest";
 
@@ -71,5 +72,21 @@ describe("Coreloom web app manifest", () => {
       "https://office.tailnet.ts.net",
     ]);
     expect(funnelAuthDomainHint("https://office.tailnet.ts.net")).toContain("Neon Console");
+  });
+});
+
+describe("local PC always-up", () => {
+  it("pulls main only when the PC is on a clean main branch behind origin", () => {
+    expect(decideLocalMainSync({ branch: "main", dirty: false, behindMain: true })).toMatchObject({ action: "pull" });
+    expect(decideLocalMainSync({ branch: "main", dirty: false, behindMain: false }).action).toBe("skip");
+    expect(decideLocalMainSync({ branch: "main", dirty: true, behindMain: true })).toMatchObject({ action: "skip" });
+    expect(decideLocalMainSync({ branch: "cursor/local-always-up-0ce2", dirty: false, behindMain: true }).action).toBe("skip");
+  });
+
+  it("always prints the PC dashboard URL next to the phone Funnel address", () => {
+    const banner = formatLocalUpBanner({ phoneOrigins: ["https://office.tailnet.ts.net"] });
+    expect(banner).toContain(PC_DEV_DASHBOARD);
+    expect(banner).toContain("https://office.tailnet.ts.net");
+    expect(banner).toContain("PC에서는 Tailscale 없이");
   });
 });

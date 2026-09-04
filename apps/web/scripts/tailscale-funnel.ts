@@ -30,6 +30,6 @@ if (status.status !== 0) {
   process.exit(status.status === null ? 1 : status.status);
 }
 
-process.stdout.write("휴대폰에서는 Tailscale을 켜지 마세요. ALT. LIFE처럼 아래 주소를 브라우저에서 연 뒤 홈 화면에 추가하면 됩니다. 이 주소는 다른 사람에게 보내지 마세요.\n");
+process.stdout.write("PC에서는 http://127.0.0.1:3000/dashboard 를 엽니다. 휴대폰에서는 Tailscale을 켜지 마세요. ALT. LIFE처럼 아래 주소를 브라우저에서 연 뒤 홈 화면에 추가하면 됩니다. 이 주소는 다른 사람에게 보내지 마세요.\n");
 process.stdout.write(status.stdout || "Funnel이 이 PC의 포트 3000을 연결했습니다.\n");
 process.stdout.write(funnelAuthDomainHint(status.stdout ?? ""));

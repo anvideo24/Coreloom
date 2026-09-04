@@ -27,7 +27,7 @@ Coreloom은 강의·앱·온라인 서비스를 함께 운영하는 1인 창업�
 ## 대표 로그인과 데이터 기반
 
 - Coreloom은 Neon Auth의 대표 이메일 로그인과 서버 측 허용 이메일 검사 두 단계를 함께 사용한다. 인증은 됐지만 허용 이메일과 다른 계정은 운영 화면을 볼 수 없다.
-- 개발 PC에서 Tailscale을 켠 뒤 `npm run dev`와 `npm run funnel`을 실행한다. 휴대폰에서는 Tailscale을 켜지 않고, ALT. LIFE처럼 나온 HTTPS 주소를 브라우저에서 연다. Safari 또는 Chrome에서 홈 화면에 추가하면 단독 웹앱처럼 열린다. 이 주소는 대표만 쓰고 다른 사람에게 보내지 않으며, 로그인된 대표 계정만 들어올 수 있다. Funnel 주소는 localhost가 아니므로, 휴대폰 로그인이 막히면 Neon Console → Auth → Configuration → Domains에 그 HTTPS 주소를 넣는다. `/setup`은 이 PC의 localhost에서만 저장된다. PC가 꺼져 있거나 서버가 꺼져 있으면 휴대폰에서도 열리지 않는다. 개발 서버를 바꾼 뒤에는 다시 켠다.
+- 개발 PC에서 Tailscale을 켠 뒤 `apps/web`에서 `npm run up`을 실행한다. 이 명령은 `main`이 깨끗하면 최신을 받고, 예전에 켜 둔 3000번 서버를 끈 다음 PC와 휴대폰용 주소를 같이 연다. PC 브라우저는 `http://127.0.0.1:3000/dashboard`를 연다. 휴대폰에서는 Tailscale을 켜지 않고, ALT. LIFE처럼 나온 HTTPS 주소를 브라우저에서 연다. Safari 또는 Chrome에서 홈 화면에 추가하면 단독 웹앱처럼 열린다. PC만 열 때는 `npm run dev`로도 된다. `npm run dev`를 켤 때도 `main`이 깨끗하면 최신을 먼저 받는다. 이 주소는 대표만 쓰고 다른 사람에게 보내지 않으며, 로그인된 대표 계정만 들어올 수 있다. Funnel 주소는 localhost가 아니므로, 휴대폰 로그인이 막히면 Neon Console → Auth → Configuration → Domains에 그 HTTPS 주소를 넣는다. `/setup`은 이 PC의 localhost에서만 저장된다. PC가 꺼져 있거나 서버가 꺼져 있으면 휴대폰에서도 열리지 않는다. 개발 서버를 바꾼 뒤에는 다시 켠다.
 - `/dashboard`에서 승인 대기·오늘 업무·연체 입금·미분류와 오늘 할 일 한 목록, 이번 달 입금·지급 추이, 진행 프로젝트의 견적·계약·청구 단계와 다음 할 일을 본다. 설립이 끝나지 않았으면 진행률도 함께 본다. 이 화면은 조회만 하며 발송·체결·입금 확정·비용 확정·AI 확정을 대신 실행하지 않는다.
 - 개발 PC에서 처음 연결할 때만 `/setup`에서 Neon Auth 주소와 대표 이메일을 입력할 수 있다. 데이터베이스 연결 문자열은 스키마 작업을 시작할 때 별도로 연결한다. 이 화면은 운영 배포에서는 열리지 않으며, `.env.local`이 있으면 덮어쓰지 않는다.
 - 개발용 스키마를 적용할 때만 `/setup/database`에 `ai-development` 연결 문자열을 추가한다. 기존 Auth 설정이나 기존 데이터베이스 연결 문자열은 이 화면에서 덮어쓰지 않는다.

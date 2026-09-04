@@ -22,6 +22,7 @@
 | 대표 내비게이션 | 전체 | 완료 | 좌측 공통 메뉴 |
 | 대시보드 | `/dashboard` | 완료 | 조회 전용, Inbox·입금/지급 추이·프로젝트 단계 |
 | 운영 매뉴얼 화면 | `/admin/manual` | 완료 | 읽기 전용, 배포 버전·커밋 표시 |
+| 개발 PC 기동 | `npm run up` | 완료 | main 동기화 후 PC·Funnel 같은 서버 |
 | 휴대폰 Funnel 웹앱 | — | PC 확인 필요 | Tailscale Funnel HTTPS |
 
 ## 회사 설립
