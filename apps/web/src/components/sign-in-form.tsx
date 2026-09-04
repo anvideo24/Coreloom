@@ -20,15 +20,19 @@ export function SignInForm() {
     const formData = new FormData(event.currentTarget);
     const email = String(formData.get("email") ?? "").trim();
     const password = String(formData.get("password") ?? "");
-    const { error: signInError } = await authClient.signIn.email({ email, password });
 
-    if (signInError) {
-      setError(signInFailureMessage(signInError));
+    try {
+      const { error: signInError } = await authClient.signIn.email({ email, password });
+      if (signInError) {
+        setError(signInFailureMessage(signInError));
+        return;
+      }
+      router.push("/dashboard");
+    } catch {
+      setError(signInFailureMessage({ status: 0 }));
+    } finally {
       setIsSubmitting(false);
-      return;
     }
-
-    router.push("/dashboard");
   }
 
   return (

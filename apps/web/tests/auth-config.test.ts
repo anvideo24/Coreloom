@@ -19,5 +19,6 @@ describe("signInFailureMessage", () => {
 
   it("explains a blocked phone origin without exposing internals", () => {
     expect(signInFailureMessage({ status: 403 })).toContain("휴대폰 HTTPS 주소");
+    expect(signInFailureMessage({ code: "INVALID_ORIGIN" })).toContain("휴대폰 HTTPS 주소");
   });
 });
