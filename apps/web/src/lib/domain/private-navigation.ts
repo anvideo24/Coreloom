@@ -53,7 +53,7 @@ export const navGroups: NavGroup[] = [
   },
   {
     label: "설정",
-    items: [{ href: "/admin/manual", label: "운영 매뉴얼" }],
+    items: [{ href: "/admin/manual", label: "매뉴얼" }],
   },
 ];
 

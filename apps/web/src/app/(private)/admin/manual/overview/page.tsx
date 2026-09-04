@@ -1,20 +1,20 @@
 import { notFound, redirect } from "next/navigation";
 
 import { AdminManualFrame } from "@/components/admin-manual-frame";
-import { readAdminManualChangelog } from "@/lib/admin-manual/repository";
+import { readAdminManualOverview } from "@/lib/admin-manual/repository";
 import { founderSession } from "@/lib/auth/session";
 import { buildAdminManualPage } from "@/lib/domain/admin-manual";
 
 export const dynamic = "force-dynamic";
 
-export default async function AdminManualChangelogPage() {
+export default async function AdminManualOverviewPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
 
-  let source: ReturnType<typeof readAdminManualChangelog>;
+  let source: ReturnType<typeof readAdminManualOverview>;
   try {
-    source = readAdminManualChangelog();
+    source = readAdminManualOverview();
   } catch {
     notFound();
   }
@@ -25,9 +25,9 @@ export default async function AdminManualChangelogPage() {
       blocks={page.blocks}
       deployCommit={page.deployCommit}
       deployVersion={page.deployVersion}
-      intro="매뉴얼 변경 기록의 저장소 원본입니다. 화면에서 고치지 않습니다."
+      intro="저장소 manual/ 원본을 읽기 전용으로 보여 줍니다. 화면에서 고치지 않으며, 변경은 검토·커밋·배포로만 반영합니다."
       manualCommit={page.manualCommit}
-      sourceLabel="manual/CHANGELOG.md"
+      sourceLabel="manual/00-coreloom-매뉴얼.md"
       title={page.title}
     />
   );

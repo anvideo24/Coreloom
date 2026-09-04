@@ -4,12 +4,112 @@ export const ADMIN_MANUAL_ROLES_DIRECTORY = "roles";
 
 export const ADMIN_MANUAL_PROGRESS_FILE = "system-progress.md";
 
-export const adminManualNav = [
-  { href: "/admin/manual", label: "개요" },
-  { href: "/admin/manual/progress", label: "시스템 진행 현황" },
-  { href: "/admin/manual/roles", label: "역할별 운영 절차" },
-  { href: "/admin/manual/changelog", label: "변경 기록" },
+export const ADMIN_MANUAL_HOME_HREF = "/admin/manual";
+export const ADMIN_MANUAL_OVERVIEW_HREF = "/admin/manual/overview";
+
+/** 공용 정본 저장소(working-method)에서 읽어 오는 문서. 이 목록에 없는 파일은 읽지 않는다. */
+export const SHARED_MANUAL_DOCS = [
+  { slug: "rules", file: "RULES.md", title: "공용 규칙" },
+  { slug: "how", file: "HOW.md", title: "일하는 방식" },
+  { slug: "lessons", file: "LESSONS.md", title: "배운 것" },
 ] as const;
+
+export function sharedManualDoc(slug: string) {
+  const doc = SHARED_MANUAL_DOCS.find((item) => item.slug === slug);
+  if (!doc) throw new Error("Unknown manual");
+  return doc;
+}
+
+export type ManualHomeCard = {
+  href: string;
+  label: string;
+  summary: string;
+  source: string;
+} & (
+  /** shared = 공용 저장소를 읽는 칸. 그 파일이 없으면 「아직 없다」로 표시한다. */
+  | { origin: "shared"; slug: string }
+  | { origin: "product"; slug?: undefined }
+);
+
+export const adminManualHomeSections: { title: string; description: string; cards: ManualHomeCard[] }[] = [
+  {
+    title: "규칙",
+    description: "지켜야 하는 것. 두 규칙이 겹치면 이 제품 규칙이 정본입니다.",
+    cards: [
+      {
+        href: "/admin/manual/shared/rules",
+        slug: "rules",
+        label: "공용 규칙",
+        summary: "돈, 승인, AI 권한, 이력, 비밀. 어느 제품에나 해당합니다.",
+        source: "working-method / RULES.md",
+        origin: "shared",
+      },
+      {
+        href: "/admin/manual/rules",
+        label: "이 제품 규칙",
+        summary: "Coreloom만의 차이. 화면 셸, Recho 자료, 관리자 매뉴얼 계약.",
+        source: "Coreloom / RULES.md",
+        origin: "product",
+      },
+    ],
+  },
+  {
+    title: "일하는 방식",
+    description: "규칙이 아니라 지금 이렇게 하고 있고 이유는 무엇인지를 적습니다.",
+    cards: [
+      {
+        href: "/admin/manual/shared/how",
+        slug: "how",
+        label: "일하는 방식",
+        summary: "일을 받았을 때, 판단할 때, 끝낼 때, 오케이 난 뒤.",
+        source: "working-method / HOW.md",
+        origin: "shared",
+      },
+      {
+        href: "/admin/manual/shared/lessons",
+        slug: "lessons",
+        label: "배운 것",
+        summary: "같은 실수를 두 번 겪지 않으려고 압축해 둔 기록.",
+        source: "working-method / LESSONS.md",
+        origin: "shared",
+      },
+    ],
+  },
+  {
+    title: "운영",
+    description: "이 제품을 어떻게 쓰고 지금 어디까지 됐는지.",
+    cards: [
+      {
+        href: ADMIN_MANUAL_OVERVIEW_HREF,
+        label: "운영 설명",
+        summary: "시스템 구조와 운영 방법 전문. 길어서 여기서만 폅니다.",
+        source: "Coreloom / manual/00-coreloom-매뉴얼.md",
+        origin: "product",
+      },
+      {
+        href: "/admin/manual/progress",
+        label: "시스템 진행 현황",
+        summary: "기능별로 어디까지 됐는지 보는 표.",
+        source: "Coreloom / manual/system-progress.md",
+        origin: "product",
+      },
+      {
+        href: "/admin/manual/roles",
+        label: "역할별 운영 절차",
+        summary: "대표, 팀원, 회계 담당자가 각각 무엇을 하는지.",
+        source: "Coreloom / manual/roles/",
+        origin: "product",
+      },
+      {
+        href: "/admin/manual/changelog",
+        label: "변경 기록",
+        summary: "매뉴얼이 언제 무엇 때문에 바뀌었는지.",
+        source: "Coreloom / manual/CHANGELOG.md",
+        origin: "product",
+      },
+    ],
+  },
+];
 
 export type ManualInline =
   | { type: "text"; text: string }
@@ -64,7 +164,7 @@ export function resolveManualHref(href: string) {
   const trimmed = href.trim();
   if (/^https:\/\//i.test(trimmed) || /^http:\/\//i.test(trimmed)) return trimmed;
   const normalized = trimmed.replaceAll("\\", "/").replace(/^\.\//, "");
-  if (normalized.endsWith(ADMIN_MANUAL_OVERVIEW_FILE)) return "/admin/manual";
+  if (normalized.endsWith(ADMIN_MANUAL_OVERVIEW_FILE)) return ADMIN_MANUAL_OVERVIEW_HREF;
   if (normalized.endsWith(ADMIN_MANUAL_CHANGELOG_FILE)) return "/admin/manual/changelog";
   if (normalized.endsWith(ADMIN_MANUAL_PROGRESS_FILE)) return "/admin/manual/progress";
   const roleMatch = normalized.match(/(?:^|\/)roles\/([^/]+)\.md$/);
@@ -96,10 +196,16 @@ function headingLevel(line: string): 1 | 2 | 3 | null {
   return null;
 }
 
+/**
+ * 들여 쓴 목록도 목록으로 읽는다. 들여쓰기를 안 받아 주면 하위 항목이 목록에서 떨어져 나와
+ * 앞 문단에 통째로 붙어 한 줄로 뭉친다 — 에러 없이 화면에서만 어긋난다.
+ * 계층은 만들지 않고 같은 높이의 목록으로 편다.
+ */
 function listItem(line: string) {
-  const unordered = line.match(/^[-*] (.+)$/);
+  const body = line.replace(/^[ \t]+/, "");
+  const unordered = body.match(/^[-*] (.+)$/);
   if (unordered) return { ordered: false, text: unordered[1] };
-  const ordered = line.match(/^\d+\. (.+)$/);
+  const ordered = body.match(/^\d+\. (.+)$/);
   if (ordered) return { ordered: true, text: ordered[1] };
   return null;
 }

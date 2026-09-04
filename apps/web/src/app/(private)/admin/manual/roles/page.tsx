@@ -22,11 +22,11 @@ export default async function AdminManualRolesPage() {
 
   return (
     <AdminManualFrame
-      currentHref="/admin/manual/roles"
       deployCommit={page.deployCommit}
       deployVersion={page.deployVersion}
       intro="역할별 운영 절차는 manual/roles/ 원본만 보여 줍니다. 같은 절차를 이 화면에 복사하지 않습니다."
       manualCommit={page.manualCommit}
+      sourceLabel="manual/roles/"
       title={page.title}
     >
       {source.roles.length === 0 ? (

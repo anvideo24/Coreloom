@@ -14,7 +14,8 @@ const nextConfig: NextConfig = {
     extraOrigins: process.env.CORELOOM_DEV_ORIGINS,
   }),
   outputFileTracingIncludes: {
-    "/admin/manual/**": ["../../manual/**/*.md"],
+    // 매뉴얼 화면은 저장소 원본을 읽는다. 뿌리의 RULES.md도 화면에 나오므로 같이 실어야 한다.
+    "/admin/manual/**": ["../../manual/**/*.md", "../../RULES.md"],
   },
 };
 
