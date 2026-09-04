@@ -62,7 +62,8 @@ export default async function CompanySetupPage() {
       <section aria-label="견적·청구 공급자 정보" className="quote-editor-card">
         <p className="setup-code">문서 공급자 · 입금 안내</p>
         <p className="form-help">
-          견적서·청구서 INVOICE 하단에 들어가는 값입니다. 여기서 저장한 내용만 문서에 나갑니다.
+          견적서·청구서 INVOICE 하단에 들어가는 값입니다. 여기서 저장한 내용만 문서에 나갑니다. 목록+`+`가 아니라
+          체크리스트 면의 구역·2열만 맞춥니다.
         </p>
         {profileStorageMissing ? (
           <p className="auth-notice" role="status">
@@ -70,53 +71,56 @@ export default async function CompanySetupPage() {
           </p>
         ) : null}
         <form action={updateCompanyProfileAction}>
-          <fieldset className="setup-form company-profile-form" disabled={profileStorageMissing}>
-          <label>
-            브랜드명
-            <input defaultValue={companyProfile.brandName} name="brandName" required />
-          </label>
-          <label>
-            상호(정식)
-            <input defaultValue={companyProfile.legalName} name="legalName" />
-          </label>
-          <label>
-            사업자등록번호
-            <input
-              defaultValue={companyProfile.businessRegistrationNumber}
-              name="businessRegistrationNumber"
-            />
-          </label>
-          <label>
-            대표
-            <input defaultValue={companyProfile.representativeName} name="representativeName" />
-          </label>
-          <label className="setup-form-note">
-            주소
-            <input defaultValue={companyProfile.address} name="address" />
-          </label>
-          <label>
-            이메일
-            <input defaultValue={companyProfile.email} name="email" type="email" />
-          </label>
-          <label>
-            은행
-            <input defaultValue={companyProfile.bankName} name="bankName" />
-          </label>
-          <label>
-            계좌
-            <input defaultValue={companyProfile.bankAccount} name="bankAccount" />
-          </label>
-          <label>
-            예금주
-            <input defaultValue={companyProfile.accountHolder} name="accountHolder" />
-          </label>
-          <label>
-            SWIFT
-            <input defaultValue={companyProfile.swift} name="swift" />
-          </label>
-          <button className="auth-submit" type="submit">
-            공급자·입금 정보 저장
-          </button>
+          <fieldset className="quote-form company-profile-form" disabled={profileStorageMissing}>
+            <p className="setup-code quote-form-full">회사</p>
+            <label>
+              브랜드명
+              <input defaultValue={companyProfile.brandName} name="brandName" required />
+            </label>
+            <label>
+              상호(정식)
+              <input defaultValue={companyProfile.legalName} name="legalName" />
+            </label>
+            <label>
+              사업자등록번호
+              <input
+                defaultValue={companyProfile.businessRegistrationNumber}
+                name="businessRegistrationNumber"
+              />
+            </label>
+            <label>
+              대표
+              <input defaultValue={companyProfile.representativeName} name="representativeName" />
+            </label>
+            <label className="quote-form-full">
+              주소
+              <input defaultValue={companyProfile.address} name="address" />
+            </label>
+            <label>
+              이메일
+              <input defaultValue={companyProfile.email} name="email" type="email" />
+            </label>
+
+            <p className="setup-code quote-form-full">입금 안내</p>
+            <label>
+              은행
+              <input defaultValue={companyProfile.bankName} name="bankName" />
+            </label>
+            <label>
+              계좌
+              <input defaultValue={companyProfile.bankAccount} name="bankAccount" />
+            </label>
+            <label>
+              예금주
+              <input defaultValue={companyProfile.accountHolder} name="accountHolder" />
+            </label>
+            <label>
+              SWIFT
+              <input defaultValue={companyProfile.swift} name="swift" />
+            </label>
+            <button className="auth-submit" type="submit">
+              공급자·입금 정보 저장
+            </button>
           </fieldset>
         </form>
       </section>

@@ -538,6 +538,15 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
 }
 .create-icon-button:hover { background: var(--accent-hover); }
 .create-icon-button:disabled { cursor: not-allowed; opacity: 0.45; }
+.create-icon-button-secondary {
+  background: var(--surface);
+  border: 1.5px solid var(--line);
+  color: var(--ink);
+}
+.create-icon-button-secondary:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  border-color: var(--accent);
+}
 .create-icon-glyph,
 .create-icon-glyph::before {
   background: currentColor;
