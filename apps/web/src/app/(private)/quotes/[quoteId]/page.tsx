@@ -78,6 +78,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
             clientName={detail.quote.clientName}
             contactName={latest.contactName}
             issuedOn={latest.issuedOn instanceof Date ? latest.issuedOn : new Date(latest.issuedOn)}
+            issuer={detail.issuer}
             items={customerItems}
             note={latest.note}
             subtotalAmount={latest.subtotalAmount}
@@ -111,6 +112,7 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
           validUntil={latest.validUntil}
           vatMode={latestVatMode}
           versions={priorVersions}
+          issuer={detail.issuer}
         />
       </section>
       <section className="quote-list">

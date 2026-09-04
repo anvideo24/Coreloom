@@ -11,6 +11,7 @@ import {
   QuoteCostingComposer,
   type QuoteComposerContact,
 } from "@/components/quote-costing-composer";
+import type { QuoteIssuerProfile } from "@/lib/quotes/issuer";
 
 type Client = { id: string; name: string };
 type Project = { id: string; name: string; clientCompanyId: string };
@@ -31,11 +32,13 @@ export function QuotesPageClient({
   projects,
   contacts,
   versions,
+  issuer,
 }: {
   clients: Client[];
   projects: Project[];
   contacts: QuoteComposerContact[];
   versions: Version[];
+  issuer: QuoteIssuerProfile;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -138,6 +141,7 @@ export function QuotesPageClient({
               clientId={clientId}
               clientName={clientName}
               contacts={contacts}
+              issuer={issuer}
               versionNumber={1}
             />
           </div>
