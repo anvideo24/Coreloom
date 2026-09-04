@@ -29,7 +29,7 @@
 | 개발 PC 기동 | `npm run up` | 완료 | HTTP `127.0.0.1:3000`, Windows tsx 수정 포함 |
 | 클라우드 시각 검증 | `/sign-in` → 대상 화면 | 자격 대기 | `cloud:bootstrap`/`cloud:dev`. Secrets·환경 start 반영 후 새 에이전트에서 로그인 확인 |
 | 운영 빌드 | `next build` | 완료 | 추적 기준을 저장소 뿌리로. `manual/`·뿌리 `RULES.md`가 배포 목록에 오름. `.env*`는 제외 |
-| 배포본 포장 | — | 미착수 | `output: "standalone"`·Dockerfile·호스팅 모두 없음. 기준을 올렸으므로 포장하면 진입점이 `apps/web/server.js`가 된다 |
+| 배포본 포장 | Dockerfile · standalone | 완료 | `output: "standalone"`. 진입점 `apps/web/server.js`. 정본 `docs/operations/deploy-packaging.md`. 호스팅 선정·Vercel 연결은 이후 |
 | 휴대폰 Funnel 웹앱 | — | PC 확인 필요 | HTTPS `:8443` → 로컬 3000, 로그인 Origin 허용 |
 | 개발 DB 스키마 | — | PC 확인 필요 | 0000–0024는 `ai-development`에 적용됨. 0025–0028은 코드에 있고 PC에서 `npm run db:migrate` 필요 |
 
