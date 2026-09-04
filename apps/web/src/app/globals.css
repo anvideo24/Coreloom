@@ -1694,9 +1694,11 @@ section.empty-state,
   width: fit-content;
 }
 .quote-compose-stage .quote-document {
-  /* A4 preview: dense enough for up to 6 line items + footer */
+  /* A4 preview: dense enough for 6 reserved rows + bottom-fixed summary */
   aspect-ratio: 210 / 297;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
   font-size: 0.62rem;
   height: auto;
   line-height: 1.35;
@@ -1717,6 +1719,15 @@ section.empty-state,
   line-height: 1.35;
   margin-top: 0.28rem;
   max-width: 11rem;
+}
+.quote-compose-stage .quote-invoice-table tbody tr {
+  height: 1.55rem;
+}
+.quote-compose-stage .quote-invoice-table .is-num {
+  font-size: 0.52rem;
+}
+.quote-compose-stage .quote-invoice-bottom {
+  padding-top: 0.35rem;
 }
 .quote-compose-stage .quote-invoice-brand {
   font-size: 0.78rem;
@@ -1809,9 +1820,30 @@ section.empty-state,
 }
 .quote-document-invoice {
   color: var(--ink);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+.quote-invoice-top {
+  display: grid;
+  gap: 0;
+  min-height: 0;
+}
+.quote-invoice-bottom {
+  display: grid;
+  gap: 0;
+  margin-top: auto;
+  padding-top: 0.55rem;
 }
 .quote-costing-note {
   margin-top: var(--space-3);
+}
+.company-profile-form {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.company-profile-form .setup-form-note,
+.company-profile-form .auth-submit {
+  grid-column: 1 / -1;
 }
 .quote-invoice-header {
   display: grid;
@@ -1832,6 +1864,7 @@ section.empty-state,
   line-height: 1.4;
   margin: 0.45rem 0 0;
   max-width: 17rem;
+  white-space: normal;
 }
 .quote-invoice-meta {
   text-align: right;
@@ -1919,6 +1952,21 @@ section.empty-state,
 .quote-invoice-table .is-qty { width: 5%; }
 .quote-invoice-table .is-unit { width: 13%; }
 .quote-invoice-table .is-amount { width: 17%; }
+.quote-invoice-table .is-num {
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.quote-invoice-table tbody tr {
+  height: 2.15rem;
+}
+.quote-invoice-table tbody tr.is-empty td {
+  color: transparent;
+}
+.quote-totals .is-num {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
 .quote-invoice-table .is-title strong {
   font-size: inherit;
   font-weight: 700;

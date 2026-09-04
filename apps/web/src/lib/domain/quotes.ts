@@ -1,6 +1,9 @@
 export const quoteVatModes = ["exclusive", "inclusive"] as const;
 export type QuoteVatMode = (typeof quoteVatModes)[number];
 
+/** 고객용 INVOICE 한 장에 넣는 항목 상한. 빈 칸도 줄로 확보한다. */
+export const quoteInvoiceMaxLineItems = 6;
+
 export const quoteVatModeLabels: Record<QuoteVatMode, string> = {
   exclusive: "부가세 별도",
   inclusive: "부가세 포함",

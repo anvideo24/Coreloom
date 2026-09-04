@@ -24,11 +24,13 @@ import {
 } from "@/lib/domain/quotes";
 import { createQuotePdf } from "@/lib/quotes/pdf";
 import { deliverQuoteEmail, quoteEmailConfigured } from "@/lib/quotes/email";
+import { getFounderCompanyProfile } from "@/lib/company-setup/repository";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 export async function listFounderQuotes(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "quotes");
   const database = createDatabase();
+  const issuer = await getFounderCompanyProfile(authUserId);
   const clients = await database
     .select({ id: clientCompanies.id, name: clientCompanies.name })
     .from(clientCompanies)
@@ -70,7 +72,7 @@ export async function listFounderQuotes(authUserId: string) {
     .innerJoin(clientCompanies, eq(quotes.clientCompanyId, clientCompanies.id))
     .where(and(eq(quotes.workspaceId, workspace.id), isNull(quotes.deletedAt), isNull(clientCompanies.deletedAt)))
     .orderBy(desc(quoteVersions.createdAt));
-  return { clients, projects: projectRows, contacts, versions };
+  return { clients, projects: projectRows, contacts, versions, issuer };
 }
 
 export async function getFounderQuoteDetail(authUserId: string, quoteId: string) {
@@ -101,7 +103,8 @@ export async function getFounderQuoteDetail(authUserId: string, quoteId: string)
       ),
     )
     .orderBy(asc(clientContacts.name));
-  return { quote, versions, contacts };
+  const issuer = await getFounderCompanyProfile(authUserId);
+  return { quote, versions, contacts, issuer };
 }
 
 export async function createFounderQuoteVersion(input: {
@@ -286,6 +289,7 @@ export async function sendFounderQuoteEmail(input: {
         note: version.note,
         issuedOn: version.issuedOn,
         validUntil: version.validUntil,
+        issuer: await getFounderCompanyProfile(input.actorUserId),
       }),
       quoteTitle: version.title,
       recipient: input.recipient,

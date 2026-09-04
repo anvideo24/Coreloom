@@ -40,6 +40,31 @@ export const workspaces = pgTable("workspaces", {
   deletedAt,
 });
 
+/** 견적·청구 PDF에 쓰는 우리 회사(공급자)·입금 안내. 워크스페이스당 1건. */
+export const workspaceCompanyProfiles = pgTable(
+  "workspace_company_profiles",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    workspaceId: uuid("workspace_id")
+      .notNull()
+      .references(() => workspaces.id),
+    brandName: text("brand_name").notNull().default("coreloom"),
+    legalName: text("legal_name"),
+    businessRegistrationNumber: text("business_registration_number"),
+    representativeName: text("representative_name"),
+    address: text("address"),
+    email: text("email"),
+    bankName: text("bank_name"),
+    bankAccount: text("bank_account"),
+    accountHolder: text("account_holder"),
+    swift: text("swift"),
+    signatureSrc: text("signature_src"),
+    createdAt,
+    updatedAt,
+  },
+  (table) => [uniqueIndex("workspace_company_profiles_workspace_idx").on(table.workspaceId)],
+);
+
 export const workspaceMembers = pgTable(
   "workspace_members",
   {
