@@ -83,7 +83,25 @@ export async function getFounderQuoteDetail(authUserId: string, quoteId: string)
   const versions = await database.select().from(quoteVersions)
     .where(and(eq(quoteVersions.quoteId, quote.id), eq(quoteVersions.workspaceId, workspace.id)))
     .orderBy(desc(quoteVersions.versionNumber));
-  return { quote, versions };
+  const contacts = await database
+    .select({
+      id: clientContacts.id,
+      name: clientContacts.name,
+      role: clientContacts.role,
+      email: clientContacts.email,
+      phone: clientContacts.phone,
+      clientCompanyId: clientContacts.clientCompanyId,
+    })
+    .from(clientContacts)
+    .where(
+      and(
+        eq(clientContacts.workspaceId, workspace.id),
+        eq(clientContacts.clientCompanyId, quote.clientCompanyId),
+        isNull(clientContacts.deletedAt),
+      ),
+    )
+    .orderBy(asc(clientContacts.name));
+  return { quote, versions, contacts };
 }
 
 export async function createFounderQuoteVersion(input: {

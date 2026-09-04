@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { createContractFromQuoteAction } from "@/app/(private)/contracts/actions";
+import { QuoteInvoiceDocument } from "@/components/quote-invoice-document";
 import { QuoteNewVersionForm } from "@/components/quote-new-version-form";
 import { founderSession } from "@/lib/auth/session";
 import { getFounderContractForQuote } from "@/lib/contracts/repository";
@@ -25,6 +26,14 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
   const customerItems = normalizeStoredQuoteItemsForPdf(latest.items);
   const latestVatMode = (latest.vatMode ?? "exclusive") as QuoteVatMode;
   const contract = await getFounderContractForQuote(session.founder.id, quoteId);
+  const priorVersions = detail.versions.map((version) => ({
+    id: version.id,
+    versionNumber: version.versionNumber,
+    title: version.title,
+    totalAmount: version.totalAmount,
+    createdAt: version.createdAt,
+    href: `/quotes/${detail.quote.id}/versions/${version.id}/print`,
+  }));
 
   return (
     <main className="operations-shell">
@@ -64,22 +73,33 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
       )}
       <section className="quote-editor-card">
         <p className="setup-code">현재 버전 (고객용)</p>
-        <ul className="quote-customer-preview">
-          {customerItems.map((item, index) => (
-            <li key={index}>
-              <div>
-                <strong>{item.title}</strong>
-                {item.customerDescription ? <p>{item.customerDescription}</p> : null}
-              </div>
-              <span>{item.amount.toLocaleString("ko-KR")}원</span>
-            </li>
-          ))}
-        </ul>
+        <div className="quote-detail-preview">
+          <QuoteInvoiceDocument
+            clientName={detail.quote.clientName}
+            contactName={latest.contactName}
+            issuedOn={latest.issuedOn instanceof Date ? latest.issuedOn : new Date(latest.issuedOn)}
+            items={customerItems}
+            note={latest.note}
+            subtotalAmount={latest.subtotalAmount}
+            title={latest.title}
+            totalAmount={latest.totalAmount}
+            validUntil={
+              latest.validUntil instanceof Date ? latest.validUntil : new Date(latest.validUntil)
+            }
+            vatAmount={latest.vatAmount}
+            vatMode={latestVatMode}
+            versionNumber={latest.versionNumber}
+          />
+        </div>
       </section>
       <section className="quote-editor-card">
         <p className="setup-code">새 수정본 만들기</p>
         <QuoteNewVersionForm
+          clientContactId={latest.clientContactId}
           clientId={detail.quote.clientCompanyId}
+          clientName={detail.quote.clientName}
+          contacts={detail.contacts}
+          issuedOn={latest.issuedOn}
           items={latest.items}
           nextVersionNumber={latest.versionNumber + 1}
           note={latest.note ?? ""}
@@ -88,7 +108,9 @@ export default async function QuoteDetailPage({ params }: { params: Promise<{ qu
           quoteId={detail.quote.id}
           targetMarginPercent={latest.targetMarginPercent ?? 30}
           title={latest.title}
+          validUntil={latest.validUntil}
           vatMode={latestVatMode}
+          versions={priorVersions}
         />
       </section>
       <section className="quote-list">

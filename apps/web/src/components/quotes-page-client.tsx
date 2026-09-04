@@ -7,7 +7,10 @@ import { saveQuoteVersionAction } from "@/app/(private)/quotes/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
-import { QuoteCostingComposer } from "@/components/quote-costing-composer";
+import {
+  QuoteCostingComposer,
+  type QuoteComposerContact,
+} from "@/components/quote-costing-composer";
 
 type Client = { id: string; name: string };
 type Project = { id: string; name: string; clientCompanyId: string };
@@ -19,15 +22,19 @@ type Version = {
   totalAmount: number;
   clientName: string;
   vatMode?: "exclusive" | "inclusive";
+  issuedOn?: string | Date | null;
+  validUntil?: string | Date | null;
 };
 
 export function QuotesPageClient({
   clients,
   projects,
+  contacts,
   versions,
 }: {
   clients: Client[];
   projects: Project[];
+  contacts: QuoteComposerContact[];
   versions: Version[];
 }) {
   const router = useRouter();
@@ -66,7 +73,8 @@ export function QuotesPageClient({
           <p className="auth-eyebrow">CORELOOM / QUOTES</p>
           <h1>견적서</h1>
           <p>
-            고객용 탭은 실제 견적서 모습으로 편집하고, 내부 원가 탭에서 단가·마진을 잡습니다. 수정은 새 버전으로 남습니다.
+            고객용 탭은 발송될 INVOICE 문서로 편집하고, 내부 원가 탭에서 단가·마진을 잡습니다. 수정은 새
+            버전으로 남습니다.
           </p>
         </div>
         <CreateIconButton disabled={!canCreate} label="새 견적" onClick={openCreate} />
@@ -126,7 +134,12 @@ export function QuotesPageClient({
             />
           </div>
           <div className="quote-form-full">
-            <QuoteCostingComposer clientName={clientName} versionNumber={1} />
+            <QuoteCostingComposer
+              clientId={clientId}
+              clientName={clientName}
+              contacts={contacts}
+              versionNumber={1}
+            />
           </div>
           <button className="auth-submit" type="submit">
             견적 버전 1 저장

@@ -23,8 +23,8 @@ describe("quote amounts", () => {
     expect(result.totalAmount).toBe(165000);
     expect(result.vatMode).toBe("exclusive");
     expect(result.customerItems).toEqual([
-      { title: "기획", customerDescription: "", amount: 100000 },
-      { title: "디자인", customerDescription: "", amount: 50000 },
+      { title: "기획", customerDescription: "", quantity: 1, unitPrice: 100000, amount: 100000 },
+      { title: "디자인", customerDescription: "", quantity: 1, unitPrice: 50000, amount: 50000 },
     ]);
   });
 
@@ -80,6 +80,8 @@ describe("quote costing", () => {
     expect(result.customerItems[0]).toEqual({
       title: "개발",
       customerDescription: "웹 구축",
+      quantity: 1,
+      unitPrice: result.subtotalAmount,
       amount: result.subtotalAmount,
     });
     expect(result.items[0].monthlyRate).toBe(6_000_000);
@@ -106,7 +108,7 @@ describe("quote costing", () => {
 describe("stored quote items", () => {
   it("maps legacy description rows for PDF", () => {
     expect(normalizeStoredQuoteItemsForPdf([{ description: "기획", amount: 100000 }])).toEqual([
-      { title: "기획", customerDescription: "", amount: 100000 },
+      { title: "기획", customerDescription: "", quantity: 1, unitPrice: 100000, amount: 100000 },
     ]);
   });
 
