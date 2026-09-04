@@ -23,6 +23,23 @@ function isWideNavigationViewport() {
   return window.matchMedia(NAV_WIDE_MEDIA).matches;
 }
 
+function NavToggleButton({ open, onToggle }: { open: boolean; onToggle: () => void }) {
+  return (
+    <button
+      aria-controls="private-drawer"
+      aria-expanded={open}
+      aria-keyshortcuts="Control+B Meta+B"
+      aria-label={open ? "메뉴 접기" : "메뉴 펼치기"}
+      className="private-menu-button"
+      onClick={onToggle}
+      title="Ctrl+B 또는 ⌘B"
+      type="button"
+    >
+      <span aria-hidden="true" className="private-menu-icon" />
+    </button>
+  );
+}
+
 export function PrivateNavigation() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(true);
@@ -84,31 +101,16 @@ export function PrivateNavigation() {
   return (
     <>
       <header className="private-topbar">
-        <button
-          aria-controls="private-drawer"
-          aria-expanded={drawerOpen}
-          aria-keyshortcuts="Control+B Meta+B"
-          className="private-menu-button"
-          onClick={toggleDrawer}
-          title="Ctrl+B 또는 ⌘B"
-          type="button"
-        >
-          <span aria-hidden="true" className="private-menu-icon" />
-          메뉴
-        </button>
-        <Link className="private-navigation-brand" href="/dashboard">CORELOOM</Link>
+        <NavToggleButton onToggle={toggleDrawer} open={drawerOpen} />
       </header>
 
       <div className={drawerOpen ? "private-drawer-layer is-open" : "private-drawer-layer"} inert={!drawerOpen}>
         <aside aria-labelledby={drawerTitleId} className="private-navigation" id="private-drawer">
           <div className="private-drawer-head">
-            <div>
-              <p className="private-navigation-brand" id={drawerTitleId}>CORELOOM</p>
-              <p className="private-navigation-sub">대표 운영 본부</p>
-            </div>
-            <button className="private-drawer-close" onClick={() => setDrawerOpen(false)} type="button">
-              닫기
-            </button>
+            <NavToggleButton onToggle={toggleDrawer} open={drawerOpen} />
+            <Link className="private-navigation-brand" href="/dashboard" id={drawerTitleId}>
+              CORELOOM
+            </Link>
           </div>
           <nav aria-label="운영 메뉴">
             {navGroups.map((group) => (

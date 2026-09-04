@@ -17,6 +17,7 @@
   --nav-ink: #f3eee6;
   --nav-muted: #b5a89c;
   --nav-active-ink: #1c1916;
+  --private-sidebar-width: 15rem;
 
   /* 강조 */
   --accent: #e24a1b;
@@ -183,12 +184,12 @@ body {
 
 .private-topbar {
   align-items: center;
-  background: var(--nav);
-  color: var(--nav-ink);
+  background: var(--canvas);
+  color: var(--ink);
   display: none;
   gap: var(--space-3);
-  min-height: 3.25rem;
-  padding: calc(0.5rem + env(safe-area-inset-top, 0px)) var(--space-4) 0.5rem;
+  min-height: 2.75rem;
+  padding: calc(0.35rem + env(safe-area-inset-top, 0px)) var(--space-3) 0.35rem;
   position: sticky;
   top: 0;
   z-index: 20;
@@ -200,7 +201,7 @@ body {
   background: transparent;
   border: 0;
   border-radius: var(--radius-control);
-  color: var(--nav-ink);
+  color: inherit;
   cursor: pointer;
   display: inline-flex;
   font: inherit;
@@ -208,7 +209,13 @@ body {
   font-weight: 700;
   gap: var(--space-2);
   min-height: 2.25rem;
-  padding: 0 var(--space-3);
+  min-width: 2.25rem;
+  padding: 0 0.45rem;
+}
+
+.private-menu-button:hover,
+.private-drawer-close:hover {
+  background: color-mix(in srgb, currentColor, transparent 88%);
 }
 
 .private-menu-icon {
@@ -227,8 +234,6 @@ body {
   margin-top: 0.22rem;
 }
 
-.private-topbar .private-navigation-brand { color: var(--nav-ink); }
-
 .private-drawer-layer {
   overflow: hidden;
   pointer-events: none;
@@ -238,7 +243,7 @@ body {
 
 .private-drawer-layer.is-open {
   pointer-events: auto;
-  width: 20rem;
+  width: var(--private-sidebar-width);
 }
 
 .private-sheet-backdrop {
@@ -258,14 +263,14 @@ body {
   gap: var(--space-5);
   height: 100%;
   overflow-y: auto;
-  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-4) calc(var(--space-7) + env(safe-area-inset-bottom, 0px));
-  width: 20rem;
+  padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-3) calc(var(--space-7) + env(safe-area-inset-bottom, 0px));
+  width: var(--private-sidebar-width);
 }
 
 .private-drawer-head {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
-  justify-content: space-between;
+  gap: var(--space-2);
 }
 
 .private-navigation-brand {
@@ -277,12 +282,6 @@ body {
   margin: 0;
   text-decoration: none;
   text-transform: uppercase;
-}
-
-.private-navigation-sub {
-  color: var(--nav-muted);
-  font-size: 0.75rem;
-  margin: var(--space-2) 0 0;
 }
 
 .private-navigation nav,
@@ -391,8 +390,7 @@ body {
   right: 0;
 }
 
-.private-sheet-head,
-.private-drawer-head {
+.private-sheet-head {
   align-items: center;
   display: flex;
   justify-content: space-between;
@@ -440,6 +438,12 @@ body {
     grid-row: 2;
     min-height: 0;
     overflow: auto;
+  }
+  .private-app-shell:has(.private-drawer-layer.is-open) .private-topbar {
+    display: none;
+  }
+  .private-app-shell:has(.private-drawer-layer.is-open) .private-app-content {
+    grid-row: 1 / -1;
   }
   .private-tabbar,
   .private-sheet-layer { display: none !important; }
