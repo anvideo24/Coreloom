@@ -11,6 +11,10 @@ import {
   QuoteCostingComposer,
   type QuoteComposerContact,
 } from "@/components/quote-costing-composer";
+import {
+  companyProfileStorageMissingMessage,
+  type CompanyProfileStorageState,
+} from "@/lib/company-setup/profile-storage";
 import type { QuoteIssuerProfile } from "@/lib/quotes/issuer";
 
 type Client = { id: string; name: string };
@@ -33,12 +37,14 @@ export function QuotesPageClient({
   contacts,
   versions,
   issuer,
+  companyProfileStorage = "ready",
 }: {
   clients: Client[];
   projects: Project[];
   contacts: QuoteComposerContact[];
   versions: Version[];
   issuer: QuoteIssuerProfile;
+  companyProfileStorage?: CompanyProfileStorageState;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -82,6 +88,12 @@ export function QuotesPageClient({
         </div>
         <CreateIconButton disabled={!canCreate} label="새 견적" onClick={openCreate} />
       </header>
+
+      {companyProfileStorage === "missing_table" ? (
+        <p className="auth-notice" role="status">
+          {companyProfileStorageMissingMessage}
+        </p>
+      ) : null}
 
       {!canCreate ? (
         <section className="empty-state quote-empty">

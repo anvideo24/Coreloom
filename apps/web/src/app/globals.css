@@ -168,10 +168,14 @@ body {
 
 .auth-submit:hover { background: var(--accent-hover); }
 .auth-submit:disabled { cursor: wait; opacity: 0.55; }
+fieldset:disabled .auth-submit,
+fieldset:disabled .auth-submit:disabled { cursor: not-allowed; }
 .auth-error { color: var(--danger); font-size: 0.875rem; margin: 0; }
 .auth-link { color: var(--accent); font-size: 0.875rem; font-weight: 600; margin-top: var(--space-3); text-align: center; }
 .auth-link:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--accent), transparent 50%); outline-offset: 2px; }
 .auth-notice { background: var(--accent-subtle); border: 1px solid color-mix(in srgb, var(--accent), transparent 70%); border-radius: var(--radius-control); color: var(--ink); line-height: 1.6; margin: 0; padding: var(--space-4) var(--space-5); }
+.operations-shell > .auth-notice,
+.quote-editor-card .auth-notice { margin-top: var(--space-4); }
 
 .dashboard-shell { align-items: flex-start; flex-direction: column; gap: var(--space-5); margin: 0 auto; max-width: 50rem; }
 .dashboard-shell > p { margin: 0; max-width: 42rem; }
@@ -1839,7 +1843,10 @@ section.empty-state,
   margin-top: var(--space-3);
 }
 .company-profile-form {
+  border: 0;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-inline-size: 0;
+  padding: 0;
 }
 .company-profile-form .setup-form-note,
 .company-profile-form .auth-submit {

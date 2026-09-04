@@ -6,6 +6,7 @@ import {
   updateCompanySetupAction,
 } from "@/app/(private)/company-setup/actions";
 import { founderSession } from "@/lib/auth/session";
+import { companyProfileStorageMissingMessage } from "@/lib/company-setup/profile-storage";
 import { listFounderCompanySetup } from "@/lib/company-setup/repository";
 import { calculateCompanySetupProgress, companySetupStatuses } from "@/lib/domain/company-setup";
 
@@ -23,8 +24,11 @@ export default async function CompanySetupPage() {
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
 
-  const { items, companyProfile } = await listFounderCompanySetup(session.founder.id);
+  const { items, companyProfile, companyProfileStorage } = await listFounderCompanySetup(
+    session.founder.id,
+  );
   const progress = calculateCompanySetupProgress(items);
+  const profileStorageMissing = companyProfileStorage === "missing_table";
 
   return (
     <main className="operations-shell">
@@ -60,7 +64,13 @@ export default async function CompanySetupPage() {
         <p className="form-help">
           견적서·청구서 INVOICE 하단에 들어가는 값입니다. 여기서 저장한 내용만 문서에 나갑니다.
         </p>
-        <form action={updateCompanyProfileAction} className="setup-form company-profile-form">
+        {profileStorageMissing ? (
+          <p className="auth-notice" role="status">
+            {companyProfileStorageMissingMessage}
+          </p>
+        ) : null}
+        <form action={updateCompanyProfileAction}>
+          <fieldset className="setup-form company-profile-form" disabled={profileStorageMissing}>
           <label>
             브랜드명
             <input defaultValue={companyProfile.brandName} name="brandName" required />
@@ -107,6 +117,7 @@ export default async function CompanySetupPage() {
           <button className="auth-submit" type="submit">
             공급자·입금 정보 저장
           </button>
+          </fieldset>
         </form>
       </section>
 

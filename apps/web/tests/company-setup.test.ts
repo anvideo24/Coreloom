@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { companyProfileStorageMissingMessage } from "@/lib/company-setup/profile-storage";
 import {
   calculateCompanySetupProgress,
   companySetupTemplates,
@@ -56,5 +57,13 @@ describe("company setup updates", () => {
   it("allows in-progress or not-applicable without evidence", () => {
     expect(normalizeCompanySetupUpdate({ status: "in_progress" })).toMatchObject({ status: "in_progress", evidenceReference: null, completedAt: null });
     expect(normalizeCompanySetupUpdate({ status: "not_applicable" })).toMatchObject({ status: "not_applicable", completedAt: null });
+  });
+});
+
+describe("company profile storage notice", () => {
+  it("tells the operator to migrate 0022 on the development PC without claiming it is already applied", () => {
+    expect(companyProfileStorageMissingMessage).toContain("0022");
+    expect(companyProfileStorageMissingMessage).toContain("npm run db:migrate");
+    expect(companyProfileStorageMissingMessage).not.toMatch(/적용되어 있/);
   });
 });
