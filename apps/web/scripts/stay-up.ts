@@ -54,15 +54,22 @@ async function tick() {
   }
 }
 
-process.stdout.write(`PC가 origin/main을 ${STAY_UP_INTERVAL_MS / 1000}초마다 확인하고, 합쳐진 코드가 있으면 서버와 Funnel을 다시 켭니다. 끄려면 Ctrl+C.\n`);
-await tick();
-setInterval(() => {
-  void tick();
-}, STAY_UP_INTERVAL_MS);
+async function main() {
+  process.stdout.write(`PC가 origin/main을 ${STAY_UP_INTERVAL_MS / 1000}초마다 확인하고, 합쳐진 코드가 있으면 서버와 Funnel을 다시 켭니다. 끄려면 Ctrl+C.\n`);
+  await tick();
+  setInterval(() => {
+    void tick();
+  }, STAY_UP_INTERVAL_MS);
 
-function shutdown() {
-  if (child?.pid) child.kill("SIGTERM");
-  process.exit(0);
+  function shutdown() {
+    if (child?.pid) child.kill("SIGTERM");
+    process.exit(0);
+  }
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+
+main().catch((error: unknown) => {
+  process.stderr.write(`${error instanceof Error ? error.message : "개발 서버를 다시 켜지 못했습니다."}\n`);
+  process.exit(1);
+});
