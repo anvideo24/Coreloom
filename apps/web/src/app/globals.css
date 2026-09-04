@@ -561,6 +561,15 @@ body {
   transform: translate(-50%, -50%);
   width: min(42rem, calc(100vw - 2rem));
 }
+.create-panel-xlarge {
+  border-radius: var(--radius-card);
+  bottom: 1rem;
+  left: 50%;
+  max-height: calc(100vh - 2rem);
+  top: 1rem;
+  transform: translateX(-50%);
+  width: min(72rem, calc(100vw - 2rem));
+}
 .create-panel-drawer {
   border-radius: var(--radius-card) 0 0 var(--radius-card);
   bottom: 0;
@@ -1260,6 +1269,202 @@ section.empty-state,
 .quote-item-labels { color: var(--muted); font-size: 0.75rem; font-weight: 600; }
 .quote-item-remove { background: transparent; border: 0; color: var(--danger); cursor: pointer; font: inherit; font-weight: 600; }
 .quote-item-add { background: transparent; border: 0; cursor: pointer; padding: 0; text-align: left; width: fit-content; color: var(--accent); font-weight: 600; font: inherit; }
+
+.quote-form-costing { grid-template-columns: 1fr; }
+.quote-costing {
+  display: grid;
+  gap: var(--space-4);
+  grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+}
+.quote-costing-toolbar,
+.quote-costing-sliders,
+.quote-costing-hint,
+.quote-costing-packages { grid-column: 1 / -1; }
+@media (min-width: 720px) {
+  .quote-costing-toolbar,
+  .quote-costing-sliders,
+  .quote-costing-hint,
+  .quote-costing-packages { grid-column: 1; }
+  .quote-costing-live {
+    align-self: start;
+    grid-column: 2;
+    grid-row: 1 / span 20;
+    position: sticky;
+    top: 0;
+  }
+}
+.quote-costing-toolbar {
+  align-items: end;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+.quote-costing-tabs {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+}
+.quote-costing-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+  color: var(--muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+}
+.quote-costing-tabs button.is-active {
+  background: var(--ink);
+  color: var(--surface);
+}
+.quote-costing-vat {
+  display: grid;
+  font-size: 0.875rem;
+  font-weight: 600;
+  gap: 0.375rem;
+  min-width: 10rem;
+}
+.quote-costing-sliders {
+  display: grid;
+  gap: var(--space-3);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.quote-costing-sliders label,
+.quote-package-inline-edits label {
+  display: grid;
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 0.35rem;
+}
+.quote-costing-sliders input[type="range"],
+.quote-package-util input[type="range"] {
+  accent-color: var(--accent);
+  width: 100%;
+}
+.quote-costing-hint {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0;
+}
+.quote-costing-packages { display: grid; gap: var(--space-3); }
+.quote-package {
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-3);
+  padding: var(--space-3);
+}
+.quote-package-summary { display: grid; gap: var(--space-2); }
+.quote-package-head {
+  align-items: end;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: auto minmax(0, 1fr);
+}
+.quote-package-title {
+  display: grid;
+  font-size: 0.8rem;
+  font-weight: 600;
+  gap: 0.35rem;
+}
+.quote-package-toggle {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  color: var(--ink);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 1.1rem;
+  justify-content: center;
+  min-height: 2.5rem;
+  min-width: 2rem;
+  padding: 0;
+}
+.quote-package-meta {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+.quote-package-inline-edits {
+  align-items: end;
+  display: grid;
+  gap: var(--space-2);
+  grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr));
+}
+.quote-package-inline-edits input[type="number"],
+.quote-package-title input,
+.quote-package-body input,
+.quote-package-body textarea,
+.quote-costing-vat select {
+  background: var(--canvas);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  font: inherit;
+  min-height: 2.5rem;
+  padding: 0 var(--space-3);
+  width: 100%;
+}
+.quote-package-body textarea { min-height: 4.5rem; padding: var(--space-3); resize: vertical; }
+.quote-package-inline-edits output {
+  align-items: center;
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  min-height: 2.5rem;
+}
+.quote-package-body { display: grid; gap: var(--space-3); }
+.quote-package-body label { display: grid; font-size: 0.875rem; font-weight: 600; gap: 0.375rem; }
+.quote-costing-live {
+  background: color-mix(in srgb, var(--canvas), var(--surface) 40%);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: 0.55rem;
+  padding: var(--space-4);
+}
+.quote-costing-live p {
+  align-items: baseline;
+  display: flex;
+  font-size: 0.875rem;
+  justify-content: space-between;
+  margin: 0;
+}
+.quote-costing-live .quote-costing-total {
+  border-top: 1px solid var(--line);
+  font-size: 1rem;
+  margin-top: 0.25rem;
+  padding-top: 0.65rem;
+}
+.quote-customer-preview {
+  display: grid;
+  gap: var(--space-3);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.quote-customer-preview li {
+  align-items: start;
+  display: flex;
+  gap: var(--space-3);
+  justify-content: space-between;
+}
+.quote-customer-preview p {
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+.quote-item-desc {
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 400;
+  margin: 0.25rem 0 0;
+}
 .quote-email-approval { align-items: start; color: var(--muted); grid-template-columns: auto 1fr; line-height: 1.6; gap: var(--space-3); }
 
 /* ── 목록 행 ─────────────────────────────────── */
@@ -1332,7 +1537,16 @@ section.empty-state,
   }
   .operations-header,
   .setup-card-heading { flex-direction: column; }
-  .setup-form, .registration-grid, .project-row, .project-update-form, .quote-form, .quote-item-labels, .quote-item-inputs, .project-workspace { grid-template-columns: 1fr; }
+  .setup-form, .registration-grid, .project-row, .project-update-form, .quote-form, .quote-item-labels, .quote-item-inputs, .project-workspace, .quote-costing, .quote-costing-sliders { grid-template-columns: 1fr; }
+  .create-panel-xlarge {
+    bottom: 0;
+    border-radius: var(--radius-card) var(--radius-card) 0 0;
+    left: 0;
+    max-height: 94vh;
+    top: auto;
+    transform: none;
+    width: 100vw;
+  }
   .project-workspace-rail { position: static; }
   .quote-document { padding: var(--space-5); }
   .quote-print-shell { padding: var(--space-5); }

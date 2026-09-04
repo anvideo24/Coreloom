@@ -9,6 +9,7 @@ import {
 import { founderSession } from "@/lib/auth/session";
 import { getFounderContractDetail } from "@/lib/contracts/repository";
 import { contractStatusLabels } from "@/lib/domain/contracts";
+import { normalizeStoredQuoteItemsForPdf } from "@/lib/domain/quotes";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +21,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   const detail = await getFounderContractDetail(session.founder.id, contractId);
   if (!detail) notFound();
   const latest = detail.versions[0];
-  const items = Array.isArray(latest.items) ? latest.items as { description: string; amount: number }[] : [];
+  const items = normalizeStoredQuoteItemsForPdf(latest.items);
 
   return (
     <main className="operations-shell">
@@ -80,7 +81,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
         <p>{latest.currency} · 부가세 별도 · 공급가액 {latest.subtotalAmount.toLocaleString("ko-KR")}원 · 합계 {latest.totalAmount.toLocaleString("ko-KR")}원</p>
         <ul className="contract-item-list">
           {items.map((item, index) => (
-            <li key={`${item.description}-${index}`}>{item.description} · {item.amount.toLocaleString("ko-KR")}원</li>
+            <li key={`${item.title}-${index}`}>{item.title} · {item.amount.toLocaleString("ko-KR")}원</li>
           ))}
         </ul>
         {latest.originalReference ? <p className="form-help">원본 위치: {latest.originalReference}</p> : null}

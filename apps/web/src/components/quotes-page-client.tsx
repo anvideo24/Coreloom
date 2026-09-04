@@ -7,7 +7,7 @@ import { saveQuoteVersionAction } from "@/app/(private)/quotes/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
-import { QuoteItemsFields } from "@/components/quote-items-fields";
+import { QuoteCostingComposer } from "@/components/quote-costing-composer";
 
 type Client = { id: string; name: string };
 type Project = { id: string; name: string; clientCompanyId: string };
@@ -58,7 +58,8 @@ export function QuotesPageClient({
           <p className="auth-eyebrow">CORELOOM / QUOTES</p>
           <h1>견적서</h1>
           <p>
-            견적 수정은 새 버전으로 남습니다. 부가세는 포함·미포함을 고를 수 있으며, 각 버전에서 PDF를 다운로드하거나 인쇄할 수 있습니다.
+            작업 패키지별로 원가·마진을 잡아 고객 금액을 제안합니다. 수정은 새 버전으로 남으며, 고객 PDF에는 작업명·설명·금액만
+            나갑니다.
           </p>
         </div>
         <CreateIconButton disabled={!canCreate} label="새 견적" onClick={openCreate} />
@@ -68,7 +69,9 @@ export function QuotesPageClient({
         <section className="empty-state quote-empty">
           <h2>먼저 고객사를 등록해 주세요</h2>
           <p>견적서는 고객사에 연결해 보관합니다.</p>
-          <a className="text-link" href="/clients-projects">고객사 등록으로 이동</a>
+          <a className="text-link" href="/clients-projects">
+            고객사 등록으로 이동
+          </a>
         </section>
       ) : null}
 
@@ -105,28 +108,23 @@ export function QuotesPageClient({
         )}
       </section>
 
-      <CreatePanel onClose={close} open={open && canCreate} size="wide" title="새 견적">
-        <form action={saveQuoteVersionAction} className="quote-form">
+      <CreatePanel onClose={close} open={open && canCreate} size="xlarge" title="새 견적">
+        <form action={saveQuoteVersionAction} className="quote-form quote-form-costing">
           <QuoteClientProjectFields clients={clients} projects={projects} />
           <label className="quote-form-full">
             견적명
             <input name="title" placeholder="예: 웹사이트 구축 견적" required />
           </label>
-          <label className="quote-form-full">
-            부가세
-            <select defaultValue="exclusive" name="vatMode">
-              <option value="exclusive">미포함 (별도)</option>
-              <option value="inclusive">포함</option>
-            </select>
-          </label>
           <div className="quote-form-full">
-            <QuoteItemsFields />
+            <QuoteCostingComposer />
           </div>
           <label className="quote-form-full">
             메모 (선택)
             <textarea name="note" placeholder="견적 조건이나 전달 메모" />
           </label>
-          <button className="auth-submit" type="submit">견적 버전 1 저장</button>
+          <button className="auth-submit" type="submit">
+            견적 버전 1 저장
+          </button>
         </form>
       </CreatePanel>
     </>

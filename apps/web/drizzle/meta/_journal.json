@@ -141,6 +141,13 @@
       "when": 1788499200000,
       "tag": "0019_agent_panel_quote_vat",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788502800000,
+      "tag": "0020_quote_costing",
+      "breakpoints": true
     }
   ]
 }
