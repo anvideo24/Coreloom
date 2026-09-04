@@ -107,17 +107,25 @@ export function QuoteInvoiceDocument({
           </tr>
         </thead>
         <tbody>
-          {items.map((item, index) => (
-            <tr key={index}>
-              <td className="is-title">
-                <strong>{item.title}</strong>
+          {items.length === 0 ? (
+            <tr>
+              <td className="is-title" colSpan={5}>
+                <span className="quote-invoice-muted">내부 원가 탭에서 항목을 추가하면 여기에 표시됩니다.</span>
               </td>
-              <td className="is-desc">{item.customerDescription || "—"}</td>
-              <td className="is-qty">{item.quantity}</td>
-              <td className="is-unit">{won(item.unitPrice)}</td>
-              <td className="is-amount">{won(item.amount)}</td>
             </tr>
-          ))}
+          ) : (
+            items.map((item, index) => (
+              <tr key={index}>
+                <td className="is-title">
+                  <strong>{item.title}</strong>
+                </td>
+                <td className="is-desc">{item.customerDescription || "—"}</td>
+                <td className="is-qty">{item.quantity}</td>
+                <td className="is-unit">{won(item.unitPrice)}</td>
+                <td className="is-amount">{won(item.amount)}</td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
 

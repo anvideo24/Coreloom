@@ -2,23 +2,20 @@
 
 import { useMemo, useState, type CSSProperties } from "react";
 
+import { QuoteInvoiceDocument } from "@/components/quote-invoice-document";
 import {
-  amountFromUnitPrice,
   calculatePackageCostAmount,
   calculateQuoteCosting,
   createEmptyQuotePackage,
   defaultQuoteValidUntil,
-  formatQuoteDocumentNumber,
   monthlyRateForRole,
   quoteRoleRates,
-  quoteVatModeLabels,
   suggestCustomerSupplyAmount,
   toDateInputValue,
   unitPriceFromAmount,
   type QuotePackage,
   type QuoteVatMode,
 } from "@/lib/domain/quotes";
-import { quoteIssuerProfile } from "@/lib/quotes/issuer";
 
 export type QuoteComposerContact = {
   id: string;
@@ -272,16 +269,30 @@ export function QuoteCostingComposer({
     }
   }, [livePackages, vatMode, targetMarginPercent, operatingCostPercent]);
 
-  const documentNumber = useMemo(() => {
-    try {
-      const date = new Date(`${issuedOn}T00:00:00`);
-      return formatQuoteDocumentNumber(versionNumber, Number.isNaN(date.getTime()) ? new Date() : date);
-    } catch {
-      return formatQuoteDocumentNumber(versionNumber);
-    }
-  }, [issuedOn, versionNumber]);
-
   const resolvedTitle = title.trim() || (clientName.trim() ? `${clientName.trim()} · 견적` : "제목 없는 견적");
+
+  const customerPreviewItems = useMemo(
+    () =>
+      (preview.customerItems ??
+        livePackages.map((item) => ({
+          title: item.title.trim() || "작업 패키지",
+          customerDescription: item.customerDescription,
+          quantity: item.quantity > 0 ? item.quantity : 1,
+          unitPrice: unitPriceFromAmount(item.amount, item.quantity > 0 ? item.quantity : 1),
+          amount: item.amount,
+        }))).filter((item) => item.amount > 0 || item.title.trim()),
+    [preview, livePackages],
+  );
+
+  const issuedOnDate = useMemo(() => {
+    const date = new Date(`${issuedOn}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? new Date() : date;
+  }, [issuedOn]);
+
+  const validUntilDate = useMemo(() => {
+    const date = new Date(`${validUntil}T00:00:00`);
+    return Number.isNaN(date.getTime()) ? defaultQuoteValidUntil(issuedOnDate) : date;
+  }, [validUntil, issuedOnDate]);
 
   const updatePackage = (index: number, patch: Partial<QuotePackage>) => {
     setPackages((current) =>
@@ -491,212 +502,23 @@ export function QuoteCostingComposer({
       <div className="quote-costing-workspace">
         <div className="quote-costing-main">
           {tab === "customer" ? (
-            <article className="quote-document quote-document-compose quote-document-invoice">
-              <header className="quote-invoice-header">
-                <div className="quote-invoice-brand-block">
-                  <p className="quote-invoice-title">INVOICE</p>
-                  <p className="quote-invoice-lead">아래와 같이 견적드립니다. 검토 후 회신 부탁드립니다.</p>
-                </div>
-                <div className="quote-invoice-meta">
-                  <p className="quote-invoice-brand">{quoteIssuerProfile.brandName}</p>
-                  <dl>
-                    <div>
-                      <dt>견적번호</dt>
-                      <dd>{documentNumber}</dd>
-                    </div>
-                    <div>
-                      <dt>발행일</dt>
-                      <dd>{issuedOn || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>유효기간</dt>
-                      <dd>{validUntil || "—"}</dd>
-                    </div>
-                  </dl>
-                </div>
-              </header>
-
-              <section className="quote-invoice-parties">
-                <div>
-                  <p className="quote-invoice-label">수신</p>
-                  <p className="quote-invoice-client">{clientName || "고객사 선택"}</p>
-                  {selectedContact ? (
-                    <p className="quote-invoice-muted">담당자 {selectedContact.name}</p>
-                  ) : null}
-                  <p className="quote-invoice-muted">{resolvedTitle}</p>
-                </div>
-              </section>
-
-              <table className="quote-invoice-table">
-                <thead>
-                  <tr>
-                    <th className="is-title">항목</th>
-                    <th className="is-desc">설명</th>
-                    <th className="is-qty">수량</th>
-                    <th className="is-unit">단가</th>
-                    <th className="is-amount">공급가액</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {livePackages.map((pkg, index) => {
-                    const unitPrice = unitPriceFromAmount(pkg.amount, pkg.quantity);
-                    return (
-                      <tr key={index}>
-                        <td className="is-title">
-                          <input
-                            aria-label={`항목 ${index + 1} 작업명`}
-                            className="quote-document-line-title"
-                            onChange={(event) => updatePackage(index, { title: event.target.value })}
-                            placeholder={`작업 패키지 ${index + 1}`}
-                            required
-                            value={pkg.title}
-                          />
-                          {livePackages.length > 1 ? (
-                            <button
-                              className="quote-item-remove"
-                              onClick={() => {
-                                setPackages((current) => current.filter((_, pkgIndex) => pkgIndex !== index));
-                                setExpanded({});
-                              }}
-                              type="button"
-                            >
-                              삭제
-                            </button>
-                          ) : null}
-                        </td>
-                        <td className="is-desc">
-                          <textarea
-                            aria-label={`항목 ${index + 1} 설명`}
-                            className="quote-document-line-desc"
-                            onChange={(event) =>
-                              updatePackage(index, { customerDescription: event.target.value })
-                            }
-                            placeholder="고객에게 보이는 설명"
-                            rows={2}
-                            value={pkg.customerDescription}
-                          />
-                        </td>
-                        <td className="is-qty">
-                          <input
-                            aria-label={`항목 ${index + 1} 수량`}
-                            className="quote-document-line-qty"
-                            inputMode="numeric"
-                            min={1}
-                            onChange={(event) => {
-                              const quantity = Math.max(1, Math.round(Number(event.target.value) || 1));
-                              const nextAmount = amountFromUnitPrice(unitPrice, quantity);
-                              updatePackage(index, {
-                                quantity,
-                                amount: nextAmount,
-                                amountLocked: true,
-                              });
-                            }}
-                            type="number"
-                            value={pkg.quantity}
-                          />
-                        </td>
-                        <td className="is-unit">
-                          <WonAmountInput
-                            aria-label={`항목 ${index + 1} 단가`}
-                            className="quote-document-line-unit"
-                            onValueChange={(nextUnit) => {
-                              const quantity = pkg.quantity > 0 ? pkg.quantity : 1;
-                              updatePackage(index, {
-                                amount: amountFromUnitPrice(nextUnit, quantity),
-                                amountLocked: true,
-                              });
-                            }}
-                            value={unitPrice}
-                          />
-                        </td>
-                        <td className="is-amount">
-                          <WonAmountInput
-                            aria-label={`항목 ${index + 1} 공급가액`}
-                            className="quote-document-line-amount"
-                            onValueChange={(amount) => updatePackage(index, { amount, amountLocked: true })}
-                            value={pkg.amount}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              <button className="text-link quote-item-add" onClick={addPackage} type="button">
-                항목 추가
-              </button>
-
-              <section className="quote-invoice-summary">
-                <div className="quote-invoice-note-block">
-                  <p>상기 금액은 {quoteVatModeLabels[vatMode]}입니다.</p>
-                  <label className="quote-document-note">
-                    메모 (선택)
-                    <textarea
-                      onChange={(event) => setNote(event.target.value)}
-                      placeholder="견적 조건이나 전달 메모"
-                      value={note}
-                    />
-                  </label>
-                </div>
-                <div className="quote-totals">
-                  <p>
-                    <span>공급가액</span>
-                    <strong>{won(preview.subtotalAmount)}</strong>
-                  </p>
-                  <p>
-                    <span>부가세</span>
-                    <strong>{won(preview.vatAmount)}</strong>
-                  </p>
-                  <p className="quote-total">
-                    <span>합계</span>
-                    <strong>{won(preview.totalAmount)}</strong>
-                  </p>
-                </div>
-              </section>
-
-              <footer className="quote-invoice-footer">
-                <div>
-                  <p className="quote-invoice-label">입금 안내</p>
-                  <dl className="quote-invoice-footer-list">
-                    <div>
-                      <dt>은행</dt>
-                      <dd>{quoteIssuerProfile.bankName || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>계좌</dt>
-                      <dd>{quoteIssuerProfile.bankAccount || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>예금주</dt>
-                      <dd>{quoteIssuerProfile.accountHolder || "—"}</dd>
-                    </div>
-                  </dl>
-                </div>
-                <div>
-                  <p className="quote-invoice-label">공급자</p>
-                  <p className="quote-invoice-brand">{quoteIssuerProfile.brandName}</p>
-                  <dl className="quote-invoice-footer-list">
-                    <div>
-                      <dt>사업자등록번호</dt>
-                      <dd>{quoteIssuerProfile.businessRegistrationNumber || "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>이메일</dt>
-                      <dd>{quoteIssuerProfile.email || "—"}</dd>
-                    </div>
-                  </dl>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    alt=""
-                    className="quote-invoice-signature"
-                    height={40}
-                    src={quoteIssuerProfile.signatureSrc}
-                    width={100}
-                  />
-                </div>
-              </footer>
-            </article>
+            <div className="quote-compose-stage" aria-label="고객용 견적 미리보기">
+              <QuoteInvoiceDocument
+                clientName={clientName || "고객사 선택"}
+                contactName={selectedContact?.name}
+                contactPhone={selectedContact?.phone}
+                issuedOn={issuedOnDate}
+                items={customerPreviewItems}
+                note={note}
+                subtotalAmount={preview.subtotalAmount}
+                title={resolvedTitle}
+                totalAmount={preview.totalAmount}
+                validUntil={validUntilDate}
+                vatAmount={preview.vatAmount}
+                vatMode={vatMode}
+                versionNumber={versionNumber}
+              />
+            </div>
           ) : (
             <>
               <div className="quote-costing-sliders">
@@ -912,6 +734,15 @@ export function QuoteCostingComposer({
                   패키지 추가
                 </button>
               </div>
+
+              <label className="quote-document-note quote-costing-note">
+                메모 (선택)
+                <textarea
+                  onChange={(event) => setNote(event.target.value)}
+                  placeholder="견적 조건이나 전달 메모"
+                  value={note}
+                />
+              </label>
             </>
           )}
         </div>
