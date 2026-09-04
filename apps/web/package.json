@@ -6,6 +6,8 @@
     "predev": "tsx scripts/sync-main.ts",
     "dev": "next dev --hostname 127.0.0.1 --port 3000",
     "up": "tsx scripts/dev-up.ts",
+    "cloud:bootstrap": "tsx scripts/cloud-agent-bootstrap.ts",
+    "cloud:dev": "tsx scripts/cloud-agent-bootstrap.ts && next dev --hostname 127.0.0.1 --port 3000",
     "build": "next build",
     "start": "next start --hostname 127.0.0.1 --port 3000",
     "lan": "tsx scripts/print-lan-urls.ts",
