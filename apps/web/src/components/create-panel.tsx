@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 type CreatePanelProps = {
   open: boolean;
+  /** 스크린리더용. 화면에는 헤더를 두지 않는다(배경·Esc로 닫음). */
   title: string;
   onClose: () => void;
   children: React.ReactNode;
@@ -13,7 +14,6 @@ type CreatePanelProps = {
 };
 
 export function CreatePanel({ open, title, onClose, children, size = "wide" }: CreatePanelProps) {
-  const titleId = useId();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -48,13 +48,7 @@ export function CreatePanel({ open, title, onClose, children, size = "wide" }: C
   return createPortal(
     <div className="create-panel-layer is-open">
       <button aria-label="작성 닫기" className="create-panel-backdrop" onClick={onClose} type="button" />
-      <div aria-labelledby={titleId} aria-modal="true" className={panelClass} role="dialog">
-        <div className="create-panel-head">
-          <h2 id={titleId}>{title}</h2>
-          <button aria-label="닫기" className="create-panel-close" onClick={onClose} type="button">
-            <span aria-hidden="true">×</span>
-          </button>
-        </div>
+      <div aria-label={title} aria-modal="true" className={panelClass} role="dialog">
         <div className="create-panel-body">{children}</div>
       </div>
     </div>,
