@@ -1,9 +1,14 @@
 "use client";
 
 import { saveQuoteVersionAction } from "@/app/(private)/quotes/actions";
-import { QuoteCostingComposer } from "@/components/quote-costing-composer";
+import {
+  QuoteCostingComposer,
+  type QuoteComposerContact,
+  type QuoteComposerVersion,
+} from "@/components/quote-costing-composer";
 import {
   packagesFromStoredItems,
+  toDateInputValue,
   type QuotePackage,
   type QuoteVatMode,
 } from "@/lib/domain/quotes";
@@ -12,6 +17,8 @@ export function QuoteNewVersionForm({
   quoteId,
   clientId,
   projectId,
+  clientName,
+  contacts,
   title,
   note,
   vatMode,
@@ -19,10 +26,16 @@ export function QuoteNewVersionForm({
   targetMarginPercent,
   operatingCostPercent,
   nextVersionNumber,
+  issuedOn,
+  validUntil,
+  clientContactId,
+  versions,
 }: {
   quoteId: string;
   clientId: string;
   projectId: string;
+  clientName: string;
+  contacts: QuoteComposerContact[];
   title: string;
   note: string;
   vatMode: QuoteVatMode;
@@ -30,30 +43,48 @@ export function QuoteNewVersionForm({
   targetMarginPercent: number;
   operatingCostPercent: number;
   nextVersionNumber: number;
+  issuedOn?: Date | string | null;
+  validUntil?: Date | string | null;
+  clientContactId?: string | null;
+  versions?: QuoteComposerVersion[];
 }) {
   const initialPackages: QuotePackage[] = packagesFromStoredItems(items);
+  const issuedValue =
+    issuedOn instanceof Date
+      ? toDateInputValue(issuedOn)
+      : typeof issuedOn === "string" && issuedOn
+        ? toDateInputValue(new Date(issuedOn))
+        : undefined;
+  const validValue =
+    validUntil instanceof Date
+      ? toDateInputValue(validUntil)
+      : typeof validUntil === "string" && validUntil
+        ? toDateInputValue(new Date(validUntil))
+        : undefined;
 
   return (
     <form action={saveQuoteVersionAction} className="quote-form quote-form-costing">
       <input name="quoteId" type="hidden" value={quoteId} />
       <input name="clientId" type="hidden" value={clientId} />
       <input name="projectId" type="hidden" value={projectId} />
-      <label className="quote-form-full">
-        견적명
-        <input defaultValue={title} name="title" required />
-      </label>
       <div className="quote-form-full">
         <QuoteCostingComposer
+          clientId={clientId}
+          clientName={clientName}
+          contacts={contacts}
+          initialClientContactId={clientContactId ?? ""}
+          initialIssuedOn={issuedValue}
+          initialNote={note}
           initialOperatingCostPercent={operatingCostPercent}
           initialPackages={initialPackages}
           initialTargetMarginPercent={targetMarginPercent}
+          initialTitle={title}
+          initialValidUntil={validValue}
           initialVatMode={vatMode}
+          versionNumber={nextVersionNumber}
+          versions={versions}
         />
       </div>
-      <label className="quote-form-full">
-        메모 (선택)
-        <textarea defaultValue={note} name="note" />
-      </label>
       <button className="auth-submit" type="submit">
         v{nextVersionNumber} 저장
       </button>

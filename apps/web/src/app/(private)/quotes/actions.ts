@@ -26,6 +26,7 @@ export async function saveQuoteVersionAction(formData: FormData) {
           title: String(description),
           customerDescription: "",
           amount: Number(amounts[index] ?? 0),
+          quantity: 1,
           role: "",
           monthlyRate: Number(amounts[index] ?? 0) || 1,
           months: 1,
@@ -41,12 +42,15 @@ export async function saveQuoteVersionAction(formData: FormData) {
     quoteId: value(formData, "quoteId") || undefined,
     clientId: value(formData, "clientId"),
     projectId: value(formData, "projectId") || undefined,
+    clientContactId: value(formData, "clientContactId") || undefined,
     title: value(formData, "title"),
     note: value(formData, "note"),
     packages,
     vatMode: value(formData, "vatMode"),
     targetMarginPercent: value(formData, "targetMarginPercent") || 30,
     operatingCostPercent: value(formData, "operatingCostPercent") || 10,
+    issuedOn: value(formData, "issuedOn") || undefined,
+    validUntil: value(formData, "validUntil") || undefined,
   });
   revalidatePath("/quotes");
   redirect(`/quotes/${result.quoteId}`);

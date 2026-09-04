@@ -10,6 +10,8 @@ export const quoteVatModeLabels: Record<QuoteVatMode, string> = {
 export type QuoteCustomerItem = {
   title: string;
   customerDescription: string;
+  quantity: number;
+  unitPrice: number;
   amount: number;
 };
 
@@ -19,6 +21,8 @@ export type QuotePackage = {
   customerDescription: string;
   /** 고객 견적 금액. exclusive면 공급가, inclusive면 부가세 포함 금액. */
   amount: number;
+  /** 고객 문서 수량. */
+  quantity: number;
   role: string;
   monthlyRate: number;
   months: number;
@@ -135,6 +139,7 @@ export function createEmptyQuotePackage(): QuotePackage {
     title: "",
     customerDescription: "",
     amount: 0,
+    quantity: 1,
     role: defaultRole.role,
     monthlyRate: defaultRole.monthlyRate,
     months: 1,
@@ -143,6 +148,42 @@ export function createEmptyQuotePackage(): QuotePackage {
     costAmount: 0,
     amountLocked: false,
   };
+}
+
+export function unitPriceFromAmount(amount: number, quantity: number) {
+  const qty = quantity > 0 ? quantity : 1;
+  return Math.round(amount / qty);
+}
+
+export function amountFromUnitPrice(unitPrice: number, quantity: number) {
+  const qty = quantity > 0 ? quantity : 1;
+  return Math.max(0, Math.round(unitPrice * qty));
+}
+
+export function defaultQuoteValidUntil(issuedOn: Date = new Date()) {
+  const date = new Date(issuedOn);
+  date.setDate(date.getDate() + 30);
+  return date;
+}
+
+export function formatQuoteDocumentNumber(versionNumber: number, issuedOn: Date = new Date()) {
+  const year = issuedOn.getFullYear();
+  return `CL-${year}-${String(versionNumber).padStart(3, "0")}`;
+}
+
+export function toDateInputValue(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+export function parseDateInputValue(value: string) {
+  const trimmed = value.trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) throw new Error("Date is invalid");
+  const date = new Date(`${trimmed}T00:00:00`);
+  if (Number.isNaN(date.getTime())) throw new Error("Date is invalid");
+  return date;
 }
 
 export function recalculateQuotePackage(
@@ -162,6 +203,7 @@ export function recalculateQuotePackage(
     title: packageInput.title.trim(),
     customerDescription: packageInput.customerDescription.trim(),
     role: packageInput.role.trim(),
+    quantity: packageInput.quantity > 0 ? packageInput.quantity : 1,
     costAmount,
     amount: packageInput.amountLocked && packageInput.amount > 0 ? packageInput.amount : suggestedAmount,
   };
@@ -188,10 +230,12 @@ export function calculateQuoteCosting(input: {
   if (!input.packages.length) throw new Error("At least one quote package is required");
 
   const items = input.packages.map((raw) => {
+    const quantity = Number(raw.quantity ?? 1) > 0 ? Number(raw.quantity ?? 1) : 1;
     const base: QuotePackage = {
       title: String(raw.title ?? ""),
       customerDescription: String(raw.customerDescription ?? ""),
       amount: Number(raw.amount ?? 0),
+      quantity,
       role: String(raw.role ?? ""),
       monthlyRate: Number(raw.monthlyRate ?? 0),
       months: Number(raw.months ?? 0),
@@ -211,6 +255,7 @@ export function calculateQuoteCosting(input: {
       ...calculated,
       title,
       customerDescription,
+      quantity: calculated.quantity,
       role: calculated.role.slice(0, 80),
     };
   });
@@ -239,6 +284,8 @@ export function calculateQuoteCosting(input: {
     customerItems: items.map((item) => ({
       title: item.title,
       customerDescription: item.customerDescription,
+      quantity: item.quantity,
+      unitPrice: unitPriceFromAmount(item.amount, item.quantity),
       amount: item.amount,
     })),
     costAmount,
@@ -261,7 +308,12 @@ export function normalizeStoredQuoteItemsForPdf(items: unknown): QuoteCustomerIt
     const title = String(record.title ?? record.description ?? "").trim();
     const customerDescription = String(record.customerDescription ?? "").trim();
     const amount = Number(record.amount ?? 0);
-    return { title, customerDescription, amount };
+    const quantity = Number(record.quantity ?? 1) > 0 ? Number(record.quantity ?? 1) : 1;
+    const unitPrice =
+      Number(record.unitPrice ?? 0) > 0
+        ? Math.round(Number(record.unitPrice))
+        : unitPriceFromAmount(amount, quantity);
+    return { title, customerDescription, quantity, unitPrice, amount };
   }).filter((item) => item.title && Number.isInteger(item.amount) && item.amount > 0);
 }
 
@@ -278,6 +330,7 @@ export function calculateQuoteAmounts(
       title: item.description,
       customerDescription: "",
       amount: Number(item.amount),
+      quantity: 1,
       role: "",
       monthlyRate: Number(item.amount) || 1,
       months: 1,
@@ -318,6 +371,7 @@ export function packagesFromStoredItems(items: unknown): QuotePackage[] {
       title: String(record.title ?? record.description ?? "").trim(),
       customerDescription: String(record.customerDescription ?? "").trim(),
       amount: Number.isFinite(amount) ? Math.max(0, Math.round(amount)) : 0,
+      quantity: Number(record.quantity ?? 1) > 0 ? Number(record.quantity ?? 1) : 1,
       role: String(record.role ?? "").trim(),
       monthlyRate: Number(record.monthlyRate ?? (hasCostFields ? 0 : Math.max(amount, 1))) || 6_000_000,
       months: Number(record.months ?? 1) || 1,

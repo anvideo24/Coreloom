@@ -19,6 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ quot
   const items = normalizeStoredQuoteItemsForPdf(version.items);
   const pdf = await createQuotePdf({
     clientName: detail.quote.clientName,
+    contactName: version.contactName,
     title: version.title,
     versionNumber: version.versionNumber,
     items,
@@ -27,6 +28,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ quot
     totalAmount: version.totalAmount,
     vatMode: version.vatMode,
     note: version.note,
+    issuedOn: version.issuedOn,
+    validUntil: version.validUntil,
   });
 
   return new NextResponse(new Uint8Array(pdf), {

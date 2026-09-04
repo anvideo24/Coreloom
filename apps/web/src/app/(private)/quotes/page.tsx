@@ -11,12 +11,17 @@ export default async function QuotesPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { clients, projects, versions } = await listFounderQuotes(session.founder.id);
+  const { clients, projects, contacts, versions } = await listFounderQuotes(session.founder.id);
 
   return (
     <main className="operations-shell">
       <Suspense fallback={<p className="empty-state">견적서를 불러오는 중…</p>}>
-        <QuotesPageClient clients={clients} projects={projects} versions={versions} />
+        <QuotesPageClient
+          clients={clients}
+          contacts={contacts}
+          projects={projects}
+          versions={versions}
+        />
       </Suspense>
     </main>
   );

@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { QuoteDocumentActions } from "@/components/quote-print-button";
+import { QuoteInvoiceDocument } from "@/components/quote-invoice-document";
 import { founderSession } from "@/lib/auth/session";
-import { quoteVatModeLabels, normalizeStoredQuoteItemsForPdf, type QuoteVatMode } from "@/lib/domain/quotes";
+import { normalizeStoredQuoteItemsForPdf, type QuoteVatMode } from "@/lib/domain/quotes";
 import { quotePdfDownloadPath } from "@/lib/quotes/download";
 import { getFounderQuoteDetail } from "@/lib/quotes/repository";
 
@@ -23,7 +24,10 @@ export default async function QuotePrintPage({
   if (!detail || !version) notFound();
   const items = normalizeStoredQuoteItemsForPdf(version.items);
   const vatMode = (version.vatMode ?? "exclusive") as QuoteVatMode;
-  const amountLabel = vatMode === "inclusive" ? "금액(부가세 포함)" : "공급가액";
+  const issuedOn = version.issuedOn instanceof Date ? version.issuedOn : new Date(version.issuedOn);
+  const validUntil =
+    version.validUntil instanceof Date ? version.validUntil : new Date(version.validUntil);
+  const contact = detail.contacts.find((item) => item.id === version.clientContactId);
 
   return (
     <main className="quote-print-shell">
@@ -39,56 +43,21 @@ export default async function QuotePrintPage({
         </Link>
         <QuoteDocumentActions downloadHref={quotePdfDownloadPath(quoteId, versionId)} />
       </div>
-      <article className="quote-document">
-        <header>
-          <p>견적서 · {quoteVatModeLabels[vatMode]}</p>
-          <h1>{version.title}</h1>
-          <dl>
-            <div>
-              <dt>고객사</dt>
-              <dd>{detail.quote.clientName}</dd>
-            </div>
-            <div>
-              <dt>버전</dt>
-              <dd>v{version.versionNumber}</dd>
-            </div>
-          </dl>
-        </header>
-        <table>
-          <thead>
-            <tr>
-              <th>항목</th>
-              <th>{amountLabel}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item, index) => (
-              <tr key={index}>
-                <td>
-                  <strong>{item.title}</strong>
-                  {item.customerDescription ? <p className="quote-item-desc">{item.customerDescription}</p> : null}
-                </td>
-                <td>{item.amount.toLocaleString("ko-KR")}원</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <section className="quote-totals">
-          <p>
-            <span>{vatMode === "inclusive" ? "공급가액(역산)" : "공급가액"}</span>
-            <strong>{version.subtotalAmount.toLocaleString("ko-KR")}원</strong>
-          </p>
-          <p>
-            <span>{vatMode === "inclusive" ? "부가세 (포함분)" : "부가세 (10%)"}</span>
-            <strong>{version.vatAmount.toLocaleString("ko-KR")}원</strong>
-          </p>
-          <p className="quote-total">
-            <span>합계</span>
-            <strong>{version.totalAmount.toLocaleString("ko-KR")}원</strong>
-          </p>
-        </section>
-        {version.note ? <p className="quote-note">{version.note}</p> : null}
-      </article>
+      <QuoteInvoiceDocument
+        clientName={detail.quote.clientName}
+        contactName={version.contactName || contact?.name}
+        contactPhone={contact?.phone}
+        issuedOn={issuedOn}
+        items={items}
+        note={version.note}
+        subtotalAmount={version.subtotalAmount}
+        title={version.title}
+        totalAmount={version.totalAmount}
+        validUntil={validUntil}
+        vatAmount={version.vatAmount}
+        vatMode={vatMode}
+        versionNumber={version.versionNumber}
+      />
     </main>
   );
 }
