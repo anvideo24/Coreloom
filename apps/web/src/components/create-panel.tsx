@@ -7,8 +7,8 @@ type CreatePanelProps = {
   title: string;
   onClose: () => void;
   children: React.ReactNode;
-  /** 필드가 많으면 wide(센터), 적으면 drawer(우측) */
-  size?: "wide" | "drawer";
+  /** wide=센터 폼, drawer=우측, xlarge=원가 작성기처럼 거의 전체 */
+  size?: "wide" | "drawer" | "xlarge";
 };
 
 export function CreatePanel({ open, title, onClose, children, size = "wide" }: CreatePanelProps) {
@@ -30,15 +30,17 @@ export function CreatePanel({ open, title, onClose, children, size = "wide" }: C
 
   if (!open) return null;
 
+  const panelClass =
+    size === "drawer"
+      ? "create-panel create-panel-drawer"
+      : size === "xlarge"
+        ? "create-panel create-panel-xlarge"
+        : "create-panel create-panel-wide";
+
   return (
     <div className="create-panel-layer is-open">
       <button aria-label="작성 닫기" className="create-panel-backdrop" onClick={onClose} type="button" />
-      <div
-        aria-labelledby={titleId}
-        aria-modal="true"
-        className={size === "drawer" ? "create-panel create-panel-drawer" : "create-panel create-panel-wide"}
-        role="dialog"
-      >
+      <div aria-labelledby={titleId} aria-modal="true" className={panelClass} role="dialog">
         <div className="create-panel-head">
           <h2 id={titleId}>{title}</h2>
           <button aria-label="닫기" className="create-panel-close" onClick={onClose} type="button">

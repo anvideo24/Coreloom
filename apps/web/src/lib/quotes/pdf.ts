@@ -2,23 +2,49 @@ import path from "node:path";
 
 import PDFDocument from "pdfkit";
 
-type QuotePdfItem = { description: string; amount: number };
+import type { QuoteCustomerItem, QuoteVatMode } from "@/lib/domain/quotes";
 
 export type QuotePdfInput = {
   clientName: string;
   title: string;
   versionNumber: number;
-  items: QuotePdfItem[];
+  items: QuoteCustomerItem[] | Array<{ description: string; amount: number }>;
   subtotalAmount: number;
   vatAmount: number;
   totalAmount: number;
-  vatMode?: "exclusive" | "inclusive";
+  vatMode?: QuoteVatMode;
   note?: string | null;
 };
 
-const koreanFontPath = path.join(process.cwd(), "node_modules", "@fontsource", "gowun-dodum", "files", "gowun-dodum-korean-400-normal.woff");
+const koreanFontPath = path.join(
+  process.cwd(),
+  "node_modules",
+  "@fontsource",
+  "gowun-dodum",
+  "files",
+  "gowun-dodum-korean-400-normal.woff",
+);
 
-function won(value: number) { return `${value.toLocaleString("ko-KR")}원`; }
+function won(value: number) {
+  return `${value.toLocaleString("ko-KR")}원`;
+}
+
+function asCustomerLines(items: QuotePdfInput["items"]) {
+  return items.map((item) => {
+    if ("title" in item && typeof item.title === "string") {
+      return {
+        title: item.title,
+        customerDescription: "customerDescription" in item ? String(item.customerDescription ?? "") : "",
+        amount: item.amount,
+      };
+    }
+    return {
+      title: String((item as { description: string }).description ?? ""),
+      customerDescription: "",
+      amount: item.amount,
+    };
+  });
+}
 
 export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
   return new Promise((resolve, reject) => {
@@ -47,19 +73,33 @@ export function createQuotePdf(input: QuotePdfInput): Promise<Buffer> {
     document.strokeColor("#d7ded9").moveTo(52, document.y).lineTo(543, document.y).stroke();
     document.moveDown(0.6);
     document.fillColor("#17211c").fontSize(10);
-    for (const item of input.items) {
+    for (const item of asCustomerLines(input.items)) {
       const y = document.y;
-      document.text(item.description, 52, y, { width: 340 });
+      document.text(item.title, 52, y, { width: 340 });
       document.text(won(item.amount), amountX, y, { align: "right", width: 120 });
+      if (item.customerDescription) {
+        document.moveDown(0.15);
+        document.fontSize(9).fillColor("#68766f").text(item.customerDescription, 52, document.y, { width: 340 });
+        document.fillColor("#17211c").fontSize(10);
+      }
       document.moveDown(0.8);
     }
 
     document.moveDown(1.1);
     document.strokeColor("#17211c").moveTo(343, document.y).lineTo(543, document.y).stroke();
     document.moveDown(0.7);
-    const totals: Array<[string, number]> = input.vatMode === "inclusive"
-      ? [["공급가액(역산)", input.subtotalAmount], ["부가세 (포함분)", input.vatAmount], ["합계", input.totalAmount]]
-      : [["공급가액", input.subtotalAmount], ["부가세 (10%)", input.vatAmount], ["합계", input.totalAmount]];
+    const totals: Array<[string, number]> =
+      input.vatMode === "inclusive"
+        ? [
+            ["공급가액(역산)", input.subtotalAmount],
+            ["부가세 (포함분)", input.vatAmount],
+            ["합계", input.totalAmount],
+          ]
+        : [
+            ["공급가액", input.subtotalAmount],
+            ["부가세 (10%)", input.vatAmount],
+            ["합계", input.totalAmount],
+          ];
     for (const [label, amount] of totals) {
       const y = document.y;
       document.fontSize(label === "합계" ? 12 : 10).fillColor("#17211c").text(label, 343, y);

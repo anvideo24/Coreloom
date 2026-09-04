@@ -4,7 +4,13 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
 import { auditEvents, clientCompanies, projects, quoteEmailDeliveries, quotes, quoteVersions } from "@/lib/db/schema";
-import { calculateQuoteAmounts, nextQuoteVersionNumber, normalizeQuoteVatMode, QuoteItemInput } from "@/lib/domain/quotes";
+import {
+  calculateQuoteCosting,
+  nextQuoteVersionNumber,
+  normalizeQuoteVatMode,
+  normalizeStoredQuoteItemsForPdf,
+  type QuotePackage,
+} from "@/lib/domain/quotes";
 import { createQuotePdf } from "@/lib/quotes/pdf";
 import { deliverQuoteEmail, quoteEmailConfigured } from "@/lib/quotes/email";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
@@ -54,12 +60,19 @@ export async function createFounderQuoteVersion(input: {
   title: string;
   note?: string;
   vatMode?: string;
-  items: QuoteItemInput[];
+  packages: Array<Partial<QuotePackage>>;
+  targetMarginPercent?: unknown;
+  operatingCostPercent?: unknown;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "quotes");
   const database = createDatabase();
   const vatMode = normalizeQuoteVatMode(input.vatMode);
-  const amounts = calculateQuoteAmounts(input.items, vatMode);
+  const amounts = calculateQuoteCosting({
+    packages: input.packages,
+    vatMode,
+    targetMarginPercent: input.targetMarginPercent,
+    operatingCostPercent: input.operatingCostPercent,
+  });
   const title = input.title.trim();
   if (!title) throw new Error("Quote title is required");
 
@@ -87,14 +100,27 @@ export async function createFounderQuoteVersion(input: {
   }
 
   const [version] = await database.insert(quoteVersions).values({
-    workspaceId: workspace.id, quoteId, versionNumber, title, items: amounts.items,
-    subtotalAmount: amounts.subtotalAmount, vatAmount: amounts.vatAmount, totalAmount: amounts.totalAmount,
+    workspaceId: workspace.id,
+    quoteId,
+    versionNumber,
+    title,
+    items: amounts.items,
+    subtotalAmount: amounts.subtotalAmount,
+    vatAmount: amounts.vatAmount,
+    totalAmount: amounts.totalAmount,
     vatMode: amounts.vatMode,
+    targetMarginPercent: amounts.targetMarginPercent,
+    operatingCostPercent: amounts.operatingCostPercent,
+    costAmount: amounts.costAmount,
     note: input.note?.trim() || null,
   }).returning({ id: quoteVersions.id });
   await database.update(quotes).set({ updatedAt: new Date() }).where(eq(quotes.id, quoteId));
-  await database.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: input.actorUserId,
-    eventType: "quote.version_created", payload: { quoteId, quoteVersionId: version.id, versionNumber } });
+  await database.insert(auditEvents).values({
+    workspaceId: workspace.id,
+    actorUserId: input.actorUserId,
+    eventType: "quote.version_created",
+    payload: { quoteId, quoteVersionId: version.id, versionNumber },
+  });
   return { quoteId, versionId: version.id, versionNumber };
 }
 
@@ -105,7 +131,14 @@ export async function listFounderQuoteEmailDeliveries(authUserId: string, quoteI
     .from(quoteEmailDeliveries).where(and(eq(quoteEmailDeliveries.workspaceId, workspace.id), eq(quoteEmailDeliveries.quoteId, quoteId), eq(quoteEmailDeliveries.quoteVersionId, quoteVersionId))).orderBy(desc(quoteEmailDeliveries.createdAt));
 }
 
-export async function sendFounderQuoteEmail(input: { actorUserId: string; message: string; quoteId: string; quoteVersionId: string; recipient: string; subject: string }) {
+export async function sendFounderQuoteEmail(input: {
+  actorUserId: string;
+  message: string;
+  quoteId: string;
+  quoteVersionId: string;
+  recipient: string;
+  subject: string;
+}) {
   if (!quoteEmailConfigured()) throw new Error("Quote email service is not configured");
   const workspace = await ensureFounderWorkspace(input.actorUserId, "quotes");
   const database = createDatabase();
@@ -116,8 +149,27 @@ export async function sendFounderQuoteEmail(input: { actorUserId: string; messag
   const [delivery] = await database.insert(quoteEmailDeliveries).values({ workspaceId: workspace.id, quoteId: quote.id, quoteVersionId: version.id, recipient: input.recipient, subject: input.subject, message: input.message }).returning({ id: quoteEmailDeliveries.id });
 
   try {
-    const items = Array.isArray(version.items) ? version.items as { description: string; amount: number }[] : [];
-    const providerMessageId = await deliverQuoteEmail({ clientName: quote.clientName, message: input.message, pdf: await createQuotePdf({ clientName: quote.clientName, title: version.title, versionNumber: version.versionNumber, items, subtotalAmount: version.subtotalAmount, vatAmount: version.vatAmount, totalAmount: version.totalAmount, vatMode: version.vatMode, note: version.note }), quoteTitle: version.title, recipient: input.recipient, subject: input.subject, versionNumber: version.versionNumber, idempotencyKey: `quote-email-${delivery.id}` });
+    const items = normalizeStoredQuoteItemsForPdf(version.items);
+    const providerMessageId = await deliverQuoteEmail({
+      clientName: quote.clientName,
+      message: input.message,
+      pdf: await createQuotePdf({
+        clientName: quote.clientName,
+        title: version.title,
+        versionNumber: version.versionNumber,
+        items,
+        subtotalAmount: version.subtotalAmount,
+        vatAmount: version.vatAmount,
+        totalAmount: version.totalAmount,
+        vatMode: version.vatMode,
+        note: version.note,
+      }),
+      quoteTitle: version.title,
+      recipient: input.recipient,
+      subject: input.subject,
+      versionNumber: version.versionNumber,
+      idempotencyKey: `quote-email-${delivery.id}`,
+    });
     await database.update(quoteEmailDeliveries).set({ status: "accepted", providerMessageId, sentAt: new Date(), updatedAt: new Date() }).where(eq(quoteEmailDeliveries.id, delivery.id));
     await database.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: input.actorUserId, eventType: "quote.email_accepted", payload: { quoteId: quote.id, quoteVersionId: version.id, quoteEmailDeliveryId: delivery.id } });
     return { deliveryId: delivery.id };
