@@ -13,7 +13,7 @@
 
 | 기능 | 경로 | 상태 | 비고 |
 | --- | --- | --- | --- |
-| Neon Auth 대표 로그인 | `/sign-in` | 완료 | 서버 측 허용 이메일 검사 포함 |
+| Neon Auth 대표 로그인 | `/sign-in` | 완료 | 서버 측 허용 이메일 검사, PC `127.0.0.1`·`localhost` Origin 동일 취급 |
 | 비밀번호 설정·재설정 | `/auth/forgot-password` | 완료 | 계정 존재 여부 미노출 |
 | 개발 PC 초기 설정 | `/setup` | 완료 | `.env.local`에만 저장 |
 | 개발 DB 연결 | `/setup/database` | 완료 | `ai-development` 전용 |
