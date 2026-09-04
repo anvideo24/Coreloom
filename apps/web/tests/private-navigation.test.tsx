@@ -66,11 +66,14 @@ describe("PrivateNavigation", () => {
   });
 
   test("does not steal Control or Command B from form fields", () => {
-    expect(isEditableHotkeyTarget({ tagName: "INPUT" })).toBe(true);
-    expect(isEditableHotkeyTarget({ tagName: "textarea" })).toBe(true);
-    expect(isEditableHotkeyTarget({ tagName: "SELECT" })).toBe(true);
-    expect(isEditableHotkeyTarget({ tagName: "DIV", isContentEditable: true })).toBe(true);
-    expect(isEditableHotkeyTarget({ tagName: "BUTTON" })).toBe(false);
+    // 진짜 DOM 요소 대신 흉내 낸 객체를 넘긴다. EventTarget으로 형을 맞춰 줘야
+    // `next build`의 타입 검사가 통과한다.
+    const target = (value: { tagName?: string; isContentEditable?: boolean }) => value as unknown as EventTarget;
+    expect(isEditableHotkeyTarget(target({ tagName: "INPUT" }))).toBe(true);
+    expect(isEditableHotkeyTarget(target({ tagName: "textarea" }))).toBe(true);
+    expect(isEditableHotkeyTarget(target({ tagName: "SELECT" }))).toBe(true);
+    expect(isEditableHotkeyTarget(target({ tagName: "DIV", isContentEditable: true }))).toBe(true);
+    expect(isEditableHotkeyTarget(target({ tagName: "BUTTON" }))).toBe(false);
     expect(isEditableHotkeyTarget(null)).toBe(false);
   });
 
