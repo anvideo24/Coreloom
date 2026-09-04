@@ -37,11 +37,13 @@ describe("contract terms", () => {
         effectiveStartOn: "2026-09-01",
         effectiveEndOn: "2027-08-31",
         autoRenew: "true",
+        contractNumber: " C-2026-01 ",
       }),
     ).toEqual({
       effectiveStartOn: "2026-09-01",
       effectiveEndOn: "2027-08-31",
       autoRenew: true,
+      contractNumber: "C-2026-01",
     });
   });
 

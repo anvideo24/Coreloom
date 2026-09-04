@@ -24,6 +24,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   const latest = detail.versions[0];
   const items = normalizeStoredQuoteItemsForPdf(latest.items);
   const periodLabel = [
+    latest.contractNumber ? `계약번호 ${latest.contractNumber}` : null,
     latest.effectiveStartOn || latest.effectiveEndOn
       ? `${latest.effectiveStartOn ?? "시작 미정"} ~ ${latest.effectiveEndOn ?? "종료 미정"}`
       : null,
@@ -61,6 +62,10 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
           <p className="setup-code">계약 기간</p>
           <form action={updateContractTermsAction} className="quote-form">
             <input name="contractId" type="hidden" value={detail.contract.id} />
+            <label className="quote-form-full">
+              계약번호
+              <input defaultValue={latest.contractNumber ?? ""} name="contractNumber" placeholder="내부 계약번호" />
+            </label>
             <label>
               효력 시작일
               <input defaultValue={latest.effectiveStartOn ?? ""} name="effectiveStartOn" type="date" />
@@ -74,7 +79,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
               기간 종료 후 자동갱신
             </label>
             <button className="auth-submit" type="submit">
-              기간 저장
+              기간·번호 저장
             </button>
           </form>
         </section>

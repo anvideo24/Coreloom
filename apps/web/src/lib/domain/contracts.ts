@@ -53,12 +53,13 @@ function parseOptionalIsoDate(value: string | undefined, message: string) {
   return date;
 }
 
-/** 초안·원본 보관 단계에서만 기간·자동갱신을 고친다. 체결본은 수정본으로만 이어간다. */
+/** 초안·원본 보관 단계에서만 기간·자동갱신·계약번호를 고친다. 체결본은 수정본으로만 이어간다. */
 export function normalizeContractTerms(input: {
   status: string;
   effectiveStartOn?: string;
   effectiveEndOn?: string;
   autoRenew?: boolean | string;
+  contractNumber?: string;
 }) {
   if (input.status === "executed") throw new Error("Executed contracts cannot be changed");
   if (input.status !== "draft" && input.status !== "original_recorded") {
@@ -69,9 +70,12 @@ export function normalizeContractTerms(input: {
   if (effectiveStartOn && effectiveEndOn && effectiveEndOn < effectiveStartOn) {
     throw new Error("Effective end date must be on or after start date");
   }
+  const contractNumber = input.contractNumber?.trim() || null;
+  if (contractNumber && contractNumber.length > 80) throw new Error("Contract number is too long");
   return {
     effectiveStartOn,
     effectiveEndOn,
     autoRenew: input.autoRenew === true || input.autoRenew === "true" || input.autoRenew === "on",
+    contractNumber,
   };
 }

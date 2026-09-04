@@ -108,6 +108,7 @@ export async function createFounderContractFromQuote(input: {
   effectiveStartOn?: string;
   effectiveEndOn?: string;
   autoRenew?: boolean | string;
+  contractNumber?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "contracts");
   const database = createDatabase();
@@ -134,6 +135,7 @@ export async function createFounderContractFromQuote(input: {
     effectiveStartOn: input.effectiveStartOn,
     effectiveEndOn: input.effectiveEndOn,
     autoRenew: input.autoRenew,
+    contractNumber: input.contractNumber,
   });
 
   const [contract] = await database.insert(contracts).values({
@@ -173,6 +175,7 @@ export async function updateFounderContractTerms(input: {
   effectiveStartOn?: string;
   effectiveEndOn?: string;
   autoRenew?: boolean | string;
+  contractNumber?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "contracts");
   const database = createDatabase();
@@ -187,6 +190,7 @@ export async function updateFounderContractTerms(input: {
     effectiveStartOn: input.effectiveStartOn,
     effectiveEndOn: input.effectiveEndOn,
     autoRenew: input.autoRenew,
+    contractNumber: input.contractNumber,
   });
   await database.update(contractVersions).set({ ...terms, updatedAt: new Date() }).where(eq(contractVersions.id, version.id));
   await database.update(contracts).set({ updatedAt: new Date() }).where(eq(contracts.id, contract.id));
@@ -267,6 +271,7 @@ export async function createFounderContractAmendment(input: { actorUserId: strin
     effectiveStartOn: version.effectiveStartOn,
     effectiveEndOn: version.effectiveEndOn,
     autoRenew: version.autoRenew,
+    contractNumber: version.contractNumber,
   }).returning({ id: contractVersions.id });
   await database.update(contracts).set({ updatedAt: new Date() }).where(eq(contracts.id, contract.id));
   await database.insert(auditEvents).values({

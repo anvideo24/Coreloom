@@ -75,6 +75,7 @@ export async function listFounderRevenueLedger(authUserId: string) {
     occurredOn: revenueEntries.occurredOn,
     settlementDate: revenueEntries.settlementDate,
     status: revenueEntries.status,
+    accountCategory: revenueEntries.accountCategory,
     ventureName: ventures.name,
     ventureKind: ventures.kind,
     clientName: clientCompanies.name,
@@ -182,6 +183,7 @@ export async function createFounderRevenueEntry(input: {
   occurredOn: string;
   settlementDate: string;
   note?: string;
+  accountCategory?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "revenue");
   const database = createDatabase();
@@ -221,6 +223,7 @@ export async function createFounderRevenueEntry(input: {
     currency: draft.currency,
     occurredOn: draft.occurredOn,
     settlementDate: draft.settlementDate,
+    accountCategory: draft.accountCategory,
     note: draft.note,
   }).returning({ id: revenueEntries.id });
 

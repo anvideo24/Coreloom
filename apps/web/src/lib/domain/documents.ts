@@ -82,22 +82,26 @@ export function normalizeVaultDocumentDraft(input: {
   originalReference?: string;
   filename?: string;
   projectId?: string;
+  clientCompanyId?: string;
   note?: string;
 }): {
   title: string;
   kind: VaultDocumentKind;
   originalReference: string;
   projectId: string | null;
+  clientCompanyId: string | null;
   note: string | null;
 } {
   const title = input.title.trim();
   const projectId = input.projectId?.trim() || null;
+  const clientCompanyId = input.clientCompanyId?.trim() || null;
   const note = input.note?.trim() || null;
 
   if (!title) throw new Error("Document title is required");
   if (title.length > 160) throw new Error("Document title is too long");
   if (!vaultDocumentKinds.includes(input.kind as VaultDocumentKind)) throw new Error("Unsupported document kind");
   if (note && note.length > 500) throw new Error("Document note is too long");
+  if (projectId && clientCompanyId) throw new Error("Link to a project or a client, not both");
 
   return {
     title,
@@ -107,6 +111,7 @@ export function normalizeVaultDocumentDraft(input: {
       filename: input.filename,
     }).originalReference,
     projectId,
+    clientCompanyId,
     note,
   };
 }

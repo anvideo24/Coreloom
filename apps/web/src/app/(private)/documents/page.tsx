@@ -12,12 +12,13 @@ export default async function DocumentsPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { projects, documents } = await listFounderVaultDocuments(session.founder.id);
+  const { projects, clients, documents } = await listFounderVaultDocuments(session.founder.id);
 
   return (
     <main className="operations-shell">
       <Suspense fallback={<p className="empty-state">문서함을 불러오는 중…</p>}>
         <DocumentsPageClient
+          clients={clients}
           documents={documents.map((document) => ({
             documentId: document.documentId,
             title: document.title,

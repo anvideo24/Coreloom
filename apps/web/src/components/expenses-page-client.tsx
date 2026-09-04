@@ -6,7 +6,12 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createExpenseEntryAction } from "@/app/(private)/expenses/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
-import { expenseEntryStatusLabels, type ExpenseEntryStatus } from "@/lib/domain/expenses";
+import {
+  expenseAccountCategories,
+  expenseAccountCategoryLabels,
+  expenseEntryStatusLabels,
+  type ExpenseEntryStatus,
+} from "@/lib/domain/expenses";
 import { UNCLASSIFIED_LABEL, ventureKindLabels, type VentureKind } from "@/lib/domain/revenue";
 
 type Project = { id: string; name: string; clientName: string };
@@ -113,8 +118,8 @@ export function ExpensesPageClient({
         <form action={createExpenseEntryAction} className="quote-form">
           <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
-            프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 사업은 매출 원장에서 먼저 등록합니다. 공급
-            거래처·계정과목·증빙 파일은 이후입니다.
+            프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 사업은 매출 원장에서 먼저 등록합니다.
+            매입처 이름은 고객사와 별도로 적을 수 있습니다. 증빙 파일은 문서함에서 연결합니다.
           </p>
           <label>
             고객사 프로젝트 (선택)
@@ -139,7 +144,22 @@ export function ExpensesPageClient({
             </select>
           </label>
 
-          <p className="setup-code quote-form-full">금액</p>
+          <p className="setup-code quote-form-full">금액·매입</p>
+          <label>
+            계정과목 (선택)
+            <select defaultValue="" name="accountCategory">
+              <option value="">미정</option>
+              {expenseAccountCategories.map((category) => (
+                <option key={category} value={category}>
+                  {expenseAccountCategoryLabels[category]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            매입처 (선택)
+            <input name="supplierName" placeholder="공급 거래처 상호" />
+          </label>
           <label>
             금액 (원)
             <input min={1} name="amount" required step={1} type="number" />

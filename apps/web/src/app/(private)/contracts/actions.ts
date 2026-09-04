@@ -31,6 +31,7 @@ export async function createContractFromQuoteAction(formData: FormData) {
     effectiveStartOn: value(formData, "effectiveStartOn"),
     effectiveEndOn: value(formData, "effectiveEndOn"),
     autoRenew: value(formData, "autoRenew"),
+    contractNumber: value(formData, "contractNumber"),
   });
   revalidatePath("/contracts");
   revalidatePath("/quotes");
@@ -46,6 +47,7 @@ export async function updateContractTermsAction(formData: FormData) {
     effectiveStartOn: value(formData, "effectiveStartOn"),
     effectiveEndOn: value(formData, "effectiveEndOn"),
     autoRenew: value(formData, "autoRenew"),
+    contractNumber: value(formData, "contractNumber"),
   });
   revalidatePath(`/contracts/${contractId}`);
   revalidatePath("/contracts");

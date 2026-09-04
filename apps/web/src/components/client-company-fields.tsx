@@ -101,7 +101,7 @@ export function ClientCompanyFields({ defaults, includeFirstContact = false }: C
           placeholder="파일 경로, 문서함 위치, 또는 URL"
         />
       </label>
-      <p className="form-help quote-form-full">파일 업로드는 문서함 연동으로 이어집니다. 지금은 위치·링크만 남깁니다.</p>
+      <p className="form-help quote-form-full">파일 업로드는 문서함에서 고객사에 연결해 보관합니다. 지금은 위치·링크도 남길 수 있습니다.</p>
 
       {includeFirstContact ? (
         <>

@@ -128,7 +128,11 @@ export function ContractsPageClient({
                 ))}
               </select>
             </label>
-            <p className="setup-code quote-form-full">기간 (선택)</p>
+            <p className="setup-code quote-form-full">기간·번호 (선택)</p>
+            <label>
+              계약번호
+              <input name="contractNumber" placeholder="내부 계약번호" />
+            </label>
             <label>
               효력 시작일
               <input name="effectiveStartOn" type="date" />

@@ -17,6 +17,8 @@ describe("expense entries", () => {
       occurredOn: "2026-09-01",
       settlementDate: "2026-09-05",
       note: " 광고비 ",
+      accountCategory: "marketing",
+      supplierName: " 광고사 ",
     })).toEqual({
       projectId: null,
       ventureId: "venture-1",
@@ -25,6 +27,8 @@ describe("expense entries", () => {
       occurredOn: "2026-09-01",
       settlementDate: "2026-09-05",
       note: "광고비",
+      accountCategory: "marketing",
+      supplierName: "광고사",
     });
   });
 
@@ -41,6 +45,8 @@ describe("expense entries", () => {
       occurredOn: "2026-09-02",
       settlementDate: "2026-09-02",
       note: null,
+      accountCategory: null,
+      supplierName: null,
     });
   });
 

@@ -183,6 +183,13 @@
       "when": 1788529200000,
       "tag": "0025_ops_field_pass",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1788532800000,
+      "tag": "0026_ops_field_pass_ledger",
+      "breakpoints": true
     }
   ]
 }

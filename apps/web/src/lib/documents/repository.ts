@@ -26,6 +26,13 @@ export async function listFounderVaultDocuments(authUserId: string) {
     .where(and(eq(projects.workspaceId, workspace.id), isNull(projects.deletedAt), isNull(clientCompanies.deletedAt)))
     .orderBy(asc(clientCompanies.name), asc(projects.name));
 
+  const clientRows = await database.select({
+    id: clientCompanies.id,
+    name: clientCompanies.name,
+  }).from(clientCompanies)
+    .where(and(eq(clientCompanies.workspaceId, workspace.id), isNull(clientCompanies.deletedAt)))
+    .orderBy(asc(clientCompanies.name));
+
   const versionRows = await database.select({
     documentId: vaultDocuments.id,
     versionId: vaultDocumentVersions.id,
@@ -56,12 +63,15 @@ export async function listFounderVaultDocuments(authUserId: string) {
       hasStoredFile: Boolean(row.storageKey),
       counterparty: row.projectName && row.clientName
         ? `${row.clientName} · ${row.projectName}`
-        : COMPANY_DOCUMENT_LABEL,
+        : row.clientName
+          ? row.clientName
+          : COMPANY_DOCUMENT_LABEL,
     });
   }
 
   return {
     projects: projectRows,
+    clients: clientRows,
     documents: [...latestByDocument.values()],
   };
 }
@@ -149,6 +159,7 @@ export async function createFounderVaultDocument(input: {
   kind: string;
   originalReference?: string;
   projectId?: string;
+  clientCompanyId?: string;
   note?: string;
   file?: StoredDocumentUpload;
 }) {
@@ -159,7 +170,7 @@ export async function createFounderVaultDocument(input: {
     filename: input.file?.filename,
   });
 
-  let clientCompanyId: string | null = null;
+  let clientCompanyId: string | null = draft.clientCompanyId;
   if (draft.projectId) {
     const [project] = await database.select({
       id: projects.id,
@@ -175,6 +186,16 @@ export async function createFounderVaultDocument(input: {
       .limit(1);
     if (!project) throw new Error("Project was not found");
     clientCompanyId = project.clientCompanyId;
+  } else if (draft.clientCompanyId) {
+    const [client] = await database.select({ id: clientCompanies.id }).from(clientCompanies)
+      .where(and(
+        eq(clientCompanies.id, draft.clientCompanyId),
+        eq(clientCompanies.workspaceId, workspace.id),
+        isNull(clientCompanies.deletedAt),
+      ))
+      .limit(1);
+    if (!client) throw new Error("Client was not found");
+    clientCompanyId = client.id;
   }
 
   const [created] = await database.insert(vaultDocuments).values({
