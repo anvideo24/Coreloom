@@ -29,6 +29,7 @@ export async function createExpenseEntryAction(formData: FormData) {
     note: value(formData, "note"),
     accountCategory: value(formData, "accountCategory"),
     supplierName: value(formData, "supplierName"),
+    supplierClientCompanyId: value(formData, "supplierClientCompanyId"),
   });
   revalidatePath("/expenses");
   revalidatePath("/revenue");

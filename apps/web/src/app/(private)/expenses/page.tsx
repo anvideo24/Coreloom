@@ -13,7 +13,7 @@ export default async function ExpensesPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { ventures, projects, rows, summary } = await listFounderExpenseLedger(session.founder.id);
+  const { ventures, projects, suppliers, rows, summary } = await listFounderExpenseLedger(session.founder.id);
 
   return (
     <main className="operations-shell">
@@ -25,6 +25,7 @@ export default async function ExpensesPage() {
             status: row.status as ExpenseEntryStatus,
           }))}
           summary={summary}
+          suppliers={suppliers.map((supplier) => ({ id: supplier.id, name: supplier.name }))}
           ventures={ventures.map((venture) => ({
             ...venture,
             kind: venture.kind as VentureKind,

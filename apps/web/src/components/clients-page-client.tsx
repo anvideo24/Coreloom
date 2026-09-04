@@ -7,7 +7,7 @@ import { createClientAction } from "@/app/(private)/clients-projects/actions";
 import { ClientCompanyFields } from "@/components/client-company-fields";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
-import { formatClientListMeta, type ClientTaxType } from "@/lib/domain/clients-projects";
+import { formatClientListMeta, type ClientTaxType, type ClientTradeKind } from "@/lib/domain/clients-projects";
 
 type ClientRow = {
   id: string;
@@ -15,6 +15,7 @@ type ClientRow = {
   businessRegistrationNumber: string | null;
   representativeName: string | null;
   taxType: ClientTaxType | null;
+  tradeKind: ClientTradeKind;
   contactCount: number;
   projectCount: number;
 };
@@ -46,7 +47,8 @@ export function ClientsPageClient({ clients }: { clients: ClientRow[] }) {
           <p className="auth-eyebrow">CORELOOM / CLIENTS</p>
           <h1>고객사</h1>
           <p>
-            상호·사업자번호·대표자·주소를 두고 세금계산서·계약에 씁니다. 담당자는 고객사를 연 뒤 추가합니다.
+            상호·사업자번호·대표자·거래 유형(매출/매입)·주소를 두고 세금계산서·계약·비용 매입에 씁니다. 담당자는
+            고객사를 연 뒤 추가합니다.
           </p>
         </div>
         <CreateIconButton label="새 고객사" onClick={openCreate} />

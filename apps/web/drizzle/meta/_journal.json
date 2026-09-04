@@ -190,6 +190,13 @@
       "when": 1788532800000,
       "tag": "0026_ops_field_pass_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1788536400000,
+      "tag": "0027_client_trade_kind",
+      "breakpoints": true
     }
   ]
 }

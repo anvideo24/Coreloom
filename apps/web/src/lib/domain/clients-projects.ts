@@ -1,10 +1,12 @@
 export const projectStatuses = ["planned", "active", "on_hold", "complete"] as const;
 export const contactRelationStatuses = ["active", "inactive"] as const;
 export const clientTaxTypes = ["general", "simplified", "exempt"] as const;
+export const clientTradeKinds = ["sales", "purchase", "both"] as const;
 
 export type ProjectStatus = (typeof projectStatuses)[number];
 export type ContactRelationStatus = (typeof contactRelationStatuses)[number];
 export type ClientTaxType = (typeof clientTaxTypes)[number];
+export type ClientTradeKind = (typeof clientTradeKinds)[number];
 
 export const projectStatusLabels: Record<ProjectStatus, string> = {
   planned: "예정",
@@ -24,6 +26,12 @@ export const clientTaxTypeLabels: Record<ClientTaxType, string> = {
   exempt: "면세",
 };
 
+export const clientTradeKindLabels: Record<ClientTradeKind, string> = {
+  sales: "매출",
+  purchase: "매입",
+  both: "매출·매입",
+};
+
 export type ClientCompanyProfile = {
   name: string;
   businessRegistrationNumber: string | null;
@@ -36,6 +44,7 @@ export type ClientCompanyProfile = {
   email: string | null;
   businessRegistrationRef: string | null;
   taxType: ClientTaxType | null;
+  tradeKind: ClientTradeKind;
   bankName: string | null;
   bankAccount: string | null;
   accountHolder: string | null;
@@ -92,6 +101,7 @@ export function normalizeClientCompanyProfile(input: {
   email?: string;
   businessRegistrationRef?: string;
   taxType?: string;
+  tradeKind?: string;
   bankName?: string;
   bankAccount?: string;
   accountHolder?: string;
@@ -103,6 +113,8 @@ export function normalizeClientCompanyProfile(input: {
     if (!clientTaxTypes.includes(taxTypeRaw as ClientTaxType)) throw new Error("Unsupported client tax type");
     taxType = taxTypeRaw as ClientTaxType;
   }
+  const tradeKindRaw = input.tradeKind?.trim() || "sales";
+  if (!clientTradeKinds.includes(tradeKindRaw as ClientTradeKind)) throw new Error("Unsupported client trade kind");
   return {
     name: normalizeClientName(input.name),
     businessRegistrationNumber: normalizeBusinessRegistrationNumber(input.businessRegistrationNumber),
@@ -115,6 +127,7 @@ export function normalizeClientCompanyProfile(input: {
     email: optionalEmail(input.email),
     businessRegistrationRef: optionalText(input.businessRegistrationRef, 400, "Business registration reference"),
     taxType,
+    tradeKind: tradeKindRaw as ClientTradeKind,
     bankName: optionalText(input.bankName, 80, "Bank name"),
     bankAccount: optionalText(input.bankAccount, 80, "Bank account"),
     accountHolder: optionalText(input.accountHolder, 80, "Account holder"),
@@ -122,10 +135,15 @@ export function normalizeClientCompanyProfile(input: {
   };
 }
 
+export function clientAllowsPurchase(tradeKind: ClientTradeKind) {
+  return tradeKind === "purchase" || tradeKind === "both";
+}
+
 export function formatClientListMeta(client: {
   businessRegistrationNumber?: string | null;
   representativeName?: string | null;
   taxType?: ClientTaxType | null;
+  tradeKind?: ClientTradeKind | null;
   contactCount: number;
   projectCount: number;
 }) {
@@ -133,6 +151,7 @@ export function formatClientListMeta(client: {
     client.businessRegistrationNumber?.trim() || null,
     client.representativeName?.trim() ? `대표 ${client.representativeName.trim()}` : null,
     client.taxType ? clientTaxTypeLabels[client.taxType] : null,
+    client.tradeKind && client.tradeKind !== "sales" ? clientTradeKindLabels[client.tradeKind] : null,
     `담당자 ${client.contactCount}명`,
     `프로젝트 ${client.projectCount}개`,
   ].filter(Boolean);

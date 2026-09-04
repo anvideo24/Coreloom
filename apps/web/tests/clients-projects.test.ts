@@ -26,6 +26,7 @@ describe("client company profile", () => {
         email: " office@example.com ",
         businessRegistrationRef: " docs/reg.pdf ",
         taxType: "general",
+        tradeKind: "both",
         bankName: " 국민은행 ",
         bankAccount: " 123-45-6789 ",
         accountHolder: " 주식회사 예시 ",
@@ -43,11 +44,19 @@ describe("client company profile", () => {
       email: "office@example.com",
       businessRegistrationRef: "docs/reg.pdf",
       taxType: "general",
+      tradeKind: "both",
       bankName: "국민은행",
       bankAccount: "123-45-6789",
       accountHolder: "주식회사 예시",
       bankBookRef: "docs/bank.pdf",
     });
+  });
+
+  it("defaults trade kind to sales and rejects an unsupported value", () => {
+    expect(normalizeClientCompanyProfile({ name: "예시" }).tradeKind).toBe("sales");
+    expect(() => normalizeClientCompanyProfile({ name: "예시", tradeKind: "unknown" })).toThrow(
+      "Unsupported client trade kind",
+    );
   });
 
   it("rejects an unsupported tax type", () => {
@@ -66,10 +75,11 @@ describe("client company profile", () => {
         businessRegistrationNumber: "123-45-67890",
         representativeName: "홍길동",
         taxType: "general",
+        tradeKind: "purchase",
         contactCount: 2,
         projectCount: 1,
       }),
-    ).toBe("123-45-67890 · 대표 홍길동 · 일반과세 · 담당자 2명 · 프로젝트 1개");
+    ).toBe("123-45-67890 · 대표 홍길동 · 일반과세 · 매입 · 담당자 2명 · 프로젝트 1개");
   });
 });
 
