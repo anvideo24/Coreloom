@@ -436,9 +436,11 @@ body {
     color: var(--nav-ink);
   }
   .private-drawer-layer {
+    align-self: stretch;
     grid-column: 1;
     grid-row: 1;
     height: 100%;
+    justify-self: start;
     min-height: 0;
   }
   .private-app-content {
