@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { formatLocalUpBanner, LOCAL_DEV_PORT, PC_DEV_DASHBOARD } from "../src/lib/pwa/local-up";
-import { funnelHttpsOrigins, tailscaleFunnelArgs } from "../src/lib/pwa/tailscale-funnel";
+import { funnelHttpsOrigins, tailscaleFunnelArgs, tailscaleFunnelDisableRootArgs } from "../src/lib/pwa/tailscale-funnel";
 import { runSyncLocalMain } from "./git-sync";
 
 const webRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -86,6 +86,7 @@ try {
   process.exit(1);
 }
 
+runTailscale(tailscaleFunnelDisableRootArgs());
 const funnel = runTailscale(tailscaleFunnelArgs());
 if (funnel.status !== 0) {
   process.stderr.write("휴대폰용 Funnel은 켜지지 않았습니다. PC 주소는 그대로 쓸 수 있습니다.\n");

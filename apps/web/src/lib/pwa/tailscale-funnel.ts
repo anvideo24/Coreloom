@@ -1,7 +1,12 @@
 export const TAILSCALE_FUNNEL_PORT = "3000";
+export const FUNNEL_PUBLIC_HTTPS_PORT = "8443";
 
 export function tailscaleFunnelArgs(port = TAILSCALE_FUNNEL_PORT) {
-  return ["funnel", "--bg", "--yes", port];
+  return ["funnel", "--bg", "--yes", `--https=${FUNNEL_PUBLIC_HTTPS_PORT}`, port];
+}
+
+export function tailscaleFunnelDisableRootArgs() {
+  return ["funnel", "--https=443", "off"];
 }
 
 export function funnelHttpsOrigins(statusText: string) {
