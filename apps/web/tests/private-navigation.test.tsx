@@ -1,27 +1,19 @@
 import { describe, expect, test } from "vitest";
 
-const navData = [
-  { href: "/dashboard", label: "대시보드" },
-  { href: "/company-setup", label: "설립 준비" },
-  { href: "/documents", label: "문서함" },
-  { href: "/clients-projects", label: "고객사 · 프로젝트" },
-  { href: "/quotes", label: "견적서" },
-  { href: "/contracts", label: "계약" },
-  { href: "/billings", label: "청구" },
-  { href: "/revenue", label: "매출 원장" },
-  { href: "/expenses", label: "비용 원장" },
-  { href: "/tasks", label: "업무" },
-  { href: "/agents", label: "에이전트" },
-  { href: "/timeline", label: "근거 기록" },
-  { href: "/proposals", label: "AI 제안" },
-  { href: "/admin/manual", label: "운영 매뉴얼" },
-];
+import {
+  isNavItemActive,
+  navItems,
+  navItemsForTab,
+  navigationShell,
+  tabIdForPath,
+} from "@/lib/domain/private-navigation";
 
 describe("PrivateNavigation", () => {
   test("includes all required operating destinations", () => {
-    const hrefs = navData.map((item) => item.href);
+    const hrefs = navItems().map((item) => item.href);
     expect(hrefs).toContain("/dashboard");
     expect(hrefs).toContain("/company-setup");
+    expect(hrefs).toContain("/documents");
     expect(hrefs).toContain("/clients-projects");
     expect(hrefs).toContain("/quotes");
     expect(hrefs).toContain("/contracts");
@@ -36,9 +28,34 @@ describe("PrivateNavigation", () => {
   });
 
   test("includes required labels", () => {
-    const labels = navData.map((item) => item.label);
+    const labels = navItems().map((item) => item.label);
     expect(labels).toContain("비용 원장");
     expect(labels).toContain("에이전트");
     expect(labels).toContain("운영 매뉴얼");
+  });
+
+  test("uses a bottom bar on folded phones and a drawer from unfolded fold upward", () => {
+    expect(navigationShell(300)).toBe("compact");
+    expect(navigationShell(390)).toBe("compact");
+    expect(navigationShell(639)).toBe("compact");
+    expect(navigationShell(640)).toBe("drawer");
+    expect(navigationShell(720)).toBe("drawer");
+    expect(navigationShell(1920)).toBe("drawer");
+    expect(navigationShell(3840)).toBe("drawer");
+  });
+
+  test("maps routes to compact tabs and nested paths stay in the same tab", () => {
+    expect(tabIdForPath("/dashboard")).toBe("overview");
+    expect(tabIdForPath("/quotes/q1")).toBe("sales");
+    expect(tabIdForPath("/revenue/r1")).toBe("finance");
+    expect(tabIdForPath("/tasks/t1")).toBe("ops");
+    expect(tabIdForPath("/company-setup")).toBe("more");
+    expect(tabIdForPath("/admin/manual/progress")).toBe("more");
+    expect(navItemsForTab("more").map((item) => item.href)).toEqual(["/company-setup", "/documents", "/admin/manual"]);
+  });
+
+  test("does not treat other pages as the dashboard", () => {
+    expect(isNavItemActive("/documents", "/dashboard")).toBe(false);
+    expect(isNavItemActive("/clients-projects/p1", "/clients-projects")).toBe(true);
   });
 });
