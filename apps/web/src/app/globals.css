@@ -428,12 +428,6 @@ body {
   .private-app-shell:has(.private-drawer-layer.is-open) {
     grid-template-columns: var(--private-sidebar-width) minmax(0, 1fr);
   }
-  .private-app-shell:has(.agent-panel-layer.is-open) {
-    grid-template-columns: var(--private-toggle-rail) minmax(0, 1fr) var(--agent-panel-width);
-  }
-  .private-app-shell:has(.private-drawer-layer.is-open):has(.agent-panel-layer.is-open) {
-    grid-template-columns: var(--private-sidebar-width) minmax(0, 1fr) var(--agent-panel-width);
-  }
   .private-menu-button {
     align-self: start;
     color: var(--ink);
@@ -464,14 +458,6 @@ body {
     overflow: auto;
     position: relative;
     z-index: 0;
-  }
-  .agent-panel-layer {
-    align-self: stretch;
-    grid-column: 3;
-    grid-row: 1;
-    height: 100%;
-    justify-self: end;
-    min-height: 0;
   }
   .private-tabbar,
   .private-sheet-layer { display: none !important; }
@@ -637,11 +623,16 @@ body {
 }
 
 .agent-panel-layer {
+  bottom: 0;
   overflow: hidden;
   pointer-events: none;
+  position: fixed;
+  right: 0;
+  top: 0;
   transform: translateX(100%);
   transition: transform 220ms ease;
   width: var(--agent-panel-width);
+  z-index: 55;
 }
 .agent-panel-layer.is-open {
   pointer-events: auto;
@@ -650,6 +641,7 @@ body {
 .agent-panel {
   background: var(--surface);
   border-left: 1px solid var(--line);
+  box-shadow: -12px 0 32px rgb(28 25 22 / 10%);
   color: var(--ink);
   display: flex;
   flex-direction: column;
