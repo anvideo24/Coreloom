@@ -12,8 +12,9 @@
 2. 생성 SQL과 코드 변경을 검토합니다.
 3. `.env.local`의 `CORELOOM_DATABASE_BRANCH=ai-development` 및 Console 선택 브랜치가 모두 `ai-development`임을 확인합니다.
 4. `npm --prefix apps/web run db:migrate`로 개발 브랜치에만 적용하고, Tables 화면에서 테이블 이름만 확인합니다.
-5. 코드·SQL·검증 결과를 Git에 커밋·푸시합니다.
-6. 대표가 명시적으로 승인한 경우에만, 별도 로컬 운영 연결로 같은 검토 SQL을 `production`에 적용합니다.
+5. 코드 작업 안내에는 개발 PC에서 `npm run db:migrate`가 필요한지를 빠뜨리지 않습니다.
+6. 코드·SQL·검증 결과를 Git에 커밋·푸시합니다.
+7. 대표가 명시적으로 승인한 경우에만, 별도 로컬 운영 연결로 같은 검토 SQL을 `production`에 적용합니다.
 
 연결 대상, 선택된 브랜치, 생성 SQL 중 하나라도 검토 조건과 다르면 즉시 중단합니다. Neon Free의 짧은 복구 이력은 논리 백업을 대신하지 않습니다.
 
