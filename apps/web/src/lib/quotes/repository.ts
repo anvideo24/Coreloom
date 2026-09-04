@@ -24,13 +24,13 @@ import {
 } from "@/lib/domain/quotes";
 import { createQuotePdf } from "@/lib/quotes/pdf";
 import { deliverQuoteEmail, quoteEmailConfigured } from "@/lib/quotes/email";
-import { getFounderCompanyProfile } from "@/lib/company-setup/repository";
+import { getFounderCompanyProfile, loadFounderCompanyProfile } from "@/lib/company-setup/repository";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 export async function listFounderQuotes(authUserId: string) {
   const workspace = await ensureFounderWorkspace(authUserId, "quotes");
   const database = createDatabase();
-  const issuer = await getFounderCompanyProfile(authUserId);
+  const { profile: issuer, storage: companyProfileStorage } = await loadFounderCompanyProfile(authUserId);
   const clients = await database
     .select({ id: clientCompanies.id, name: clientCompanies.name })
     .from(clientCompanies)
@@ -72,7 +72,7 @@ export async function listFounderQuotes(authUserId: string) {
     .innerJoin(clientCompanies, eq(quotes.clientCompanyId, clientCompanies.id))
     .where(and(eq(quotes.workspaceId, workspace.id), isNull(quotes.deletedAt), isNull(clientCompanies.deletedAt)))
     .orderBy(desc(quoteVersions.createdAt));
-  return { clients, projects: projectRows, contacts, versions, issuer };
+  return { clients, projects: projectRows, contacts, versions, issuer, companyProfileStorage };
 }
 
 export async function getFounderQuoteDetail(authUserId: string, quoteId: string) {
