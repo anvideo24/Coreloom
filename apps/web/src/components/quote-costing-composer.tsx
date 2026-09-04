@@ -27,6 +27,40 @@ function won(value: number) {
   return `${Math.max(0, Math.round(value)).toLocaleString("ko-KR")}원`;
 }
 
+/** 원화 금액 표시용. type=number는 콤마를 못 쓰므로 text로 포맷한다. */
+function formatWonDigits(value: number) {
+  if (!Number.isFinite(value) || value <= 0) return "";
+  return Math.round(value).toLocaleString("ko-KR");
+}
+
+function parseWonDigits(raw: string) {
+  const digits = raw.replace(/[^\d]/g, "");
+  if (!digits) return 0;
+  const number = Number(digits);
+  return Number.isFinite(number) ? number : 0;
+}
+
+function WonAmountInput({
+  value,
+  onValueChange,
+  "aria-label": ariaLabel,
+}: {
+  value: number;
+  onValueChange: (value: number) => void;
+  "aria-label"?: string;
+}) {
+  return (
+    <input
+      aria-label={ariaLabel}
+      autoComplete="off"
+      inputMode="numeric"
+      onChange={(event) => onValueChange(parseWonDigits(event.target.value))}
+      type="text"
+      value={formatWonDigits(value)}
+    />
+  );
+}
+
 function safeCost(pkg: QuotePackage) {
   try {
     return calculatePackageCostAmount(pkg);
@@ -248,17 +282,12 @@ export function QuoteCostingComposer({
                     <>
                       <label>
                         단가
-                        <input
-                          inputMode="numeric"
-                          min={0}
-                          onChange={(event) =>
-                            updatePackage(index, {
-                              monthlyRate: Number(event.target.value) || 0,
-                              amountLocked: false,
-                            })
+                        <WonAmountInput
+                          aria-label="단가"
+                          onValueChange={(monthlyRate) =>
+                            updatePackage(index, { monthlyRate, amountLocked: false })
                           }
-                          type="number"
-                          value={pkg.monthlyRate || ""}
+                          value={pkg.monthlyRate}
                         />
                       </label>
                       <label>
@@ -316,17 +345,10 @@ export function QuoteCostingComposer({
                   ) : null}
                   <label>
                     {vatMode === "inclusive" ? "고객 금액" : "공급가"}
-                    <input
-                      inputMode="numeric"
-                      min={0}
-                      onChange={(event) =>
-                        updatePackage(index, {
-                          amount: Number(event.target.value) || 0,
-                          amountLocked: true,
-                        })
-                      }
-                      type="number"
-                      value={pkg.amount || ""}
+                    <WonAmountInput
+                      aria-label={vatMode === "inclusive" ? "고객 금액" : "공급가"}
+                      onValueChange={(amount) => updatePackage(index, { amount, amountLocked: true })}
+                      value={pkg.amount}
                     />
                   </label>
                   {tab === "internal" && pkg.amountLocked ? (
