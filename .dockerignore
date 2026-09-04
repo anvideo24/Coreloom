@@ -1,0 +1,24 @@
+# 저장소 뿌리 기준. docker build -t coreloom .
+.git
+.github
+.superpowers
+.local
+**/.local
+**/.env
+**/.env.*
+!**/.env.example
+**/node_modules
+**/.next
+**/dist
+**/build
+**/*.log
+**/.DS_Store
+**/Thumbs.db
+docs
+working-method
+*.md
+!RULES.md
+!manual/**/*.md
+apps/web/tests
+apps/web/coverage
+apps/web/tsconfig.tsbuildinfo

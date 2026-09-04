@@ -9,6 +9,8 @@ const addresses = Object.values(networkInterfaces())
   .flatMap((item) => (item?.address ? [item.address] : []));
 
 const nextConfig: NextConfig = {
+  // 컨테이너·자체 호스팅용. 빌드 후 진입점은 `.next/standalone/apps/web/server.js`다.
+  output: "standalone",
   allowedDevOrigins: allowedDevelopmentOrigins({
     addresses,
     machineName: hostname(),

@@ -54,6 +54,7 @@ Coreloom은 강의·앱·온라인 서비스를 함께 운영하는 1인 창업�
 - 대표 계정은 Neon Console에서 직접 만든다. 계정에 비밀번호가 없는 경우 `/auth/forgot-password`에서 대표 이메일로 설정 링크를 요청한다. 공개 가입은 켜지지 않으며, 이메일·비밀번호·연결 문자열·쿠키 비밀값은 저장소나 매뉴얼에 기록하지 않는다.
 - 스키마를 바꾸면 같은 변경에 drizzle 마이그레이션을 둔다. 개발 PC에서는 `apps/web`에서 `npm run db:migrate`(또는 `tsx scripts/migrate.ts`)가 필요할 수 있다. 2026-09-04 기준 `ai-development`에는 0000–0024가 적용되어 있다. 코드에는 이어서 0025(고객사 과세유형·계좌, 계약 기간·자동갱신, 청구번호·PO), 0026(계약번호, 매출·비용 계정과목, 비용 매입처 이름), 0027(고객사 거래 유형, 비용 매입처 고객사 연결), 0028(계정과목 마스터·원장 FK)이 있다. 0025–0028이 없으면 고객사·계약·청구·원장·계정과목의 새 칸이 비거나 저장이 실패할 수 있다. 적용 여부는 이 클라우드가 아니라 개발 PC에서 확인한다.
 - 스키마 변경은 `ai-development`에서 먼저 검증한다. `production` 적용과 복구는 대표의 그 시점 승인 없이는 실행하지 않는다.
+- 배포본 포장은 Next `output: "standalone"`과 저장소 뿌리 `Dockerfile`이다. 컨테이너 진입점은 `apps/web/server.js`이며, `.env*`는 이미지에 넣지 않는다. 절차 정본은 `docs/operations/deploy-packaging.md`다. 호스팅 공급자 선정과 Vercel 연결은 그 문서 범위 밖이다.
 - 백업은 자동화하지 않는다. 운영 변경 전후에 `docs/operations/neon-branch-and-backup-runbook.md`의 수동 절차를 따른다.
 
 ## 고객사 프로젝트 운영
