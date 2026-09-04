@@ -5,6 +5,11 @@ import { and, asc, desc, eq, isNull } from "drizzle-orm";
 import { createDatabase } from "@/lib/db/client";
 import { aiAgentWorkLogs, aiAgents, auditEvents, clientCompanies, projects, tasks, ventures } from "@/lib/db/schema";
 import {
+  agentPanelContextTitle,
+  buildAgentPanelWorkNotes,
+  buildAgentSubscriptionPackage,
+} from "@/lib/domain/agent-panel";
+import {
   agentAccessLabel,
   approveAiAgentWork,
   assertAgentCanRecordWork,
@@ -337,6 +342,55 @@ export async function recordFounderAgentWork(input: {
     payload: { workLogId: created.id, agentId: agent.id, taskId: draft.taskId },
   });
   return { workLogId: created.id, agentId: agent.id };
+}
+
+export async function invokeFounderAgentFromPanel(input: {
+  actorUserId: string;
+  agentId: string;
+  message: string;
+  pathname: string;
+}) {
+  const detail = await getFounderAgentDetail(input.actorUserId, input.agentId);
+  if (!detail) throw new Error("Agent was not found");
+  if (detail.status !== "active") throw new Error("Inactive agents cannot record work");
+
+  const packed = buildAgentSubscriptionPackage({
+    agentName: detail.name,
+    purpose: detail.purpose,
+    workStyle: detail.workStyle,
+    answerStyle: detail.answerStyle,
+    procedure: detail.procedure,
+    instructions: detail.instructions,
+    allowedWork: detail.allowedWork,
+    modelProvider: detail.modelProvider,
+    pathname: input.pathname,
+    contextTitle: agentPanelContextTitle(input.pathname),
+    message: input.message,
+  });
+  const notes = buildAgentPanelWorkNotes({
+    message: packed.message,
+    contextTitle: packed.contextTitle,
+    pathname: packed.pathname,
+    modelLabel: packed.modelLabel,
+    packageText: packed.packageText,
+  });
+
+  const recorded = await recordFounderAgentWork({
+    actorUserId: input.actorUserId,
+    agentId: detail.id,
+    requestNote: notes.requestNote,
+    inputNote: notes.inputNote,
+  });
+
+  return {
+    ...recorded,
+    agentName: detail.name,
+    packageText: packed.packageText,
+    handoffLabel: packed.handoffLabel,
+    handoffHint: packed.handoffHint,
+    modelLabel: packed.modelLabel,
+    contextTitle: packed.contextTitle,
+  };
 }
 
 export async function approveFounderAgentWork(input: {
