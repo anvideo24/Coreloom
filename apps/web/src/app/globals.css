@@ -229,11 +229,14 @@ body {
 .private-drawer-layer {
   overflow: hidden;
   pointer-events: none;
-  width: 100%;
+  transform: translateX(-100%);
+  transition: transform 220ms ease;
+  width: var(--private-sidebar-width);
 }
 
 .private-drawer-layer.is-open {
   pointer-events: auto;
+  transform: translateX(0);
 }
 
 .private-sheet-backdrop {
@@ -254,13 +257,7 @@ body {
   height: 100%;
   overflow-y: auto;
   padding: calc(var(--space-5) + env(safe-area-inset-top, 0px)) var(--space-3) calc(var(--space-7) + env(safe-area-inset-bottom, 0px));
-  transform: translateX(-100%);
-  transition: transform 180ms ease;
   width: var(--private-sidebar-width);
-}
-
-.private-drawer-layer.is-open .private-navigation {
-  transform: translateX(0);
 }
 
 .private-drawer-head {
@@ -419,7 +416,7 @@ body {
     min-height: 100dvh;
     overflow: hidden;
     position: relative;
-    transition: grid-template-columns 180ms ease;
+    transition: grid-template-columns 220ms ease;
   }
   .private-app-shell:has(.private-drawer-layer.is-open) {
     grid-template-columns: var(--private-sidebar-width) minmax(0, 1fr);
