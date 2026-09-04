@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { adminManualNav, type ManualBlock, type ManualInline } from "@/lib/domain/admin-manual";
+import { ADMIN_MANUAL_HOME_HREF, type ManualBlock, type ManualInline } from "@/lib/domain/admin-manual";
 
 function InlineText({ inlines }: { inlines: ManualInline[] }) {
   return inlines.map((part, index) => {
@@ -33,19 +33,22 @@ function ManualBlocks({ blocks }: { blocks: ManualBlock[] }) {
 }
 
 export function AdminManualFrame({
-  currentHref,
+  home = false,
   deployVersion,
   deployCommit,
   manualCommit,
+  sourceLabel,
   title,
   intro,
   blocks,
   children,
 }: {
-  currentHref: string;
+  /** 홈은 고르는 입구라 되돌아갈 곳이 없다. 나머지 화면은 홈으로 돌아가는 길을 위에 둔다. */
+  home?: boolean;
   deployVersion: string;
   deployCommit: string;
   manualCommit: string;
+  sourceLabel?: string;
   title: string;
   intro: string;
   blocks?: ManualBlock[];
@@ -53,6 +56,11 @@ export function AdminManualFrame({
 }) {
   return (
     <main className="operations-shell">
+      {home ? null : (
+        <nav aria-label="매뉴얼 위치" className="manual-back">
+          <Link href={ADMIN_MANUAL_HOME_HREF}>매뉴얼 홈</Link>
+        </nav>
+      )}
       <header className="operations-header">
         <div>
           <p className="auth-eyebrow">CORELOOM / ADMIN MANUAL</p>
@@ -60,13 +68,11 @@ export function AdminManualFrame({
           <p>{intro}</p>
         </div>
       </header>
-      <p className="manual-meta">배포 버전 {deployVersion} · 배포 커밋 {deployCommit} · 매뉴얼 원본 커밋 {manualCommit}</p>
-      <nav aria-label="매뉴얼 메뉴" className="manual-menu">
-        {adminManualNav.map((item) => (
-          <Link aria-current={item.href === currentHref ? "page" : undefined} href={item.href} key={item.href}>{item.label}</Link>
-        ))}
-      </nav>
-      <section aria-label={title} className="manual-document">
+      <p className="manual-meta">
+        배포 버전 {deployVersion} · 배포 커밋 {deployCommit} · 매뉴얼 원본 커밋 {manualCommit}
+        {sourceLabel ? ` · 원본 ${sourceLabel}` : ""}
+      </p>
+      <section aria-label={title} className={home ? "manual-home" : "manual-document"}>
         {blocks ? <ManualBlocks blocks={blocks} /> : children}
       </section>
     </main>

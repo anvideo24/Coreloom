@@ -27,7 +27,7 @@ const pageTitles: Array<{ match: (pathname: string) => boolean; title: string }>
   { match: (path) => path.startsWith("/proposals"), title: "AI 제안" },
   { match: (path) => path.startsWith("/documents"), title: "문서함" },
   { match: (path) => path.startsWith("/company-setup"), title: "설립 준비" },
-  { match: (path) => path.startsWith("/admin/manual"), title: "운영 매뉴얼" },
+  { match: (path) => path.startsWith("/admin/manual"), title: "매뉴얼" },
 ];
 
 export function agentPanelContextTitle(pathname: string) {

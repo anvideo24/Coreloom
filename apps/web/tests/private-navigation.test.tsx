@@ -39,7 +39,8 @@ describe("PrivateNavigation", () => {
     const labels = navItems().map((item) => item.label);
     expect(labels).toContain("비용 원장");
     expect(labels).toContain("에이전트");
-    expect(labels).toContain("운영 매뉴얼");
+    // /admin/manual은 이제 한 권의 책이 아니라 고르는 입구다.
+    expect(labels).toContain("매뉴얼");
   });
 
   test("uses a bottom bar on folded phones and a push sidebar from unfolded fold upward", () => {

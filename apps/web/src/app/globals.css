@@ -2071,10 +2071,26 @@ section.empty-state,
 
 /* ── 관리자 매뉴얼 ──────────────────────────── */
 .manual-meta { color: var(--muted); font-size: 0.8125rem; line-height: 1.6; margin: var(--space-5) 0 0; }
-.manual-menu { border-bottom: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 0; margin-top: var(--space-5); }
-.manual-menu a { border-bottom: 2px solid transparent; color: var(--muted); font-size: 0.875rem; font-weight: 600; padding: var(--space-3) var(--space-4); text-decoration: none; transition: color 100ms; margin-bottom: -1px; }
-.manual-menu a:hover { color: var(--accent); }
-.manual-menu a[aria-current="page"] { border-bottom-color: var(--accent); color: var(--accent); }
+.manual-back { margin-bottom: var(--space-4); }
+.manual-back a { align-items: center; color: var(--muted); display: inline-flex; font-size: 0.875rem; font-weight: 600; min-height: 1.75rem; text-decoration: none; transition: color 120ms ease; }
+.manual-back a::before { content: "←"; margin-right: 0.5rem; }
+.manual-back a:hover { color: var(--accent); }
+.manual-back a:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--accent), transparent 50%); outline-offset: 3px; }
+
+/* 매뉴얼 홈 — 긴 원본을 펼치지 않고 고르게 하는 입구 */
+.manual-home { display: grid; gap: var(--space-10); margin-top: var(--space-6); }
+.manual-home-section { display: grid; gap: var(--space-3); }
+.manual-home-section h2 { font-size: 1.125rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.manual-home-lede { color: var(--muted); font-size: 0.875rem; line-height: 1.65; margin: 0; }
+.manual-home-grid { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); margin-top: var(--space-2); }
+.manual-card { align-content: start; background: var(--surface); border: 1.5px solid var(--line); border-radius: var(--radius-card); box-shadow: var(--shadow-card); display: grid; gap: var(--space-2); padding: var(--space-5) var(--space-6); text-decoration: none; transition: border-color 120ms ease, box-shadow 120ms ease; }
+a.manual-card:hover { border-color: var(--accent); }
+a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--accent), transparent 50%); outline-offset: 3px; }
+.manual-card h3 { color: var(--ink); font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; margin: 0; }
+.manual-card p { color: var(--ink-secondary); font-size: 0.875rem; line-height: 1.65; margin: 0; }
+.manual-card-source { color: var(--muted) !important; font-family: var(--font-geist-mono), ui-monospace, monospace; font-size: 0.75rem !important; margin-top: var(--space-2) !important; overflow-wrap: anywhere; }
+.manual-card-note { color: var(--warning) !important; font-weight: 600; }
+.manual-card-missing { background: var(--surface-raised); border-style: dashed; box-shadow: none; }
 .manual-document { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); display: grid; gap: var(--space-5); margin-top: var(--space-6); padding: var(--space-7) var(--space-6); }
 .manual-document h2, .manual-document h3, .manual-document h4 { font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 .manual-document p, .manual-document li, .manual-document blockquote { color: var(--ink); line-height: 1.75; margin: 0; }
