@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 
-import { funnelAuthDomainHint, tailscaleFunnelArgs } from "../src/lib/pwa/tailscale-funnel";
+import { funnelAuthDomainHint, tailscaleFunnelArgs, tailscaleFunnelDisableRootArgs } from "../src/lib/pwa/tailscale-funnel";
 
 function runTailscale(args: string[]) {
   const result = spawnSync("tailscale", args, {
@@ -16,6 +16,7 @@ function runTailscale(args: string[]) {
   return result;
 }
 
+runTailscale(tailscaleFunnelDisableRootArgs());
 const funnel = runTailscale(tailscaleFunnelArgs());
 if (funnel.status !== 0) {
   process.stderr.write("휴대폰용 주소를 만들지 못했습니다. PC에서 Tailscale이 실행 중인지, 관리 화면에서 Funnel이 허용돼 있는지 확인해 주세요.\n");

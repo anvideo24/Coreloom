@@ -9,7 +9,7 @@ import {
   TAILSCALE_MAGICDNS_PATTERN,
 } from "@/lib/pwa/dev-origins";
 import { decideLocalMainSync, formatLocalUpBanner, PC_DEV_DASHBOARD } from "@/lib/pwa/local-up";
-import { funnelAuthDomainHint, funnelHttpsOrigins, tailscaleFunnelArgs } from "@/lib/pwa/tailscale-funnel";
+import { funnelAuthDomainHint, funnelHttpsOrigins, tailscaleFunnelArgs, tailscaleFunnelDisableRootArgs } from "@/lib/pwa/tailscale-funnel";
 import { coreloomWebManifest } from "@/lib/pwa/web-manifest";
 
 describe("private development origins", () => {
@@ -64,14 +64,15 @@ describe("Coreloom web app manifest", () => {
   });
 
   it("opens a phone URL with Funnel instead of requiring Tailscale on the phone", () => {
-    expect(tailscaleFunnelArgs()).toEqual(["funnel", "--bg", "--yes", "3000"]);
+    expect(tailscaleFunnelArgs()).toEqual(["funnel", "--bg", "--yes", "--https=8443", "3000"]);
+    expect(tailscaleFunnelDisableRootArgs()).toEqual(["funnel", "--https=443", "off"]);
   });
 
   it("reads Funnel HTTPS origins so Neon Auth can trust the phone address", () => {
-    expect(funnelHttpsOrigins("https://office.tailnet.ts.net/\n|-- proxy http://127.0.0.1:3000\n")).toEqual([
-      "https://office.tailnet.ts.net",
+    expect(funnelHttpsOrigins("https://office.tailnet.ts.net:8443/\n|-- proxy http://127.0.0.1:3000\n")).toEqual([
+      "https://office.tailnet.ts.net:8443",
     ]);
-    expect(funnelAuthDomainHint("https://office.tailnet.ts.net")).toContain("Neon Console");
+    expect(funnelAuthDomainHint("https://office.tailnet.ts.net:8443")).toContain("Neon Console");
   });
 });
 
