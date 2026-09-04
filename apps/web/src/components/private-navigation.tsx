@@ -100,14 +100,11 @@ export function PrivateNavigation() {
 
   return (
     <>
-      <header className="private-topbar">
-        <NavToggleButton onToggle={toggleDrawer} open={drawerOpen} />
-      </header>
+      <NavToggleButton onToggle={toggleDrawer} open={drawerOpen} />
 
       <div className={drawerOpen ? "private-drawer-layer is-open" : "private-drawer-layer"} inert={!drawerOpen}>
         <aside aria-labelledby={drawerTitleId} className="private-navigation" id="private-drawer">
           <div className="private-drawer-head">
-            <NavToggleButton onToggle={toggleDrawer} open={drawerOpen} />
             <Link className="private-navigation-brand" href="/dashboard" id={drawerTitleId}>
               CORELOOM
             </Link>
