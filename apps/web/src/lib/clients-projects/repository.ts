@@ -39,8 +39,11 @@ export async function listFounderClientsAndProjects(authUserId: string) {
     .select({
       id: projects.id,
       name: projects.name,
+      summary: projects.summary,
       status: projects.status,
       progressPercent: projects.progressPercent,
+      startOn: projects.startOn,
+      targetEndOn: projects.targetEndOn,
       clientCompanyId: projects.clientCompanyId,
       clientName: clientCompanies.name,
     })
@@ -210,6 +213,9 @@ export async function createFounderProject(input: {
   name: string;
   status: string;
   progressPercent: string;
+  summary?: string;
+  startOn?: string;
+  targetEndOn?: string;
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
   const database = createDatabase();
@@ -232,8 +238,11 @@ export async function createFounderProject(input: {
       workspaceId: workspace.id,
       clientCompanyId: client.id,
       name: project.name,
+      summary: project.summary,
       status: project.status,
       progressPercent: project.progressPercent,
+      startOn: project.startOn,
+      targetEndOn: project.targetEndOn,
     })
     .returning({ id: projects.id });
 

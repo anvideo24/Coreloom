@@ -160,15 +160,36 @@ export function normalizeClientContact(input: {
   };
 }
 
+export function normalizeOptionalDate(value: string | undefined, label: string) {
+  const trimmed = value?.trim() || "";
+  if (!trimmed) return null;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) throw new Error(`${label} must be YYYY-MM-DD`);
+  return trimmed;
+}
+
 export function normalizeProjectRegistration(input: {
   clientId: string;
   name: string;
   status: string;
   progressPercent: string;
-}): { clientId: string; name: string; status: ProjectStatus; progressPercent: number } {
+  summary?: string;
+  startOn?: string;
+  targetEndOn?: string;
+}): {
+  clientId: string;
+  name: string;
+  status: ProjectStatus;
+  progressPercent: number;
+  summary: string | null;
+  startOn: string | null;
+  targetEndOn: string | null;
+} {
   const clientId = input.clientId.trim();
   const name = input.name.trim();
   const progressPercent = Number(input.progressPercent);
+  const summary = optionalText(input.summary, 400, "Summary");
+  const startOn = normalizeOptionalDate(input.startOn, "Start date");
+  const targetEndOn = normalizeOptionalDate(input.targetEndOn, "Target end date");
 
   if (!clientId) throw new Error("Client is required");
   if (!name) throw new Error("Project name is required");
@@ -177,8 +198,36 @@ export function normalizeProjectRegistration(input: {
   if (!Number.isInteger(progressPercent) || progressPercent < 0 || progressPercent > 100) {
     throw new Error("Progress must be between 0 and 100");
   }
+  if (startOn && targetEndOn && targetEndOn < startOn) {
+    throw new Error("Target end date must be on or after start date");
+  }
 
-  return { clientId, name, status: input.status as ProjectStatus, progressPercent };
+  return {
+    clientId,
+    name,
+    status: input.status as ProjectStatus,
+    progressPercent,
+    summary,
+    startOn,
+    targetEndOn,
+  };
+}
+
+export function formatProjectListMeta(project: {
+  clientName: string;
+  status: ProjectStatus;
+  progressPercent: number;
+  startOn?: string | null;
+  targetEndOn?: string | null;
+}) {
+  const parts = [
+    project.clientName,
+    projectStatusLabels[project.status],
+    `${project.progressPercent}%`,
+    project.startOn ? `시작 ${project.startOn}` : null,
+    project.targetEndOn ? `목표 ${project.targetEndOn}` : null,
+  ].filter(Boolean);
+  return parts.join(" · ");
 }
 
 export function normalizeProjectProgressUpdate(input: {

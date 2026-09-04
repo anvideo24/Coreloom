@@ -106,10 +106,14 @@ export async function createProjectAction(formData: FormData) {
     name: value(formData, "name"),
     status: value(formData, "status"),
     progressPercent: value(formData, "progressPercent"),
+    summary: value(formData, "summary"),
+    startOn: value(formData, "startOn"),
+    targetEndOn: value(formData, "targetEndOn"),
   });
   revalidatePath("/clients");
   revalidatePath("/clients-projects");
   revalidatePath("/dashboard");
+  redirect("/clients-projects");
 }
 
 export async function updateProjectProgressAction(formData: FormData) {
