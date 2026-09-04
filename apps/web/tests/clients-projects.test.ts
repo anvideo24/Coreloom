@@ -124,17 +124,23 @@ describe("client contact registration", () => {
 });
 
 describe("project registration", () => {
-  it("keeps a client-linked active project with its progress", () => {
+  it("keeps a client-linked active project with its progress and schedule", () => {
     expect(normalizeProjectRegistration({
       clientId: "client-1",
       name: "  홈페이지 개편  ",
       status: "active",
       progressPercent: "35",
+      summary: "  리뉴얼 범위  ",
+      startOn: "2026-09-01",
+      targetEndOn: "2026-12-31",
     })).toEqual({
       clientId: "client-1",
       name: "홈페이지 개편",
       status: "active",
       progressPercent: 35,
+      summary: "리뉴얼 범위",
+      startOn: "2026-09-01",
+      targetEndOn: "2026-12-31",
     });
   });
 
@@ -145,6 +151,19 @@ describe("project registration", () => {
       status: "active",
       progressPercent: "101",
     })).toThrow("Progress must be between 0 and 100");
+  });
+
+  it("rejects a target end before the start date", () => {
+    expect(() =>
+      normalizeProjectRegistration({
+        clientId: "client-1",
+        name: "홈페이지 개편",
+        status: "active",
+        progressPercent: "10",
+        startOn: "2026-12-01",
+        targetEndOn: "2026-01-01",
+      }),
+    ).toThrow("Target end date must be on or after start date");
   });
 
   it("exposes only the supported project states", () => {

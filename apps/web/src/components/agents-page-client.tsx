@@ -106,6 +106,7 @@ export function AgentsPageClient({
 
       <CreatePanel onClose={close} open={open} size="wide" title="새 에이전트">
         <form action={createAgentAction} className="quote-form">
+          <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
             프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 회사 공통입니다. 모델은 API 키가 아니라 구독 채널입니다.
           </p>
@@ -127,6 +128,8 @@ export function AgentsPageClient({
               ))}
             </select>
           </label>
+
+          <p className="setup-code quote-form-full">기본</p>
           <label className="quote-form-full">이름<input name="name" placeholder="예: 초안 도우미" required /></label>
           <label className="quote-form-full">목적<textarea name="purpose" placeholder="이 에이전트가 돕는 일" required /></label>
           <label className="quote-form-full">접근 범위<textarea name="accessScope" placeholder="볼 수 있는 고객·프로젝트·자료 범위" required /></label>
@@ -138,6 +141,8 @@ export function AgentsPageClient({
               ))}
             </select>
           </label>
+
+          <p className="setup-code quote-form-full">지침</p>
           <label className="quote-form-full">일하는 방식<textarea name="workStyle" placeholder="조사 후 초안, 숫자 근거를 먼저 확인 등" /></label>
           <label className="quote-form-full">답변 방식<textarea name="answerStyle" placeholder="짧고 확인 질문 위주, 표로 정리 등" /></label>
           <label className="quote-form-full">절차<textarea name="procedure" placeholder="1) 배경 확인 2) 부족한 질문 3) 초안 제안" /></label>
