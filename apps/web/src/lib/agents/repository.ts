@@ -16,6 +16,7 @@ import {
   deactivateAiAgent,
   defaultAiAgentCapabilities,
   normalizeAiAgentDraft,
+  normalizeAiAgentModelProvider,
   normalizeAiAgentWorkLog,
   partitionAgentWorkLogs,
   rejectAiAgentWork,
@@ -349,10 +350,15 @@ export async function invokeFounderAgentFromPanel(input: {
   agentId: string;
   message: string;
   pathname: string;
+  modelProvider?: string;
 }) {
   const detail = await getFounderAgentDetail(input.actorUserId, input.agentId);
   if (!detail) throw new Error("Agent was not found");
   if (detail.status !== "active") throw new Error("Inactive agents cannot record work");
+
+  const modelProvider = input.modelProvider
+    ? normalizeAiAgentModelProvider(input.modelProvider)
+    : detail.modelProvider;
 
   const packed = buildAgentSubscriptionPackage({
     agentName: detail.name,
@@ -362,7 +368,7 @@ export async function invokeFounderAgentFromPanel(input: {
     procedure: detail.procedure,
     instructions: detail.instructions,
     allowedWork: detail.allowedWork,
-    modelProvider: detail.modelProvider,
+    modelProvider,
     pathname: input.pathname,
     contextTitle: agentPanelContextTitle(input.pathname),
     message: input.message,

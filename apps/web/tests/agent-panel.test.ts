@@ -69,6 +69,25 @@ describe("agent subscription handoff", () => {
     }).inputNote).toContain("구독 패키지");
   });
 
+  it("uses the panel-selected subscription model in the package", () => {
+    const packed = buildAgentSubscriptionPackage({
+      agentName: "조사",
+      purpose: "자료 조사",
+      workStyle: "근거 먼저",
+      answerStyle: "짧게",
+      procedure: "1. 확인",
+      instructions: "추정하지 말 것",
+      allowedWork: ["research"],
+      modelProvider: "gpt_codex_subscription",
+      pathname: "/agents",
+      contextTitle: "에이전트",
+      message: "초안을 도와 주세요",
+    });
+    expect(packed.handoffLabel).toBe("GPT·Codex 구독");
+    expect(packed.modelLabel).toBe("GPT·Codex 구독");
+    expect(packed.packageText).toContain("모델: GPT·Codex 구독");
+  });
+
   it("rejects an empty panel message", () => {
     expect(() => normalizeAgentPanelMessage(" ")).toThrow("Panel message is required");
   });
