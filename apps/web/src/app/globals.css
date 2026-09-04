@@ -893,6 +893,28 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   font-size: 0.75rem;
   font-weight: 700;
 }
+.agent-panel-model select {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  max-width: 12rem;
+  padding: 0.3rem 1.6rem 0.3rem 0.65rem;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%),
+    linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 0.85rem) 55%, calc(100% - 0.55rem) 55%;
+  background-repeat: no-repeat;
+  background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+}
+.agent-panel-model select:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
 .agent-panel-send {
   align-items: center;
   background: var(--ink);

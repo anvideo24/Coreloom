@@ -81,6 +81,7 @@ export async function invokeAgentFromPanelAction(input: {
   agentId: string;
   message: string;
   pathname: string;
+  modelProvider?: string;
 }) {
   const founder = await requireFounder();
   const result = await invokeFounderAgentFromPanel({
@@ -88,6 +89,7 @@ export async function invokeAgentFromPanelAction(input: {
     agentId: input.agentId,
     message: input.message,
     pathname: input.pathname,
+    modelProvider: input.modelProvider,
   });
   revalidatePath(`/agents/${result.agentId}`);
   revalidatePath("/agents");

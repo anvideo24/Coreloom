@@ -13,7 +13,11 @@ import {
   parseAgentPanelOpen,
   serializeAgentPanelOpen,
 } from "@/lib/domain/agent-panel";
-import { aiAgentModelProviderLabels, type AiAgentModelProvider } from "@/lib/domain/agents";
+import {
+  aiAgentModelProviderLabels,
+  aiAgentModelProviders,
+  type AiAgentModelProvider,
+} from "@/lib/domain/agents";
 import { isEditableHotkeyTarget } from "@/lib/domain/private-navigation";
 
 export type AgentPanelItem = {
@@ -38,6 +42,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [selectedId, setSelectedId] = useState<string>("");
+  const [modelProvider, setModelProvider] = useState<AiAgentModelProvider>("claude_subscription");
   const [pickerOpen, setPickerOpen] = useState(false);
   const [draft, setDraft] = useState("");
   const [messages, setMessages] = useState<PanelMessage[]>([]);
@@ -83,6 +88,11 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
     [agents, selectedId],
   );
 
+  useEffect(() => {
+    if (!selected) return;
+    setModelProvider(selected.modelProvider);
+  }, [selected]);
+
   function toggle() {
     setOpen((value) => !value);
   }
@@ -112,6 +122,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
           agentId: selected.id,
           message,
           pathname,
+          modelProvider,
         });
         setMessages((rows) => [
           ...rows,
@@ -280,9 +291,20 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
               value={draft}
             />
             <div className="agent-panel-composer-bar">
-              <span className="agent-panel-model">
-                {selected ? aiAgentModelProviderLabels[selected.modelProvider] : "모델 미선택"}
-              </span>
+              <label className="agent-panel-model">
+                <select
+                  aria-label="구독 모델"
+                  disabled={!selected || pending}
+                  onChange={(event) => setModelProvider(event.target.value as AiAgentModelProvider)}
+                  value={modelProvider}
+                >
+                  {aiAgentModelProviders.map((provider) => (
+                    <option key={provider} value={provider}>
+                      {aiAgentModelProviderLabels[provider]}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 aria-label="보내기"
                 className="agent-panel-send"
