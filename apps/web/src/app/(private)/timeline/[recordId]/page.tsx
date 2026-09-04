@@ -30,7 +30,7 @@ export default async function TimelineDetailPage({ params }: { params: Promise<{
         </div>
         <div className="quote-header-links">
           <Link className="text-link" href="/proposals">AI 제안</Link>
-          <Link className="text-link" href="/clients-projects">고객사·프로젝트</Link>
+          <Link className="text-link" href="/clients-projects">프로젝트</Link>
           <Link className="text-link" href="/timeline">근거 목록</Link>
         </div>
       </header>

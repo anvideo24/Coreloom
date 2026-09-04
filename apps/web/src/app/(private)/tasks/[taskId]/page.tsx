@@ -25,7 +25,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
           <p>{task.clientName} · {task.projectName} · {taskStatusLabels[task.status]} · 기한 {task.dueDate}{task.assignedAgentName ? ` · ${task.assignedAgentName}` : ""}</p>
         </div>
         <div className="quote-header-links">
-          <Link className="text-link" href="/clients-projects">고객사·프로젝트</Link>
+          <Link className="text-link" href="/clients-projects">프로젝트</Link>
           {task.assignedAgentId ? <Link className="text-link" href={`/agents/${task.assignedAgentId}`}>에이전트</Link> : <Link className="text-link" href="/agents">에이전트</Link>}
           <Link className="text-link" href="/tasks">업무 목록</Link>
         </div>
