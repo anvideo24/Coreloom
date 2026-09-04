@@ -9,15 +9,29 @@ import {
   approveAiAgentWork,
   assertAgentCanRecordWork,
   deactivateAiAgent,
+  defaultAiAgentCapabilities,
   normalizeAiAgentDraft,
   normalizeAiAgentWorkLog,
   partitionAgentWorkLogs,
   rejectAiAgentWork,
+  type AiAgentCapabilities,
+  type AiAgentModelProvider,
 } from "@/lib/domain/agents";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 
 function asAllowedWork(value: unknown) {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
+}
+
+function asCapabilities(value: unknown): AiAgentCapabilities {
+  if (!value || typeof value !== "object") return { ...defaultAiAgentCapabilities };
+  const record = value as Record<string, unknown>;
+  return {
+    save_records: Boolean(record.save_records),
+    send_external: Boolean(record.send_external),
+    confirm_money: Boolean(record.confirm_money),
+    change_permissions: Boolean(record.change_permissions),
+  };
 }
 
 async function requireProject(database: ReturnType<typeof createDatabase>, workspaceId: string, projectId: string) {
@@ -73,6 +87,12 @@ export async function listFounderAgents(authUserId: string) {
       accessScope: aiAgents.accessScope,
       projectId: aiAgents.projectId,
       ventureId: aiAgents.ventureId,
+      workStyle: aiAgents.workStyle,
+      answerStyle: aiAgents.answerStyle,
+      procedure: aiAgents.procedure,
+      instructions: aiAgents.instructions,
+      modelProvider: aiAgents.modelProvider,
+      capabilities: aiAgents.capabilities,
       status: aiAgents.status,
       projectName: projects.name,
       clientName: clientCompanies.name,
@@ -91,6 +111,8 @@ export async function listFounderAgents(authUserId: string) {
     agents: agentRows.map((agent) => ({
       ...agent,
       allowedWork: asAllowedWork(agent.allowedWork),
+      capabilities: asCapabilities(agent.capabilities),
+      modelProvider: agent.modelProvider as AiAgentModelProvider,
       scopeLabel: agentAccessLabel({
         accessScope: agent.accessScope,
         projectName: agent.projectName,
@@ -99,6 +121,18 @@ export async function listFounderAgents(authUserId: string) {
       }),
     })),
   };
+}
+
+export async function listFounderAgentsForPanel(authUserId: string) {
+  const { agents } = await listFounderAgents(authUserId);
+  return agents
+    .filter((agent) => agent.status === "active")
+    .map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      purpose: agent.purpose,
+      modelProvider: agent.modelProvider,
+    }));
 }
 
 export async function getFounderAgentDetail(authUserId: string, agentId: string) {
@@ -112,6 +146,12 @@ export async function getFounderAgentDetail(authUserId: string, agentId: string)
     accessScope: aiAgents.accessScope,
     projectId: aiAgents.projectId,
     ventureId: aiAgents.ventureId,
+    workStyle: aiAgents.workStyle,
+    answerStyle: aiAgents.answerStyle,
+    procedure: aiAgents.procedure,
+    instructions: aiAgents.instructions,
+    modelProvider: aiAgents.modelProvider,
+    capabilities: aiAgents.capabilities,
     status: aiAgents.status,
     projectName: projects.name,
     clientName: clientCompanies.name,
@@ -174,6 +214,8 @@ export async function getFounderAgentDetail(authUserId: string, agentId: string)
   return {
     ...agent,
     allowedWork,
+    capabilities: asCapabilities(agent.capabilities),
+    modelProvider: agent.modelProvider as AiAgentModelProvider,
     scopeLabel: agentAccessLabel({
       accessScope: agent.accessScope,
       projectName: agent.projectName,
@@ -198,6 +240,12 @@ export async function createFounderAgent(input: {
   accessScope: string;
   projectId?: string;
   ventureId?: string;
+  workStyle?: string;
+  answerStyle?: string;
+  procedure?: string;
+  instructions?: string;
+  modelProvider?: string;
+  capabilities?: string[];
 }) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "agents");
   const database = createDatabase();

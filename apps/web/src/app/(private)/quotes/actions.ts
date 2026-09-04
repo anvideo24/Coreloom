@@ -20,6 +20,7 @@ export async function saveQuoteVersionAction(formData: FormData) {
     clientId: value(formData, "clientId"), projectId: value(formData, "projectId") || undefined,
     title: value(formData, "title"), note: value(formData, "note"),
     items: descriptions.map((description, index) => ({ description: String(description), amount: String(amounts[index] ?? "") })),
+    vatMode: value(formData, "vatMode"),
   });
   revalidatePath("/quotes");
   redirect(`/quotes/${result.quoteId}`);

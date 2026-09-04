@@ -37,9 +37,16 @@ export async function createAgentAction(formData: FormData) {
     accessScope: value(formData, "accessScope"),
     projectId: value(formData, "projectId"),
     ventureId: value(formData, "ventureId"),
+    workStyle: value(formData, "workStyle"),
+    answerStyle: value(formData, "answerStyle"),
+    procedure: value(formData, "procedure"),
+    instructions: value(formData, "instructions"),
+    modelProvider: value(formData, "modelProvider"),
+    capabilities: values(formData, "capabilities"),
   });
   revalidatePath("/agents");
   revalidatePath("/tasks");
+  revalidatePath("/dashboard");
   redirect(`/agents/${result.agentId}`);
 }
 

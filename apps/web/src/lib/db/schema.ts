@@ -21,6 +21,12 @@ export const expenseEntryStatus = pgEnum("expense_entry_status", ["scheduled", "
 export const vaultDocumentKind = pgEnum("vault_document_kind", ["company_setup", "contract", "deliverable", "settlement", "other"]);
 export const aiAgentStatus = pgEnum("ai_agent_status", ["active", "inactive"]);
 export const aiAgentWorkLogStatus = pgEnum("ai_agent_work_log_status", ["pending", "approved", "rejected"]);
+export const aiAgentModelProvider = pgEnum("ai_agent_model_provider", [
+  "claude_subscription",
+  "gpt_codex_subscription",
+  "cursor_agent",
+]);
+export const quoteVatMode = pgEnum("quote_vat_mode", ["exclusive", "inclusive"]);
 
 const createdAt = timestamp("created_at", { withTimezone: true }).defaultNow().notNull();
 const updatedAt = timestamp("updated_at", { withTimezone: true }).defaultNow().notNull();
@@ -173,6 +179,7 @@ export const quoteVersions = pgTable(
     subtotalAmount: integer("subtotal_amount").notNull(),
     vatAmount: integer("vat_amount").notNull(),
     totalAmount: integer("total_amount").notNull(),
+    vatMode: quoteVatMode("vat_mode").notNull().default("exclusive"),
     note: text("note"),
     createdAt,
   },
@@ -525,6 +532,17 @@ export const aiAgents = pgTable(
     accessScope: text("access_scope").notNull(),
     projectId: uuid("project_id").references(() => projects.id),
     ventureId: uuid("venture_id").references(() => ventures.id),
+    workStyle: text("work_style"),
+    answerStyle: text("answer_style"),
+    procedure: text("procedure"),
+    instructions: text("instructions"),
+    modelProvider: aiAgentModelProvider("model_provider").notNull().default("claude_subscription"),
+    capabilities: jsonb("capabilities").$type<Record<string, boolean>>().notNull().default({
+      save_records: false,
+      send_external: false,
+      confirm_money: false,
+      change_permissions: false,
+    }),
     status: aiAgentStatus("status").notNull().default("active"),
     createdAt,
     updatedAt,
