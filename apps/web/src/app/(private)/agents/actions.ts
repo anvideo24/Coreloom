@@ -12,6 +12,26 @@ import {
   rejectFounderAgentWork,
 } from "@/lib/agents/repository";
 import { founderSession } from "@/lib/auth/session";
+import { chatAgent } from "@/lib/agents/chat-repository";
+import { aiAgents, auditEvents } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
+import { z } from "zod";
+
+export async function readAgentSettingsAction(agentId: string) {
+  const founder = await requireFounder();
+  const { agent } = await chatAgent(founder.id, z.string().uuid().parse(agentId));
+  return { workStyle: agent.workStyle || "", answerStyle: agent.answerStyle || "", procedure: agent.procedure || "", instructions: agent.instructions || "", modelProvider: agent.modelProvider };
+}
+
+export async function saveAgentSettingsAction(agentId: string, input: { workStyle: string; answerStyle: string; procedure: string; instructions: string; modelProvider: string }) {
+  const founder = await requireFounder();
+  const data = z.object({ workStyle: z.string().trim().max(2000), answerStyle: z.string().trim().max(2000), procedure: z.string().trim().max(4000), instructions: z.string().trim().max(8000), modelProvider: z.enum(["gpt_codex_subscription", "claude_subscription", "cursor_agent"]) }).parse(input);
+  const { db, agent, workspace } = await chatAgent(founder.id, z.string().uuid().parse(agentId));
+  await db.update(aiAgents).set({ ...data, updatedAt: new Date() }).where(eq(aiAgents.id, agent.id));
+  await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: founder.id, eventType: "ai_agent.settings_updated", payload: { agentId: agent.id } });
+  revalidatePath("/", "layout");
+  return { saved: true };
+}
 
 function value(formData: FormData, key: string) {
   const item = formData.get(key);

@@ -645,6 +645,26 @@ export const aiAgents = pgTable(
   ],
 );
 
+export const agentChatThreads = pgTable("agent_chat_threads", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
+  agentId: uuid("agent_id").notNull().references(() => aiAgents.id),
+  title: text("title").notNull(),
+  model: text("model").notNull(),
+  busyUntil: timestamp("busy_until", { withTimezone: true }),
+  createdAt, updatedAt,
+}, (table) => [index("agent_chat_threads_agent_idx").on(table.workspaceId, table.agentId)]);
+
+export const agentChatMessages = pgTable("agent_chat_messages", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  threadId: uuid("thread_id").notNull().references(() => agentChatThreads.id),
+  role: text("role").notNull(),
+  body: text("body").notNull(),
+  model: text("model").notNull(),
+  status: text("status").notNull().default("complete"),
+  createdAt,
+}, (table) => [index("agent_chat_messages_thread_idx").on(table.threadId, table.createdAt)]);
+
 export const aiAgentWorkLogs = pgTable(
   "ai_agent_work_logs",
   {
