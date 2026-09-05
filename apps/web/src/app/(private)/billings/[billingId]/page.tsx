@@ -22,13 +22,9 @@ export default async function BillingDetailPage({ params }: { params: Promise<{ 
     subject: `${billing.clientName} · ${detail.contractTitle} · ${billingKindLabels[billing.kind]}`,
     amount: billing.amount,
     currency: billing.currency,
-    evidence: [
-      billing.note?.trim() || null,
-      billing.billingNumber ? `청구번호 ${billing.billingNumber}` : null,
-      `입금 예정일 ${billing.dueDate}`,
-    ]
+    evidence: [billing.note?.trim() || null, billing.billingNumber ? `청구번호 ${billing.billingNumber}` : null]
       .filter(Boolean)
-      .join(" · "),
+      .join(" · ") || null,
     outcomeLabel: "입금 확정 — 금액 고정, 세금계산서 발행 없음",
   });
 

@@ -539,6 +539,38 @@
       "planVersion": 1,
       "environment": "코드 확인",
       "note": "앞선 줄이 「로그아웃 상태로 열어 본다」고 적었으나 제품에 로그아웃이 없어 그대로는 못 한다. 시크릿 창처럼 로그인하지 않은 브라우저로 여는 방식으로 잰다."
+    },
+    {
+      "checkId": "F03-03",
+      "outcome": "pass",
+      "value": "5사례(비용·매출·입금·계약·AI 제안)를 각각 fixture로 만들어 확정 직전 검토 정보 네 가지(대상·금액·증빙·결과)를 대조했다. 라벨이 있는지가 아니라 그 사례의 실제 값이 맞게 나오는지를 쟀다. 증빙이 없는 사례에서는 「증빙 없음」이 드러난다. 확인 가능 100%.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/approval-gates.test.ts",
+        "checkedAt": "2026-09-05T11:12:18Z"
+      },
+      "codeCommit": "eee15cdeb9b541d0a7a70bb6f008f820b8320fe2",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "measured": {
+        "covered": 5,
+        "total": 5
+      },
+      "note": "이 과정에서 증빙 칸이 예정일로 채워져 「증빙 없음」이 한 번도 안 뜨던 결함을 찾아 고쳤다. AI 제안·에이전트 요청 상세에는 아직 표준 검토 카드가 없다."
+    },
+    {
+      "checkId": "F01-03",
+      "outcome": "pass",
+      "value": "같은 결과(새 고객사 하나 + 품목 1개 견적 초안 저장)를 내는 두 경로를 실제로 렌더해 쟀다. 기존 경로(고객사 화면→견적 화면) 직접 입력 3칸·화면 이동 2회, 새 경로(견적 패널 안 등록) 2칸·이동 1회. 감소율 33.3%로 목표 30%를 넘었다. 반복 입력은 양쪽 다 0.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/quote-path-input-count.test.tsx",
+        "checkedAt": "2026-09-05T11:12:18Z"
+      },
+      "codeCommit": "eee15cdeb9b541d0a7a70bb6f008f820b8320fe2",
+      "planVersion": 1,
+      "environment": "vitest · jsdom · 실제 화면 컴포넌트 렌더, 브라우저·실기기 아님",
+      "note": "절대 수가 3과 2라 칸 하나 차이가 감소율을 크게 흔든다(1칸이면 33%, 반대로 늘면 0%). 목표 달성이지만 표본이 작다는 것을 함께 읽어야 한다. 세는 도구 자체에 시험 9건을 붙였고, 두 경로가 같은 결과를 냈는지 저장 스냅샷으로 대조했다."
     }
   ]
 }
