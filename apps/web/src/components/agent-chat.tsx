@@ -6,6 +6,7 @@ import { readAgentSettingsAction, saveAgentSettingsAction } from "@/app/(private
 import { chatModels, type ChatMessage, type ChatThread } from "@/lib/domain/agent-chat";
 import { agentPanelContextTitle } from "@/lib/domain/agent-panel";
 import { type AiAgentModelProvider } from "@/lib/domain/agents";
+import { AgentAccessSettings } from "@/components/agent-access-settings";
 
 export type ChatAgentItem = { id: string; name: string; purpose: string; modelProvider: AiAgentModelProvider };
 
@@ -120,6 +121,7 @@ export function AgentChat({ agent }: { agent: ChatAgentItem }) {
         <button className="auth-submit" disabled={saving}>{saving ? "저장 중…" : "지침 저장"}</button>
         {saved ? <p role="status">저장했습니다. 다음 답변에 적용됩니다.</p> : null}
       </form> : <p role="status">지침을 불러오는 중…</p>}
+      <AgentAccessSettings agentId={agent.id} />
     </div> : view === "history" ? <div className="agent-chat-scroll"><h3>이전 대화</h3>{threads.length ? threads.map((thread) => <button className="agent-chat-history-item" type="button" key={thread.id} onClick={() => void load(thread.id)}><strong>{thread.title}</strong><span>{chatModels.find((m) => m.id === thread.model)?.label || thread.model}</span></button>) : <p className="form-help">첫 메시지를 보내면 대화가 여기에 남습니다.</p>}</div> : <>
       <div className="agent-chat-scroll" ref={scrollRef} role="log" aria-label="대화 메시지" aria-live="polite" aria-busy={pending}>
         {loading ? <p role="status">대화를 불러오는 중…</p> : messages.length === 0 ? <div className="agent-chat-welcome"><span className="agent-chat-avatar" aria-hidden="true">✳</span><h2>무엇을 함께 할까요?</h2><p>{agent.purpose}</p><div className="agent-chat-prompts">{["생각을 정리하고 싶어요", "업무 초안을 같이 작성해요", "부족한 정보를 먼저 질문해 주세요"].map((text) => <button type="button" key={text} onClick={() => setDraft(text)}>{text}</button>)}</div></div> : messages.map((message) => <article className={`agent-chat-message is-${message.role}`} key={message.id}><span className="agent-chat-message-label">{message.role === "user" ? "나" : agent.name}</span><div>{message.body}</div>{message.role === "assistant" && message.status === "complete" ? <button type="button" className="agent-chat-copy" onClick={() => { void navigator.clipboard.writeText(message.body).then(() => setCopied(message.id)).catch(() => setError("복사하지 못했습니다.")); }}>{copied === message.id ? "복사됨" : "답변 복사"}</button> : null}</article>)}
@@ -129,7 +131,7 @@ export function AgentChat({ agent }: { agent: ChatAgentItem }) {
         <div className="agent-chat-input-shell"><textarea aria-label="메시지" maxLength={8000} rows={3} placeholder={`${agent.name}에게 메시지 보내기`} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void send(); } }} />
           <div className="agent-chat-input-tools"><select aria-label="대화 모델" value={model} disabled={pending} onChange={(e) => setModel(e.target.value)}>{chatModels.map((item) => <option key={item.id} value={item.id}>{item.label}{status[item.provider] === false ? " · 연결 필요" : ""}</option>)}</select>{pending ? <button type="button" aria-label="응답 중지" onClick={() => abortRef.current?.abort()}>■</button> : <button type="submit" aria-label="메시지 보내기" disabled={!draft.trim() || loading}>↑</button>}</div>
         </div>
-        <p className="agent-chat-caption">{agentPanelContextTitle(pathname)} · 구독 한도 사용 · 화면 데이터는 자동 전송되지 않아요</p>
+        <p className="agent-chat-caption">{agentPanelContextTitle(pathname)} · 구독 한도 사용 · 지침 설정에서 허용한 자료만 조회</p>
       </form>
     </>}
     {error ? <p className="agent-chat-error" role="alert">{error}</p> : null}

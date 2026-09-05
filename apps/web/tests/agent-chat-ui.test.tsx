@@ -8,8 +8,10 @@ vi.mock("next/navigation", () => ({ usePathname: () => "/agents" }));
 vi.mock("@/app/(private)/agents/actions", () => ({
   readAgentSettingsAction: vi.fn().mockResolvedValue({ workStyle: "", answerStyle: "", procedure: "", instructions: "이전 지침", modelProvider: "gpt_codex_subscription" }),
   saveAgentSettingsAction: vi.fn().mockResolvedValue({ saved: true }),
+  readAgentAccessAction: vi.fn().mockResolvedValue({ permissions: { read_quotes: false, read_clients: false, read_projects: false, read_tasks: false, read_documents: false, read_pc: false }, roots: [], recent: [] }),
+  saveAgentAccessAction: vi.fn().mockResolvedValue({ saved: true }),
 }));
-import { saveAgentSettingsAction } from "@/app/(private)/agents/actions";
+import { saveAgentSettingsAction, saveAgentAccessAction } from "@/app/(private)/agents/actions";
 const agent = { id: "00000000-0000-4000-8000-000000000001", name: "테스트 에이전트", purpose: "초안 작성", modelProvider: "gpt_codex_subscription" as const };
 
 beforeEach(() => {
@@ -31,6 +33,17 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("agent conversation interactions", () => {
+  it("saves selected read permissions separately from instructions", async () => {
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("지침 설정"));
+    const quotes = await screen.findByRole("checkbox", { name: "견적서" });
+    expect((quotes as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(quotes);
+    fireEvent.click(screen.getByRole("button", { name: "조회 권한 저장" }));
+    await waitFor(() => expect(saveAgentAccessAction).toHaveBeenCalledWith(agent.id, expect.objectContaining({ permissions: expect.objectContaining({ read_quotes: true, read_pc: false }), roots: [] })));
+    await screen.findByText("조회 권한을 저장했습니다. 다음 요청부터 적용됩니다.");
+  });
   it("sends the selected model, displays the answer and opens stored history", async () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");

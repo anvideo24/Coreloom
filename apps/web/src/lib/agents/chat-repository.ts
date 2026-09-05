@@ -6,6 +6,8 @@ import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
 import { chatPrompt, requireChatModel } from "@/lib/domain/agent-chat";
 import { agentPanelContextTitle } from "@/lib/domain/agent-panel";
 import { generateSubscriptionReply } from "./subscription";
+import { accessPolicy, runReadConversation } from "@/lib/domain/agent-access";
+import { executeReadTool } from "./read-tools";
 
 export async function chatAgent(actor: string, agentId: string) {
   const workspace = await ensureFounderWorkspace(actor, "agents");
@@ -33,7 +35,7 @@ export async function sendAgentChat(actor: string, input: { agentId: string; thr
     const [created] = await db.insert(agentChatThreads).values({ workspaceId: workspace.id, agentId: agent.id, title: input.message.slice(0, 64), model: model.id }).returning();
     threadId = created.id;
   }
-  const [locked] = await db.update(agentChatThreads).set({ busyUntil: new Date(Date.now() + 240_000), model: model.id, updatedAt: new Date() }).where(and(eq(agentChatThreads.id, threadId), eq(agentChatThreads.workspaceId, workspace.id), eq(agentChatThreads.agentId, agent.id), or(isNull(agentChatThreads.busyUntil), lt(agentChatThreads.busyUntil, new Date())))).returning();
+  const [locked] = await db.update(agentChatThreads).set({ busyUntil: new Date(Date.now() + 600_000), model: model.id, updatedAt: new Date() }).where(and(eq(agentChatThreads.id, threadId), eq(agentChatThreads.workspaceId, workspace.id), eq(agentChatThreads.agentId, agent.id), or(isNull(agentChatThreads.busyUntil), lt(agentChatThreads.busyUntil, new Date())))).returning();
   if (!locked) throw new Error("이미 응답 중이거나 접근할 수 없는 대화입니다.");
   onThread(threadId);
   try {
@@ -43,7 +45,11 @@ export async function sendAgentChat(actor: string, input: { agentId: string; thr
     // 상세 저장 행 전체를 보내지 않는다. 지침과 해당 대화만 전달한다.
     const prompt = chatPrompt({ name: agent.name, purpose: agent.purpose, instructions: agent.instructions, workStyle: agent.workStyle, answerStyle: agent.answerStyle, procedure: agent.procedure, accessScope: agent.accessScope, allowedWork: agent.allowedWork }, history.map(({ role, body }) => ({ role, body })), agentPanelContextTitle(input.pathname));
     if (prompt.length > 100_000) throw new Error("대화가 길어졌습니다. 새 대화를 시작해 주세요.");
-    const body = await generateSubscriptionReply(model.id, prompt, signal);
+    const policy = accessPolicy(agent.capabilities);
+    const readSignal = AbortSignal.any([signal, AbortSignal.timeout(480_000)]);
+    const body = Object.values(policy).some(Boolean)
+      ? await runReadConversation(`${prompt}\n서버 조회 정책: ${JSON.stringify(policy)}\n읽을 때 선택한 구독 제공자에 자료가 전달됩니다. 현재 서버가 연결된 DB만 조회하며 이전 DB를 조회하지 않습니다.`, (context) => generateSubscriptionReply(model.id, context, readSignal), (tool) => { readSignal.throwIfAborted(); return executeReadTool(actor, agent.id, threadId!, tool); })
+      : await generateSubscriptionReply(model.id, prompt, signal);
     const [message] = await db.insert(agentChatMessages).values({ threadId, role: "assistant", body, model: model.id }).returning();
     await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: actor, eventType: "ai_agent.chat_completed", payload: { agentId: agent.id, threadId, model: model.id } });
     return message;
