@@ -11,7 +11,7 @@
 
 ## 시스템 구조도 — 구현·PC 검증, 대표 확인 2항목 남음
 
-2026-09-06 「구조도 남은 작업 모두 진행」 승인으로 `/admin/manual/system-map`을 구현했다. **7항목 통과, 2항목은 대표·실기기 확인 대기**다. 작업 가지의 구현이며 main 병합은 별도다. 아래 SM 검사는 기존 개선 검증 28항목의 통과 수에 포함하지 않는다. 원본은 [시스템 구조도](system-map.md), 상세 증거는 `manual/checks/system-map-2026-09-06.md`다.
+2026-09-06 「구조도 남은 작업 모두 진행」 승인으로 `/admin/manual/system-map`을 구현했다. **7항목 통과, 2항목은 대표·실기기 확인 대기**다. 검증 코드 `76e097d`의 작업 가지 구현이며 main 병합은 별도다. 아래 SM 검사는 기존 개선 검증 28항목의 통과 수에 포함하지 않는다. 원본은 [시스템 구조도](system-map.md), 상세 증거는 [확인 기록](https://github.com/anvideo24/Coreloom/blob/codex/manual-system-map/manual/checks/system-map-2026-09-06.md)이다.
 
 ### 목표와 화면 구성
 
