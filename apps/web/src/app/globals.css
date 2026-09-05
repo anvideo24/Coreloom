@@ -18,7 +18,7 @@
   --nav-muted: #b5a89c;
   --nav-active-ink: #1c1916;
   --private-sidebar-width: 15rem;
-  --private-toggle-rail: 2.75rem;
+  --private-toggle-rail: 4rem;
   --private-peek-z: 90;
   --agent-panel-width: 32rem;
   --chat-content-width: 48rem;
@@ -457,6 +457,9 @@ html[data-create-panel-open="true"] .pwa-install-layer {
   .private-app-shell:has(.private-drawer-layer.is-open) {
     grid-template-columns: var(--private-sidebar-width) minmax(0, 1fr);
   }
+  .private-app-shell:has(.private-drawer-layer.is-overlay-mode) {
+    grid-template-columns: var(--private-toggle-rail) minmax(0, 1fr);
+  }
   .private-menu-button.is-rail {
     align-self: start;
     color: var(--ink);
@@ -468,7 +471,7 @@ html[data-create-panel-open="true"] .pwa-install-layer {
     margin-top: calc(var(--space-5) + env(safe-area-inset-top, 0px));
     z-index: 20;
   }
-  .private-menu-button.is-rail[hidden] {
+  html:not([data-agent-dock-nav="rail"]) .private-menu-button.is-rail[hidden] {
     display: none !important;
   }
   .private-menu-button.is-drawer {
@@ -489,6 +492,14 @@ html[data-create-panel-open="true"] .pwa-install-layer {
     left: 0;
     position: fixed;
     top: 0;
+  }
+  .private-drawer-layer.is-overlay-mode.is-open {
+    box-shadow: 12px 0 28px rgb(28 25 22 / 22%);
+    height: 100dvh;
+    left: 0;
+    position: fixed;
+    top: 0;
+    z-index: var(--private-peek-z);
   }
   .private-app-content {
     grid-column: 2;
@@ -2674,6 +2685,65 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
   .stat-grid { grid-template-columns: repeat(2, 1fr); }
   .dash-vitals, .dash-main, .dash-projects { grid-template-columns: 1fr; }
 }
+
+/* ── 공통 셸·AI 패널: 폭별 한 대화 ───────────────── */
+.agent-panel-toggle { height: 3rem; width: 3rem; }
+.agent-panel-layer:not(.is-open) { display: none; }
+.agent-panel-head { min-height: 4rem; padding: var(--space-2) var(--space-4); }
+.agent-panel-head-actions .agent-panel-icon-button { min-height: 3rem; min-width: 3rem; }
+.agent-chat-toolbar { min-height: 3rem; padding: 0 var(--space-2); }
+.agent-chat-toolbar button { min-height: 3rem; }
+.agent-chat-scroll { padding: var(--space-4); }
+.agent-chat-message { overflow-wrap: normal; word-break: keep-all; }
+.agent-chat-message a, .agent-chat-message code, .agent-chat-message pre { overflow-wrap: anywhere; word-break: break-word; }
+.agent-chat-message > div { font-size: 1rem; line-height: 1.6; }
+.agent-chat-composer { max-width: none; padding: var(--space-3) var(--space-4); }
+.agent-chat-input-shell textarea { line-height: 1.5; min-height: 3.5rem; max-height: 7.5rem; resize: none; }
+.agent-chat-input-tools { min-height: 3rem; }
+.agent-chat-input-tools select { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.agent-chat-attach { align-items: center; display: inline-flex; justify-content: center; min-width: 3rem; padding: var(--space-2) !important; }
+.agent-chat-input-tools button { flex: 0 0 3rem; height: 3rem; width: 3rem; }
+.agent-chat-input-tools .agent-chat-attach { background: transparent; color: var(--ink); font-size: 0; }
+.agent-chat-input-tools .agent-chat-attach::before { content: "+"; font-size: 1.5rem; }
+.agent-settings-tabs { display: grid; grid-template-columns: 1fr 1fr; margin: var(--space-4) auto; max-width: var(--chat-content-width); }
+.agent-settings-tabs button { background: transparent; border: 0; border-bottom: 2px solid var(--line); color: var(--ink-secondary); min-height: 3rem; }
+.agent-settings-tabs button[aria-selected="true"] { border-bottom-color: var(--accent); color: var(--ink); font-weight: 700; }
+.agent-settings-advanced { border-top: 1px solid var(--line); padding-top: var(--space-3); }
+.agent-settings-advanced summary { color: var(--ink-secondary); cursor: pointer; font-weight: 700; min-height: 3rem; }
+.agent-settings-advanced[open] { display: grid; gap: var(--space-4); }
+
+/* Phone and tablet open as a true modal; navigation cannot receive input underneath. */
+.agent-panel-layer[data-mode="modal"] { inset: 0; position: fixed; transform: none; visibility: hidden; width: 100%; z-index: 100; }
+.agent-panel-layer[data-mode="modal"].is-open { visibility: visible; }
+.agent-panel-layer[data-mode="modal"] .agent-panel-backdrop { background: var(--canvas); display: block; inset: 0; position: absolute; }
+.agent-panel-layer[data-mode="modal"] .agent-panel { border: 0; border-radius: 0; box-shadow: none; height: var(--agent-vv-height, 100dvh); left: 0; position: absolute; top: var(--agent-vv-top, 0); width: 100%; }
+.agent-panel-layer[data-mode="modal"] .agent-panel-head { padding-top: max(var(--space-2), env(safe-area-inset-top, 0px)); }
+.agent-panel-layer[data-mode="modal"] .agent-chat-composer { padding-bottom: max(var(--space-3), env(safe-area-inset-bottom, 0px)); }
+
+@media (max-width: 39.98rem) {
+  .agent-panel-toggle { bottom: calc(4rem + env(safe-area-inset-bottom, 0px) + 1rem); right: 1rem; }
+  .agent-chat-toolbar { gap: 0; justify-content: space-between; }
+  .agent-chat-toolbar button { font-size: 0.75rem; min-width: 3rem; padding: var(--space-2); }
+  .agent-chat-attach { font-size: 0; }
+  .agent-chat-attach::before { content: "+"; font-size: 1.25rem; }
+  .agent-chat-composer { padding: var(--space-2); }
+}
+
+@media (min-width: 75rem) {
+  .private-app-shell:has(.agent-panel-layer.is-open[data-mode="dock"]) { grid-template-columns: var(--private-sidebar-width) minmax(0, 1fr) clamp(25rem, 28vw, 32rem); }
+  .private-app-shell:has(.private-drawer-layer:not(.is-open)):has(.agent-panel-layer.is-open[data-mode="dock"]) { grid-template-columns: var(--private-toggle-rail) minmax(0, 1fr) clamp(25rem, 28vw, 32rem); }
+  .agent-panel-layer[data-mode="dock"] { grid-column: 3; grid-row: 1; height: 100%; position: relative; transform: none; width: 100%; }
+  .agent-panel-layer[data-mode="dock"].is-open { transform: none; }
+  .agent-panel-layer[data-mode="dock"] .agent-panel { height: 100%; width: 100%; }
+  .agent-panel-layer[data-mode="dock"] .agent-panel-backdrop { display: none; }
+  .agent-panel-layer[data-mode="dock"]:not(.is-open) { display: none; }
+  html[data-agent-dock-nav="rail"] .private-app-shell:has(.agent-panel-layer.is-open[data-mode="dock"]) { grid-template-columns: var(--private-toggle-rail) minmax(0, 1fr) clamp(25rem, 28vw, 32rem); }
+}
+
+/* Work surfaces are fluid; prose keeps a readable line length in its own components. */
+.private-app-content > .operations-shell { max-width: none; }
+.manual-document > :is(h2, h3, h4, p, ul, ol, blockquote),
+.operations-header > div > p { max-width: 42rem; }
 
 @media print {
   .private-menu-button,

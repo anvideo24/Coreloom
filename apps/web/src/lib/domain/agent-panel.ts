@@ -6,6 +6,18 @@ import {
 
 export const AGENT_PANEL_OPEN_STORAGE_KEY = "coreloom.agent-panel-open";
 export const AGENT_PANEL_SELECTED_STORAGE_KEY = "coreloom.agent-panel-selected";
+export const AGENT_PANEL_DOCK_MIN_PX = 1200;
+export const AGENT_PANEL_MIN_MAIN_PX = 640;
+export const AGENT_PANEL_MIN_WIDTH_PX = 400;
+export const AGENT_PANEL_WIDE_NAV_PX = 240;
+
+/** The panel changes its surface, never the conversation instance behind it. */
+export function agentPanelLayout(widthPx: number, wideNavigationOpen = false) {
+  if (widthPx < 640) return { mode: "modal" as const, nav: "bottom" as const };
+  if (widthPx < AGENT_PANEL_DOCK_MIN_PX) return { mode: "modal" as const, nav: "rail" as const };
+  const wideNavigationFits = widthPx >= AGENT_PANEL_MIN_MAIN_PX + AGENT_PANEL_MIN_WIDTH_PX + AGENT_PANEL_WIDE_NAV_PX;
+  return { mode: "dock" as const, nav: wideNavigationOpen && wideNavigationFits ? "sidebar" as const : "rail" as const };
+}
 
 export function parseAgentPanelOpen(value: string | null) {
   return value === "1";
@@ -148,6 +160,7 @@ export function agentPanelVisualFrame(input: {
   visualOffsetTop: number;
   tabBarPx?: number;
   topInsetPx?: number;
+  flushTop?: boolean;
 }) {
   const tabBarPx = input.tabBarPx ?? AGENT_PANEL_MOBILE_TAB_BAR_PX;
   const topInsetPx = input.topInsetPx ?? 0;
@@ -162,7 +175,7 @@ export function agentPanelVisualFrame(input: {
     };
   }
 
-  const topPx = Math.max(topInsetPx, 6) + input.visualOffsetTop;
+  const topPx = (input.flushTop ? 0 : Math.max(topInsetPx, 6)) + input.visualOffsetTop;
   const heightPx = Math.max(
     160,
     input.visualHeight - (topPx - input.visualOffsetTop) - tabBarPx,
