@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AgentChat } from "@/components/agent-chat";
 import { notFound, redirect } from "next/navigation";
 
 import {
@@ -42,7 +43,9 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ ag
           <Link className="text-link" href="/agents">에이전트 목록</Link>
         </div>
       </header>
-      <section className="quote-editor-card">
+      {agent.status === "active" ? <section className="agent-chat-page" aria-label="에이전트 대화 및 지침"><AgentChat agent={agent} /></section> : null}
+      <details className="quote-editor-card">
+        <summary>에이전트 역할과 권한</summary>
         <p className="setup-code">계정</p>
         <p>{agent.purpose}</p>
         <p className="form-help">허용 업무 {formatAllowedWork(agent.allowedWork)}</p>
@@ -60,7 +63,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ ag
             .join(" · ") || "없음 (기본)"}
         </p>
         <p className="form-help">사람 계정과 다른 시스템 계정입니다. 능력에 켠 항목만 실행할 수 있으며, 기본은 저장·발송·확정이 꺼져 있습니다.</p>
-      </section>
+      </details>
       {agent.status === "active" ? (
         <section className="quote-editor-card">
           <p className="setup-code">작업 이력 남기기</p>
