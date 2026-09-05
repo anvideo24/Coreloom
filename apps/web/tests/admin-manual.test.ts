@@ -147,6 +147,7 @@ describe("admin manual category home", () => {
       "/admin/manual/shared/how",
       "/admin/manual/shared/lessons",
       "/admin/manual/work-map",
+      "/admin/manual/system-map",
       ADMIN_MANUAL_OVERVIEW_HREF,
       "/admin/manual/progress",
       "/admin/manual/roles",
