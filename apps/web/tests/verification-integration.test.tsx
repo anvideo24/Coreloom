@@ -54,7 +54,7 @@ describe("개선 목표·검증 현황 — 실제 파일 끝까지", () => {
     }
   });
 
-  it("3단계 수정 후 F05·F02는 실패가 아니고, 미측정만 결과 없음으로 남긴다", () => {
+  it("4단계 수정 후 F05·F02·F01·F03은 실패가 아니고, 미측정만 결과 없음으로 남긴다", () => {
     if (!status.available) throw new Error(status.message);
     // 최신 결과 줄의 outcome은 pass다. effective pass는 이 자리 git에
     // codeCommit이 있을 때만이고, CI 얕은 clone에서는 needs-recheck로 내려갈 수 있다.
@@ -67,6 +67,14 @@ describe("개선 목표·검증 현황 — 실제 파일 끝까지", () => {
     expect(f02?.counts).toMatchObject({ fail: 0, none: 2 });
     expect((f02?.counts.pass ?? 0) + (f02?.counts.recheck ?? 0)).toBe(2);
     expect(f02?.nextAction).toBe("결과 없음 2건 측정");
+    const f01 = status.statuses.find((item) => item.feature.id === "F01");
+    expect(f01?.counts).toMatchObject({ fail: 0, none: 1, required: 4 });
+    expect((f01?.counts.pass ?? 0) + (f01?.counts.recheck ?? 0)).toBe(3);
+    expect(f01?.nextAction).toBe("결과 없음 1건 측정");
+    const f03 = status.statuses.find((item) => item.feature.id === "F03");
+    expect(f03?.counts).toMatchObject({ fail: 0, none: 2, required: 4 });
+    expect((f03?.counts.pass ?? 0) + (f03?.counts.recheck ?? 0)).toBe(2);
+    expect(f03?.nextAction).toBe("결과 없음 2건 측정");
   });
 
   it("F07-04: 지금 HEAD 기준으로는 바뀐 파일이 없고, 없는 커밋은 null이다", () => {

@@ -6,7 +6,7 @@ Coreloom은 강의·앱·온라인 서비스를 함께 운영하는 1인 창업�
 
 ## 개선 계획과 작업 인계
 
-기능별 목표·검증 기준은 [개선 계획·체크리스트](../docs/superpowers/plans/2026-09-05-measurable-improvements.md), 개선 전 관찰은 [기준 측정 기록](../docs/quality/baseline-2026-09-05.md)에서 확인한다. 실제 검증 결과는 [결과 파일](../docs/quality/verification-results.json)에 덧붙여 쌓는다. F07 조회 화면(`/admin/manual/progress`, 기능별 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인과 사람 측정(F07-01·05·06)은 아직이다. 다음 3단계(F05 대시보드 정확성·F02 초안 보존)를 이어받을 때는 [커서 인계](handoffs/2026-09-05-cursor-stage3-accuracy-and-drafts.md)의 읽는 순서·범위·결과 적는 법을 먼저 확인한다. 제품 기능과 공용 규칙의 정본은 기존 위치를 유지한다.
+기능별 목표·검증 기준은 [개선 계획·체크리스트](../docs/superpowers/plans/2026-09-05-measurable-improvements.md), 개선 전 관찰은 [기준 측정 기록](../docs/quality/baseline-2026-09-05.md)에서 확인한다. 실제 검증 결과는 [결과 파일](../docs/quality/verification-results.json)에 덧붙여 쌓는다. F07 조회 화면(`/admin/manual/progress`, 기능별 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인과 사람 측정(F07-01·05·06)은 아직이다. 3단계(F05·F02)는 PR #92로 `main`에 들어갔다. 4단계(F01 고객사→견적·F03 승인 확인)는 [커서 인계](handoffs/2026-09-05-cursor-stage4-client-quote-approvals.md) 범위로 진행 중이며, F01-03·F03-01·02 사람 측정은 아직이다. 제품 기능과 공용 규칙의 정본은 기존 위치를 유지한다.
 
 ## MVP의 업무 흐름
 

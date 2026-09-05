@@ -7,8 +7,10 @@ import {
   recordContractOriginalAction,
   updateContractTermsAction,
 } from "@/app/(private)/contracts/actions";
+import { ApprovalReviewCard } from "@/components/approval-review-card";
 import { founderSession } from "@/lib/auth/session";
 import { getFounderContractDetail } from "@/lib/contracts/repository";
+import { buildApprovalReviewSummary } from "@/lib/domain/approvals";
 import { contractStatusLabels } from "@/lib/domain/contracts";
 import { normalizeStoredQuoteItemsForPdf } from "@/lib/domain/quotes";
 
@@ -23,6 +25,15 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
   if (!detail) notFound();
   const latest = detail.versions[0];
   const items = normalizeStoredQuoteItemsForPdf(latest.items);
+  const executeReview = buildApprovalReviewSummary({
+    subject: `${latest.title} · ${detail.contract.clientName ?? "고객사"}`,
+    amount: latest.totalAmount,
+    currency: latest.currency,
+    evidence: latest.originalReference?.trim()
+      ? `날인 원본 위치: ${latest.originalReference}`
+      : "날인 원본 위치 없음",
+    outcomeLabel: "최종 계약 체결 — 이 버전 덮어쓰기 금지",
+  });
   const periodLabel = [
     latest.contractNumber ? `계약번호 ${latest.contractNumber}` : null,
     latest.effectiveStartOn || latest.effectiveEndOn
@@ -110,6 +121,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
         <section className="quote-editor-card">
           <p className="setup-code">체결 확정</p>
           <p className="form-help">체결하면 이 버전은 덮어쓰지 않습니다. 내용은 새 수정본으로만 이어갑니다.</p>
+          <ApprovalReviewCard summary={executeReview} />
           <form action={executeContractAction} className="quote-form">
             <input name="contractId" type="hidden" value={detail.contract.id} />
             <label className="quote-email-approval quote-form-full">

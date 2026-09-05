@@ -171,3 +171,43 @@ export function summarizeApprovals(items: ApprovalInboxItem[]) {
     byKind,
   };
 }
+
+/** 확정 직전에 대표가 보는 네 칸(F03-03). 값이 비어도 칸은 보여서 「없음」을 확인하게 한다. */
+export type ApprovalReviewSummary = {
+  subject: string;
+  amountLabel: string;
+  evidenceLabel: string;
+  outcomeLabel: string;
+};
+
+export function buildApprovalReviewSummary(input: {
+  subject: string;
+  amount?: number | null;
+  currency?: string;
+  evidence?: string | null;
+  outcomeLabel: string;
+}): ApprovalReviewSummary {
+  const subject = input.subject.trim() || "대상 없음";
+  const amountLabel =
+    typeof input.amount === "number" && Number.isFinite(input.amount)
+      ? `${input.currency ?? "KRW"} · ${input.amount.toLocaleString("ko-KR")}원`
+      : "금액 없음";
+  const evidenceLabel = input.evidence?.trim() || "증빙 없음";
+  const outcomeLabel = input.outcomeLabel.trim() || "결과 미정";
+  return { subject, amountLabel, evidenceLabel, outcomeLabel };
+}
+
+export function approvalReviewIsComplete(summary: ApprovalReviewSummary): boolean {
+  return Boolean(summary.subject && summary.amountLabel && summary.evidenceLabel && summary.outcomeLabel);
+}
+
+/** 승인 체크 없이 확정·이미 확정된 건 재확정을 막는다(F03-04). */
+export function assertFounderConfirmationGate(input: {
+  approved: boolean;
+  status: string;
+  confirmedStatus: string;
+  alreadyConfirmedMessage: string;
+}) {
+  if (!input.approved) throw new Error("Representative approval is required");
+  if (input.status === input.confirmedStatus) throw new Error(input.alreadyConfirmedMessage);
+}

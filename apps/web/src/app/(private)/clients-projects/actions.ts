@@ -11,6 +11,7 @@ import {
   updateFounderClient,
   updateFounderProjectProgress,
 } from "@/lib/clients-projects/repository";
+import { quotePathAfterInlineClientCreate } from "@/lib/domain/quote-client-flow";
 
 function value(formData: FormData, key: string) {
   const item = formData.get(key);
@@ -67,6 +68,32 @@ export async function createClientAction(formData: FormData) {
   revalidatePath("/clients-projects");
   revalidatePath("/quotes");
   redirect(`/clients/${created.id}`);
+}
+
+/** 견적 패널에서 고객사를 만들면 고객사 상세로 보내지 않고 견적으로 돌아온다(F01-02). */
+export async function createClientFromQuoteAction(formData: FormData) {
+  const founder = await authorizedFounder();
+  const created = await createFounderClient({
+    actorUserId: founder.id,
+    ...companyProfileFromForm(formData),
+  });
+  const contactName = value(formData, "contactName").trim();
+  if (contactName) {
+    await createFounderClientContact({
+      actorUserId: founder.id,
+      clientId: created.id,
+      name: contactName,
+      role: value(formData, "contactRole"),
+      email: value(formData, "contactEmail"),
+      phone: value(formData, "contactPhone"),
+      relationStatus: value(formData, "relationStatus") || "active",
+      taxInvoiceRecipient: value(formData, "taxInvoiceRecipient"),
+    });
+  }
+  revalidatePath("/clients");
+  revalidatePath("/clients-projects");
+  revalidatePath("/quotes");
+  redirect(quotePathAfterInlineClientCreate(created.id));
 }
 
 export async function updateClientAction(formData: FormData) {

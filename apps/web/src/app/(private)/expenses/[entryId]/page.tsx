@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { confirmExpenseEntryAction } from "@/app/(private)/expenses/actions";
+import { ApprovalReviewCard } from "@/components/approval-review-card";
 import { founderSession } from "@/lib/auth/session";
+import { buildApprovalReviewSummary } from "@/lib/domain/approvals";
 import { expenseEntryStatusLabels, ledgerRowFromExpenseEntry } from "@/lib/domain/expenses";
 import { UNCLASSIFIED_LABEL } from "@/lib/domain/revenue";
 import { getFounderExpenseEntryDetail } from "@/lib/expenses/repository";
@@ -17,6 +19,15 @@ export default async function ExpenseEntryDetailPage({ params }: { params: Promi
   const entry = await getFounderExpenseEntryDetail(session.founder.id, entryId);
   if (!entry) notFound();
   const row = ledgerRowFromExpenseEntry(entry);
+  const review = buildApprovalReviewSummary({
+    subject: `${row.title} · ${row.counterparty}`,
+    amount: entry.amount,
+    currency: entry.currency,
+    evidence: [entry.note?.trim() || null, `지급 예정일 ${entry.settlementDate}`, `발생일 ${entry.occurredOn}`]
+      .filter(Boolean)
+      .join(" · "),
+    outcomeLabel: "비용 확정 — 금액 고정, 자동 이체·세금계산서 없음",
+  });
 
   return (
     <main className="operations-shell">
@@ -42,6 +53,7 @@ export default async function ExpenseEntryDetailPage({ params }: { params: Promi
         <section className="quote-editor-card">
           <p className="setup-code">비용 확정</p>
           <p className="form-help">지급이 실제로 확인된 뒤에만 확정합니다. 확정된 금액은 덮어쓰지 않습니다. 자동 이체와 세금계산서 발행은 포함되지 않습니다.</p>
+          <ApprovalReviewCard summary={review} />
           <form action={confirmExpenseEntryAction} className="quote-form">
             <input name="entryId" type="hidden" value={entry.id} />
             <label className="quote-email-approval quote-form-full">

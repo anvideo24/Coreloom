@@ -2,8 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { confirmBillingDepositAction } from "@/app/(private)/billings/actions";
+import { ApprovalReviewCard } from "@/components/approval-review-card";
 import { founderSession } from "@/lib/auth/session";
 import { getFounderBillingDetail } from "@/lib/billings/repository";
+import { buildApprovalReviewSummary } from "@/lib/domain/approvals";
 import { billingKindLabels, billingStatusLabels } from "@/lib/domain/billings";
 
 export const dynamic = "force-dynamic";
@@ -16,6 +18,19 @@ export default async function BillingDetailPage({ params }: { params: Promise<{ 
   const detail = await getFounderBillingDetail(session.founder.id, billingId);
   if (!detail) notFound();
   const { billing } = detail;
+  const review = buildApprovalReviewSummary({
+    subject: `${billing.clientName} · ${detail.contractTitle} · ${billingKindLabels[billing.kind]}`,
+    amount: billing.amount,
+    currency: billing.currency,
+    evidence: [
+      billing.note?.trim() || null,
+      billing.billingNumber ? `청구번호 ${billing.billingNumber}` : null,
+      `입금 예정일 ${billing.dueDate}`,
+    ]
+      .filter(Boolean)
+      .join(" · "),
+    outcomeLabel: "입금 확정 — 금액 고정, 세금계산서 발행 없음",
+  });
 
   return (
     <main className="operations-shell">
@@ -50,6 +65,7 @@ export default async function BillingDetailPage({ params }: { params: Promise<{ 
         <section className="quote-editor-card">
           <p className="setup-code">입금 확인</p>
           <p className="form-help">입금이 실제 확인된 뒤에만 확정합니다. 확정된 금액은 덮어쓰지 않습니다. 세금계산서 발행은 포함되지 않습니다.</p>
+          <ApprovalReviewCard summary={review} />
           <form action={confirmBillingDepositAction} className="quote-form">
             <input name="billingId" type="hidden" value={billing.id} />
             <label className="quote-email-approval quote-form-full">
