@@ -714,6 +714,20 @@
       "planVersion": 1,
       "environment": "vitest · jsdom · 실제 폼·메뉴 컴포넌트 렌더, 브라우저·실기기 아님",
       "note": "앞선 줄은 제품에 로그아웃이 없어 잴 수 없다고 적었다. 그 기능을 만들어 이 검사를 닫는다."
+    },
+    {
+      "checkId": "F02-03",
+      "outcome": "unverified",
+      "value": "서버가 막게 만들었다 — 고객사·견적 표에 제출 열쇠와 유일 인덱스를 두고, 중복이면 오류 없이 이미 저장된 줄로 끝낸다. 저장 계층을 대신 세운 시험에서 같은 열쇠로 두 번 보내면 결과가 하나만 생긴다. 다만 마이그레이션을 아직 안 돌려 실제 데이터베이스에는 그 인덱스가 없다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/submission-dedupe-server.test.ts",
+        "checkedAt": "2026-09-05T13:08:03Z"
+      },
+      "codeCommit": "5006fe98bbad78b572651e8b15e9f7704805a7e7",
+      "planVersion": 1,
+      "environment": "vitest · Node · 저장 계층을 대신 세움, 실제 DB 미적용",
+      "note": "마이그레이션 0033을 개발 DB에 적용하고 실제로 두 번 보내 보면 통과로 올릴 수 있다. 기존 견적에 새 버전을 더하는 경로와 수정 동작은 계획서 F02 범위 밖이라 안 막는다."
     }
   ]
 }
