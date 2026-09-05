@@ -41,6 +41,11 @@ jobs:
       - name: 의존성 설치
         run: npm ci
 
+      # Next 가 라우트·레이아웃 타입을 `.next/types` 에 만들어 두고 tsconfig 가 그걸 읽는다.
+      # 내 PC 에는 지난 빌드의 잔재가 있어 통과했지만, 빈 작업 공간에서는 없어서 깨진다.
+      - name: 라우트 타입 생성
+        run: npx next typegen
+
       - name: 타입 검사
         run: npx tsc --noEmit
 
