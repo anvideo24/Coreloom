@@ -14,6 +14,20 @@
       "ref": "b0ca699643bcebb3014224ed633fd5baf35a9431",
       "recordedAt": "2026-09-05",
       "note": "PR #89 병합. 사용 환경(대표 PC 로그인 화면) 확인 전."
+    },
+    {
+      "featureId": "F05",
+      "stage": "in-progress",
+      "ref": "cursor/stage3-accuracy-and-drafts-09f4",
+      "recordedAt": "2026-09-05",
+      "note": "대시보드 월말·입금예정·프로젝트 단계 수정. main 병합 전."
+    },
+    {
+      "featureId": "F02",
+      "stage": "in-progress",
+      "ref": "cursor/stage3-accuracy-and-drafts-09f4",
+      "recordedAt": "2026-09-05",
+      "note": "고객사·견적 패널 sessionStorage 초안. 실기기 16조합 측정 전. main 병합 전."
     }
   ],
   "results": [
@@ -139,6 +153,72 @@
       "codeCommit": "a85c38aca38580b0b8d0b9d29947825d86c1d640",
       "planVersion": 1,
       "environment": "Chromium(Playwright) 정적 HTML, 뷰포트 360/840/1280, 실기기 아님"
+    },
+    {
+      "checkId": "F05-01",
+      "outcome": "pass",
+      "value": "청구일 2026-09-29·입금예정 2026-09-30 100원이 9월 cashWeeks 합계 100원. monthWeekBuckets 마지막 end=2026-09-30.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T08:50:46Z"
+      },
+      "codeCommit": "24f902a885fa226f1171138e3d48a3868d11647b",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F05-02",
+      "outcome": "pass",
+      "value": "청구일 2026-09-02·입금예정 2026-10-02 100원의 9월 cashWeeks 입금 합계 0원(예정일 기준).",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T08:50:46Z"
+      },
+      "codeCommit": "24f902a885fa226f1171138e3d48a3868d11647b",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F05-03",
+      "outcome": "pass",
+      "value": "같은 고객사 프로젝트 2개·견적 1개(projectId=p1)에서 stages.quote=[true,false].",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T08:50:46Z"
+      },
+      "codeCommit": "24f902a885fa226f1171138e3d48a3868d11647b",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "pass",
+      "value": "고객사·견적 작성 패널에 sessionStorage 초안 보존을 연결. 단위 시험에서 동일 스코프/폼 필드 복원 확인. 예전에 실패한 PC 고객사 닫기→재열기 경로의 코드 원인을 제거. 나머지 기기·조합(실제 휴대폰 포함) 15개는 미측정.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/form-draft.test.ts",
+        "checkedAt": "2026-09-05T08:50:46Z"
+      },
+      "codeCommit": "24f902a885fa226f1171138e3d48a3868d11647b",
+      "planVersion": 1,
+      "environment": "vitest · Node · sessionStorage 대체 메모리 저장소",
+      "note": "16개 전체 조합의 사람·실기기 측정은 아직이다. 이 줄은 저장 계층과 패널 연결에 대한 자동 확인이다."
+    },
+    {
+      "checkId": "F02-04",
+      "outcome": "pass",
+      "value": "초안 키가 사용자 스코프·폼 ID로 분리되고, 다른 스코프 expected로 파싱하면 null. 입력 본문을 로그하는 코드 없음.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/form-draft.test.ts",
+        "checkedAt": "2026-09-05T08:50:46Z"
+      },
+      "codeCommit": "24f902a885fa226f1171138e3d48a3868d11647b",
+      "planVersion": 1,
+      "environment": "vitest · Node · sessionStorage 대체 메모리 저장소"
     }
   ]
 }

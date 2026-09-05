@@ -30,6 +30,7 @@ export async function listFounderBillings(authUserId: string) {
   const rows = await database.select({
     id: billings.id,
     contractId: billings.contractId,
+    projectId: billings.projectId,
     seriesId: billings.seriesId,
     kind: billings.kind,
     amount: billings.amount,

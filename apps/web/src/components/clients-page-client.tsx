@@ -7,6 +7,7 @@ import { createClientAction } from "@/app/(private)/clients-projects/actions";
 import { ClientCompanyFields } from "@/components/client-company-fields";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
+import { DraftAwareForm } from "@/components/draft-aware-form";
 import { formatClientListMeta, type ClientTaxType, type ClientTradeKind } from "@/lib/domain/clients-projects";
 
 type ClientRow = {
@@ -20,7 +21,7 @@ type ClientRow = {
   projectCount: number;
 };
 
-export function ClientsPageClient({ clients }: { clients: ClientRow[] }) {
+export function ClientsPageClient({ clients, draftScopeId }: { clients: ClientRow[]; draftScopeId: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -82,12 +83,12 @@ export function ClientsPageClient({ clients }: { clients: ClientRow[] }) {
       </section>
 
       <CreatePanel onClose={close} open={open} size="wide" title="새 고객사">
-        <form action={createClientAction} className="quote-form">
+        <DraftAwareForm action={createClientAction} className="quote-form" formId="client-create" scopeId={draftScopeId}>
           <ClientCompanyFields includeFirstContact />
           <button className="auth-submit" type="submit">
             고객사 저장
           </button>
-        </form>
+        </DraftAwareForm>
       </CreatePanel>
     </>
   );

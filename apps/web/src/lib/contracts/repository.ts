@@ -28,6 +28,7 @@ export async function listFounderContracts(authUserId: string) {
   const rows = await database.select({
     contractId: contracts.id,
     quoteId: contracts.quoteId,
+    projectId: contracts.projectId,
     clientName: clientCompanies.name,
     versionId: contractVersions.id,
     versionNumber: contractVersions.versionNumber,

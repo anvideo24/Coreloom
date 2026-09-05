@@ -31,7 +31,11 @@ jobs:
         working-directory: apps/web
 
     steps:
+      # 기본 fetch-depth:1 이면 검증 결과의 codeCommit을 못 찾아
+      # 통과가 전부 「재검증 필요」로 내려간다(F07-03·04). 이력을 넉넉히 둔다.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

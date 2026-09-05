@@ -21,6 +21,7 @@ export default async function QuotesPage() {
           clients={clients}
           companyProfileStorage={companyProfileStorage}
           contacts={contacts}
+          draftScopeId={session.founder.id}
           issuer={issuer}
           projects={projects}
           versions={versions}
