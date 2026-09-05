@@ -54,13 +54,14 @@ describe("개선 목표·검증 현황 — 실제 파일 끝까지", () => {
     }
   });
 
-  it("기준 측정에서 재현된 실패 4건이 실패로 보이고, 통과로 세지 않는다", () => {
+  it("3단계 수정 후 F05·F02 최신 결과는 통과로 세고, 미측정은 결과 없음으로 남긴다", () => {
     if (!status.available) throw new Error(status.message);
     const f05 = status.statuses.find((item) => item.feature.id === "F05");
-    expect(f05?.counts).toMatchObject({ pass: 0, fail: 3, none: 1, required: 4 });
+    expect(f05?.counts).toMatchObject({ pass: 3, fail: 0, none: 1, required: 4 });
     expect(f05?.nextAction).toBe("결과 없음 1건 측정");
     const f02 = status.statuses.find((item) => item.feature.id === "F02");
-    expect(f02?.counts).toMatchObject({ pass: 0, fail: 1, none: 3 });
+    expect(f02?.counts).toMatchObject({ pass: 2, fail: 0, none: 2 });
+    expect(f02?.nextAction).toBe("결과 없음 2건 측정");
   });
 
   it("F07-04: 지금 HEAD 기준으로는 바뀐 파일이 없고, 없는 커밋은 null이다", () => {
