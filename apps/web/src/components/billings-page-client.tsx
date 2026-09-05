@@ -5,6 +5,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { createBillingAction, createRecurringSeriesAction } from "@/app/(private)/billings/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
+import { CreateMenuButton } from "@/components/create-menu-button";
 import { CreatePanel } from "@/components/create-panel";
 import {
   billingKindLabels,
@@ -95,10 +96,13 @@ export function BillingsPageClient({
           </p>
         </div>
         {canCreate ? (
-          <div className="quote-header-links">
-            <CreateIconButton label="단건 청구" onClick={openBilling} />
-            <CreateIconButton className="create-icon-button-secondary" label="반복 청구" onClick={openSeries} />
-          </div>
+          <CreateMenuButton
+            label="새로 만들기"
+            options={[
+              { label: "단건 청구", onClick: openBilling },
+              { label: "반복 청구", onClick: openSeries },
+            ]}
+          />
         ) : (
           <CreateIconButton disabled label="단건 청구" />
         )}
