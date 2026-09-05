@@ -21,7 +21,9 @@ export async function createTaskAction(formData: FormData) {
   const founder = await requireFounder();
   const result = await createFounderTask({
     actorUserId: founder.id,
+    kind: value(formData, "kind"),
     projectId: value(formData, "projectId"),
+    ventureId: value(formData, "ventureId"),
     title: value(formData, "title"),
     dueDate: value(formData, "dueDate"),
     completionCondition: value(formData, "completionCondition"),

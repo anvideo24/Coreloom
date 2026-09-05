@@ -11,6 +11,11 @@ export const billingKind = pgEnum("billing_kind", ["down_payment", "interim", "f
 export const billingStatus = pgEnum("billing_status", ["scheduled", "deposited"]);
 export const billingRecurringInterval = pgEnum("billing_recurring_interval", ["monthly"]);
 export const taskStatus = pgEnum("task_status", ["open", "done"]);
+/**
+ * 업무가 어디에 속하는가(F06). 「고객사 프로젝트」만 있던 시절에는 회사 운영·자체 사업 업무를
+ * 넣으려면 없는 고객사와 없는 프로젝트를 지어내야 했다.
+ */
+export const workKind = pgEnum("work_kind", ["company", "internal", "client"]);
 export const clientContactRelationStatus = pgEnum("client_contact_relation_status", ["active", "inactive"]);
 export const rechoEvidenceKind = pgEnum("recho_evidence_kind", ["email", "call", "meeting"]);
 export const aiProposalKind = pgEnum("ai_proposal_kind", ["agreement", "next_action", "risk"]);
@@ -399,8 +404,18 @@ export const tasks = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
-    projectId: uuid("project_id").notNull().references(() => projects.id),
-    clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
+    /**
+     * 셋 중 하나에만 붙는다. 데이터베이스가 직접 막는다(`tasks_kind_link_ck`).
+     * 자체 사업은 이미 있는 `ventures`를 쓴다 — 매출·비용 원장과 에이전트가 같은 표를 본다.
+     * 에이전트에도 「프로젝트 또는 사업 중 하나에만」 규칙이 이미 있다(`normalizeAgentDraft`).
+     * - `client`  → 프로젝트·고객사 필수, 사업은 비어 있어야 한다
+     * - `internal`→ 자체 사업(ventures) 필수, 프로젝트·고객사는 비어 있어야 한다
+     * - `company` → 셋 다 비어 있어야 한다
+     */
+    kind: workKind("kind").notNull().default("client"),
+    projectId: uuid("project_id").references(() => projects.id),
+    clientCompanyId: uuid("client_company_id").references(() => clientCompanies.id),
+    ventureId: uuid("venture_id").references(() => ventures.id),
     title: text("title").notNull(),
     dueDate: date("due_date", { mode: "string" }).notNull(),
     completionCondition: text("completion_condition").notNull(),
@@ -415,6 +430,8 @@ export const tasks = pgTable(
     index("tasks_workspace_due_date_idx").on(table.workspaceId, table.dueDate),
     index("tasks_project_created_at_idx").on(table.projectId, desc(table.createdAt)),
     index("tasks_assigned_agent_idx").on(table.assignedAgentId),
+    index("tasks_venture_created_at_idx").on(table.ventureId, desc(table.createdAt)),
+    index("tasks_workspace_kind_idx").on(table.workspaceId, table.kind),
   ],
 );
 

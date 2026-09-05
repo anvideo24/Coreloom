@@ -1,5 +1,19 @@
 import { calculateCompanySetupProgress, type CompanySetupStatus } from "@/lib/domain/company-setup";
 import { summarizeExpenses } from "@/lib/domain/expenses";
+import { taskLinkLabel } from "@/lib/domain/tasks";
+
+/**
+ * 업무 카드·일정 문구를 만든다. `kind`가 없으면(F06 이전 호출부·기존 시험) "client"로 본다 —
+ * 그때는 `taskLinkLabel`이 예전과 같은 "고객사 · 프로젝트" 문구를 그대로 돌려준다.
+ */
+function taskDetailLabel(item: { kind?: string; clientName: string | null; projectName: string | null; ventureName?: string | null }) {
+  return taskLinkLabel({
+    kind: item.kind ?? "client",
+    clientName: item.clientName,
+    projectName: item.projectName,
+    ventureName: item.ventureName ?? null,
+  });
+}
 
 export const DASHBOARD_TIME_ZONE = "Asia/Seoul";
 export const DASHBOARD_LIST_LIMIT = 5;
@@ -232,8 +246,14 @@ export function buildFounderDashboard(input: {
     title: string;
     dueDate: string;
     status: string;
-    clientName: string;
-    projectName: string;
+    /**
+     * F06 이후 회사 운영·자체 사업 업무는 고객사·프로젝트가 없어 null이다.
+     * `kind`가 없으면(기존 호출부·시험) "client"로 보아 예전 문구를 그대로 유지한다.
+     */
+    clientName: string | null;
+    projectName: string | null;
+    ventureName?: string | null;
+    kind?: string;
     projectId?: string | null;
   }>;
   recentDecisions: Array<{
@@ -313,7 +333,7 @@ export function buildFounderDashboard(input: {
       .map((item) => ({
         href: `/tasks/${item.id}`,
         title: item.title,
-        detail: `${item.clientName} · ${item.projectName} · 기한 ${item.dueDate}${item.dueDate < today ? " · 지남" : item.dueDate === today ? " · 오늘" : ""}`,
+        detail: `${taskDetailLabel(item)} · 기한 ${item.dueDate}${item.dueDate < today ? " · 지남" : item.dueDate === today ? " · 오늘" : ""}`,
       })),
     limit,
   );
@@ -408,7 +428,7 @@ export function buildFounderDashboard(input: {
         id: `task:${item.id}`,
         href: `/tasks/${item.id}`,
         title: item.title,
-        detail: `${item.clientName} · ${item.projectName} · 기한 ${item.dueDate}${item.dueDate < today ? " · 지남" : item.dueDate === today ? " · 오늘" : ""}`,
+        detail: `${taskDetailLabel(item)} · 기한 ${item.dueDate}${item.dueDate < today ? " · 지남" : item.dueDate === today ? " · 오늘" : ""}`,
         kind: "task" as const,
         kindLabel: inboxKindLabels.task,
         when: item.dueDate,

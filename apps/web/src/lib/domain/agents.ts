@@ -202,13 +202,17 @@ export function deactivateAiAgent(input: { status: string }) {
   return { status: "inactive" as const };
 }
 
+/**
+ * `taskProjectId`는 F06 이후 null일 수 있다(회사 운영·자체 사업 업무는 프로젝트가 없다).
+ * 프로젝트 범위 에이전트는 그 경우 항상 범위 밖이라 배정을 거부한다 — `agentProjectId !== null`이면 걸린다.
+ */
 export function assignTaskAgent(input: {
   status: string;
   assignedAgentId?: string | null;
   agentStatus?: string | null;
   agentProjectId?: string | null;
   agentVentureId?: string | null;
-  taskProjectId: string;
+  taskProjectId: string | null;
 }) {
   if (input.status === "done") throw new Error("Completed tasks cannot be changed");
   if (input.status !== "open") throw new Error("Unsupported task status");
