@@ -15,6 +15,18 @@ function featureHref(featureId: string) {
   return `/admin/manual/progress/${encodeURIComponent(featureId)}`;
 }
 
+/** 목표가 셀 수 있는 수를 요구할 때 「몇 개를 쟀나」. 없으면 안 보인다. */
+function MeasuredCoverage({ result }: { result: CheckResult }) {
+  if (!result.measured) return null;
+  const { covered, total } = result.measured;
+  return (
+    <span className="verification-coverage">
+      잰 범위 {covered}/{total}
+      {covered < total ? " (덜 쟀음)" : ""}
+    </span>
+  );
+}
+
 function evidenceText(result: CheckResult) {
   const by = result.evidence.by ? ` · ${result.evidence.by}` : "";
   return `${result.evidence.ref} · ${result.evidence.checkedAt}${by}`;
@@ -140,7 +152,10 @@ export function VerificationCheckTable({ checks }: { checks: CheckStatus[] }) {
                     <VerificationOutcomeBadge outcome={status.effective} />
                     {status.reason ? <span className="verification-reason">{status.reason}</span> : null}
                   </td>
-                  <td>{status.latest?.value ?? "—"}</td>
+                  <td>
+                    {status.latest?.value ?? "—"}
+                    {status.latest ? <MeasuredCoverage result={status.latest} /> : null}
+                  </td>
                   <td>
                     {status.latest ? (
                       <span className="verification-stack">
@@ -177,7 +192,10 @@ export function VerificationCheckTable({ checks }: { checks: CheckStatus[] }) {
               <dt>통과가 아닌 이유</dt>
               <dd>{status.reason ?? "—"}</dd>
               <dt>결과값</dt>
-              <dd>{status.latest?.value ?? "—"}</dd>
+              <dd>
+                {status.latest?.value ?? "—"}
+                {status.latest ? <MeasuredCoverage result={status.latest} /> : null}
+              </dd>
               <dt>증거</dt>
               <dd>{status.latest ? evidenceText(status.latest) : "—"}</dd>
               <dt>검증 코드 커밋</dt>

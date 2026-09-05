@@ -326,6 +326,104 @@
       "codeCommit": "3cfd089597ddc34219f9c371bf1ab51e4e6e5379",
       "planVersion": 1,
       "environment": "vitest · Node · 도메인 게이트 직접 실행"
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "unverified",
+      "value": "실제로 잰 것은 초안 저장 계층의 단위 시험 4건이다. 계획이 요구한 16개 시나리오(고객사/견적 × PC/실제 휴대폰 × 닫기·새로고침·화면 이동·저장 실패)는 재지 않았다. 코드 원인을 없앤 것은 사실이지만 그것이 16개를 잰 것은 아니다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/domain/verification-plan.ts",
+        "checkedAt": "2026-09-05T10:08:04Z",
+        "by": "Claude(Fable 5.1) 단계 리뷰"
+      },
+      "codeCommit": "e5c752b946936f74a93c23d6cd462eba4f473a07",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "앞선 통과 줄을 정정한다. 그 줄도 스스로 「나머지 15개 미측정」이라 적었다. 실기기 측정이 남았다.",
+      "measured": {
+        "covered": 1,
+        "total": 16
+      }
+    },
+    {
+      "checkId": "F03-03",
+      "outcome": "unverified",
+      "value": "확정 전 검토 요약이 대상·금액·증빙·결과 네 칸을 노출하는 것과 네 종류 상세 화면 연결을 쟀다. 계획이 요구한 「5사례 모두 실제 확정 직전 검토 정보 대조」는 하지 않았다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/domain/verification-plan.ts",
+        "checkedAt": "2026-09-05T10:08:04Z",
+        "by": "Claude(Fable 5.1) 단계 리뷰"
+      },
+      "codeCommit": "e5c752b946936f74a93c23d6cd462eba4f473a07",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "앞선 통과 줄을 정정한다. 5사례 정답표가 아직 없다.",
+      "measured": {
+        "covered": 0,
+        "total": 5
+      }
+    },
+    {
+      "checkId": "F05-01",
+      "outcome": "unverified",
+      "value": "9월(말일 30일) 한 종류만 쟀다. 계획이 요구한 28·29·31일 말일, 윤년, 연도 전환 경계는 재지 않았다. 9월 29일 누락이 고쳐진 것은 사실이다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/domain/verification-plan.ts",
+        "checkedAt": "2026-09-05T10:08:04Z",
+        "by": "Claude(Fable 5.1) 단계 리뷰"
+      },
+      "codeCommit": "e5c752b946936f74a93c23d6cd462eba4f473a07",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "앞선 통과 줄을 정정한다. 말일 종류별 고정 fixture가 남았다."
+    },
+    {
+      "checkId": "F05-02",
+      "outcome": "unverified",
+      "value": "청구월과 입금 예정월이 다른 경우 하나를 scheduled 상태로 쟀다. 계획이 요구한 예정·확인 상태 조합은 재지 않았다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/domain/verification-plan.ts",
+        "checkedAt": "2026-09-05T10:08:04Z",
+        "by": "Claude(Fable 5.1) 단계 리뷰"
+      },
+      "codeCommit": "e5c752b946936f74a93c23d6cd462eba4f473a07",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "앞선 통과 줄을 정정한다. 실제 입금(확인) 상태의 분류가 남았다."
+    },
+    {
+      "checkId": "F05-03",
+      "outcome": "unverified",
+      "value": "같은 고객사의 프로젝트 두 개와 견적 하나를 쟀다. 계획이 요구한 동명 고객사(이름이 같고 실체가 다른 고객사) 사례는 재지 않았다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/domain/verification-plan.ts",
+        "checkedAt": "2026-09-05T10:08:04Z",
+        "by": "Claude(Fable 5.1) 단계 리뷰"
+      },
+      "codeCommit": "e5c752b946936f74a93c23d6cd462eba4f473a07",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "앞선 통과 줄을 정정한다."
+    },
+    {
+      "checkId": "F02-04",
+      "outcome": "unverified",
+      "value": "사용자·폼 키 분리, 스코프 불일치 거부, 입력 본문 로그 없음을 쟀다. 계획이 요구한 로그아웃 처리 검사는 하지 않았다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/domain/verification-plan.ts",
+        "checkedAt": "2026-09-05T10:08:04Z",
+        "by": "Claude(Fable 5.1) 단계 리뷰"
+      },
+      "codeCommit": "e5c752b946936f74a93c23d6cd462eba4f473a07",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "앞선 통과 줄을 정정한다. 로그아웃 시 초안이 남는지 확인이 남았다."
     }
   ]
 }

@@ -54,27 +54,59 @@ describe("개선 목표·검증 현황 — 실제 파일 끝까지", () => {
     }
   });
 
-  it("4단계 수정 후 F05·F02·F01·F03은 실패가 아니고, 미측정만 결과 없음으로 남긴다", () => {
+  /*
+   * 아래는 「지금 몇 건이 통과인가」를 못 박지 않는다. 그렇게 쓴 시험이 결과가 하나 늘 때마다 깨져
+   * 2026-09-05 하루에 세 번 기대치를 고쳤다. 세 번째부터는 시험이 판정자가 아니라 거울이 된다.
+   * 대신 결과가 아무리 늘어도 변하지 않아야 하는 성질만 잰다.
+   */
+  it("통과로 세는 줄은 전부 증거·환경·커밋·계획 버전을 갖췄다", () => {
     if (!status.available) throw new Error(status.message);
-    // 최신 결과 줄의 outcome은 pass다. effective pass는 이 자리 git에
-    // codeCommit이 있을 때만이고, CI 얕은 clone에서는 needs-recheck로 내려갈 수 있다.
-    // 둘 다 「실패로 세지 않음」이므로 pass+recheck로만 묶는다.
-    const f05 = status.statuses.find((item) => item.feature.id === "F05");
-    expect(f05?.counts).toMatchObject({ fail: 0, none: 1, required: 4 });
-    expect((f05?.counts.pass ?? 0) + (f05?.counts.recheck ?? 0)).toBe(3);
-    expect(f05?.nextAction).toBe("결과 없음 1건 측정");
-    const f02 = status.statuses.find((item) => item.feature.id === "F02");
-    expect(f02?.counts).toMatchObject({ fail: 0, none: 2 });
-    expect((f02?.counts.pass ?? 0) + (f02?.counts.recheck ?? 0)).toBe(2);
-    expect(f02?.nextAction).toBe("결과 없음 2건 측정");
-    const f01 = status.statuses.find((item) => item.feature.id === "F01");
-    expect(f01?.counts).toMatchObject({ fail: 0, none: 1, required: 4 });
-    expect((f01?.counts.pass ?? 0) + (f01?.counts.recheck ?? 0)).toBe(3);
-    expect(f01?.nextAction).toBe("결과 없음 1건 측정");
-    const f03 = status.statuses.find((item) => item.feature.id === "F03");
-    expect(f03?.counts).toMatchObject({ fail: 0, none: 2, required: 4 });
-    expect((f03?.counts.pass ?? 0) + (f03?.counts.recheck ?? 0)).toBe(2);
-    expect(f03?.nextAction).toBe("결과 없음 2건 측정");
+    const bare = status.statuses.flatMap((item) => item.checks)
+      .filter((check) => check.effective === "pass")
+      .filter((check) => {
+        const latest = check.latest!;
+        return !latest.evidence.ref.trim() || !latest.environment.trim()
+          || !latest.codeCommit.trim() || !latest.value.trim()
+          || latest.planVersion !== status.plan.version;
+      })
+      .map((check) => check.check.id);
+    expect(bare, "근거가 빈 줄이 통과로 세어졌다").toEqual([]);
+  });
+
+  it("스스로 「아직 안 쟀다」고 적은 줄은 통과로 세지 않는다", () => {
+    if (!status.available) throw new Error(status.message);
+    const admitted = status.statuses.flatMap((item) => item.checks)
+      .filter((check) => check.effective === "pass")
+      .filter((check) => /미측정|측정 전|측정하지 않/.test(`${check.latest!.value} ${check.latest!.note ?? ""}`))
+      .map((check) => check.check.id);
+    expect(admitted, "덜 쟀다고 적어 두고 초록불이 켜졌다").toEqual([]);
+  });
+
+  it("셀 수 있는 목표는 잰 개수가 목표 수와 같을 때만 통과다", () => {
+    if (!status.available) throw new Error(status.message);
+    const counted = status.statuses.flatMap((item) => item.checks)
+      .filter((check) => check.check.requiredCount !== null);
+    expect(counted.length, "계획서에서 셀 수 있는 목표를 하나도 못 읽었다").toBeGreaterThan(0);
+
+    const short = counted
+      .filter((check) => check.effective === "pass")
+      .filter((check) => {
+        const measured = check.latest!.measured;
+        return !measured || measured.total !== check.check.requiredCount || measured.covered < measured.total;
+      })
+      .map((check) => check.check.id);
+    expect(short, "목표가 요구한 개수를 다 재지 않고 통과로 세어졌다").toEqual([]);
+  });
+
+  it("결과 파일의 모든 검사 ID가 계획서에 있고, 실패는 실패로 남는다", () => {
+    if (!status.available) throw new Error(status.message);
+    // 계획에 없는 ID면 buildVerificationStatus가 던진다. 여기까지 왔다는 것이 그 증거다.
+    const everyCheck = status.statuses.flatMap((item) => item.checks);
+    expect(everyCheck).toHaveLength(28);
+    for (const check of everyCheck) {
+      if (check.latest?.outcome === "fail") expect(check.effective).toBe("fail");
+      if (!check.latest) expect(check.effective).toBe("no-result");
+    }
   });
 
   it("F07-04: 지금 HEAD 기준으로는 바뀐 파일이 없고, 없는 커밋은 null이다", () => {

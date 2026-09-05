@@ -2601,6 +2601,7 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
 .verification-check-table-wrap table { min-width: 52rem; }
 .verification-stack { display: grid; gap: 0.25rem; }
 .verification-reason { color: var(--muted); display: block; font-size: 0.8125rem; margin-top: 0.375rem; }
+.verification-coverage { color: var(--muted); display: block; font-size: 0.8125rem; font-weight: 600; margin-top: 0.375rem; }
 
 /* 검사 표(6열·최소 52rem)는 펼친 폴드·태블릿 폭(840px 실측)에서 표 안쪽 가로 스크롤이 생긴다. 밀어 읽게 두지 않고 카드로 바꾼다. */
 @media (max-width: 55.98rem) {
