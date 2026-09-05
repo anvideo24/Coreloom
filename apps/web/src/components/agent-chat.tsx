@@ -12,7 +12,7 @@ import { AgentAccessSettings } from "@/components/agent-access-settings";
 export type ChatAgentItem = { id: string; name: string; purpose: string; modelProvider: AiAgentModelProvider };
 type PendingInput = { draft: string; attachments: string[]; requestId: string };
 
-export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; active?: boolean }) {
+export function AgentChat({ agent, active = true, onSettingsDirtyChange }: { agent: ChatAgentItem; active?: boolean; onSettingsDirtyChange?: (dirty: boolean) => void }) {
   const pathname = usePathname();
   const [model, setModel] = useState<string>(chatModels.find((item) => item.provider === agent.modelProvider)?.id || chatModels[0].id);
   const [threads, setThreads] = useState<ChatThread[]>([]);
@@ -31,6 +31,9 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
   const [settings, setSettings] = useState<Awaited<ReturnType<typeof readAgentSettingsAction>>>();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<"conversation" | "access">("conversation");
+  const [settingsDirty, setSettingsDirty] = useState(false);
+  const [accessDirty, setAccessDirty] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const selectionRef = useRef(0);
@@ -41,6 +44,20 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
   const requestRef = useRef<string | undefined>(undefined);
   const inFlightRef = useRef<PendingInput | undefined>(undefined);
   const storageKey = `coreloom-chat:${agent.id}`;
+  const anySettingsDirty = settingsDirty || accessDirty;
+
+  useEffect(() => {
+    onSettingsDirtyChange?.(anySettingsDirty);
+    if (!anySettingsDirty) return;
+    const beforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); event.returnValue = ""; };
+    const linkGuard = (event: MouseEvent) => {
+      const link = (event.target as Element | null)?.closest("a[href]");
+      if (link && !window.confirm("저장하지 않은 설정이 있습니다. 저장하지 않고 이동할까요?")) { event.preventDefault(); event.stopPropagation(); }
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    document.addEventListener("click", linkGuard, true);
+    return () => { window.removeEventListener("beforeunload", beforeUnload); document.removeEventListener("click", linkGuard, true); };
+  }, [anySettingsDirty, onSettingsDirtyChange]);
 
   async function recover(input: PendingInput, signal: AbortSignal) {
     const deadline = Date.now() + 540_000;
@@ -175,6 +192,12 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
     try { setSettings(await readAgentSettingsAction(agent.id)); }
     catch { setError("지침을 불러오지 못했습니다."); }
   }
+  function leaveSettings(next: "chat" | "history") {
+    if (view !== "settings" || (!settingsDirty && !accessDirty) || window.confirm("저장하지 않은 설정이 있습니다. 저장하지 않고 나갈까요?")) {
+      setSettingsDirty(false); setAccessDirty(false); setView(next); return true;
+    }
+    return false;
+  }
 
   async function send() {
     if (abortRef.current || uploadRef.current || pending || loading || (!draft.trim() && !attachments.length)) return;
@@ -229,24 +252,26 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
 
   return <div className="agent-chat" onDragOver={(event) => { if (event.dataTransfer.types.includes("Files")) event.preventDefault(); }} onDrop={(event) => { event.preventDefault(); void addImages(Array.from(event.dataTransfer.files)); }}>
     <nav className="agent-chat-toolbar" aria-label="대화 도구">
-      <button type="button" onClick={() => { requestRef.current = undefined; setView("chat"); setMessages([]); setThreadId(undefined); setDraft(""); setAttachments([]); setNewReply(false); setError(""); }} disabled={pending || loading || uploading}>＋ 새 대화</button>
-      <button type="button" aria-pressed={view === "history"} onClick={() => setView(view === "history" ? "chat" : "history")} disabled={pending}>대화 이력</button>
-      <button type="button" aria-pressed={view === "settings"} onClick={() => { if (view === "settings") setView("chat"); else void openSettings(); }} disabled={pending}>지침 설정</button>
+      <button type="button" onClick={() => { if (!leaveSettings("chat")) return; requestRef.current = undefined; setMessages([]); setThreadId(undefined); setDraft(""); setAttachments([]); setNewReply(false); setError(""); }} disabled={pending || loading || uploading}>＋ 새 대화</button>
+      <button type="button" aria-pressed={view === "history"} onClick={() => { if (view === "history") leaveSettings("chat"); else if (leaveSettings("history")) setView("history"); }} disabled={pending}>대화 이력</button>
+      <button type="button" aria-pressed={view === "settings"} onClick={() => { if (view === "settings") leaveSettings("chat"); else void openSettings(); }} disabled={pending}>지침 설정</button>
     </nav>
     {view === "settings" ? <div className="agent-chat-scroll">
-      <h3>에이전트 지침</h3><p className="form-help">저장하면 이 에이전트의 다음 답변부터 적용됩니다.</p>
-      {settings ? <form className="agent-chat-settings" onSubmit={async (event) => {
+      <h3>에이전트 설정</h3><p className="form-help">저장하면 이 에이전트의 다음 답변부터 적용됩니다.</p>
+      <div className="agent-settings-tabs" role="tablist" aria-label="에이전트 설정"><button aria-selected={settingsTab === "conversation"} onClick={() => setSettingsTab("conversation")} role="tab" type="button">대화 방식</button><button aria-selected={settingsTab === "access"} onClick={() => setSettingsTab("access")} role="tab" type="button">자료 접근</button></div>
+      {settingsTab === "conversation" && settings ? <form className="agent-chat-settings" onSubmit={async (event) => {
         event.preventDefault(); setSaving(true); setSaved(false);
-        try { await saveAgentSettingsAction(agent.id, settings); setModel(chatModels.find((item) => item.provider === settings.modelProvider)?.id || chatModels[0].id); setSaved(true); }
+        try { await saveAgentSettingsAction(agent.id, settings); setModel(chatModels.find((item) => item.provider === settings.modelProvider)?.id || chatModels[0].id); setSettingsDirty(false); setSaved(true); }
         catch { setError("지침을 저장하지 못했습니다. 글자 수와 로그인 상태를 확인해 주세요."); }
         finally { setSaving(false); }
       }}>
-        {([ ["workStyle", "일하는 방식", 2000], ["answerStyle", "답변 방식", 2000], ["procedure", "진행 절차", 4000], ["instructions", "추가 지침", 8000] ] as const).map(([key, label, max]) => <label key={key}>{label}<textarea maxLength={max} rows={key === "instructions" ? 6 : 3} value={settings[key]} onChange={(e) => { setSettings({ ...settings, [key]: e.target.value }); setSaved(false); }} /></label>)}
-        <label>기본 구독<select value={settings.modelProvider} onChange={(e) => setSettings({ ...settings, modelProvider: e.target.value as AiAgentModelProvider })}><option value="gpt_codex_subscription">GPT·Codex</option><option value="claude_subscription">Claude</option><option value="cursor_agent">Cursor · 직접 연결 준비 전</option></select></label>
+        {([ ["workStyle", "일하는 방식", 2000], ["answerStyle", "답변 방식", 2000] ] as const).map(([key, label, max]) => <label key={key}>{label}<textarea maxLength={max} rows={3} value={settings[key]} onChange={(e) => { setSettings({ ...settings, [key]: e.target.value }); setSettingsDirty(true); setSaved(false); }} /></label>)}
+        <details className="agent-settings-advanced"><summary>고급 설정</summary>{([ ["procedure", "진행 절차", 4000], ["instructions", "추가 지침", 8000] ] as const).map(([key, label, max]) => <label key={key}>{label}<textarea maxLength={max} rows={key === "instructions" ? 6 : 3} value={settings[key]} onChange={(e) => { setSettings({ ...settings, [key]: e.target.value }); setSettingsDirty(true); setSaved(false); }} /></label>)}</details>
+        <label>기본 구독<select value={settings.modelProvider} onChange={(e) => { setSettings({ ...settings, modelProvider: e.target.value as AiAgentModelProvider }); setSettingsDirty(true); }}><option value="gpt_codex_subscription">GPT·Codex</option><option value="claude_subscription">Claude</option><option value="cursor_agent">Cursor · 직접 연결 준비 전</option></select></label>
         <button className="auth-submit" disabled={saving}>{saving ? "저장 중…" : "지침 저장"}</button>
         {saved ? <p role="status">저장했습니다. 다음 답변에 적용됩니다.</p> : null}
-      </form> : <p role="status">지침을 불러오는 중…</p>}
-      <AgentAccessSettings agentId={agent.id} />
+      </form> : settingsTab === "conversation" ? <p role="status">지침을 불러오는 중…</p> : null}
+      <div hidden={settingsTab !== "access"}><AgentAccessSettings agentId={agent.id} onDirty={setAccessDirty} /></div>
     </div> : view === "history" ? <div className="agent-chat-scroll"><h3>이전 대화</h3>{threads.length ? threads.map((thread) => <button className="agent-chat-history-item" type="button" key={thread.id} onClick={() => void load(thread.id, true)}><strong>{thread.title}</strong><span>{chatModels.find((m) => m.id === thread.model)?.label || thread.model}</span></button>) : <p className="form-help">첫 메시지를 보내면 대화가 여기에 남습니다.</p>}</div> : <>
       <div className="agent-chat-scroll" ref={scrollRef} onScroll={(event) => { const node = event.currentTarget; followRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80; if (followRef.current) setNewReply(false); }} role="log" aria-label="대화 메시지" aria-live="polite" aria-busy={pending}>
         {loading ? <p role="status">대화를 불러오는 중…</p> : messages.length === 0 ? <div className="agent-chat-welcome"><span className="agent-chat-avatar" aria-hidden="true">✳</span><h2>무엇을 함께 할까요?</h2><p>{agent.purpose}</p><div className="agent-chat-prompts">{["생각을 정리하고 싶어요", "업무 초안을 같이 작성해요", "부족한 정보를 먼저 질문해 주세요"].map((text) => <button type="button" key={text} onClick={() => { requestRef.current = undefined; inFlightRef.current = undefined; setDraft(text); }}>{text}</button>)}</div></div> : messages.map((message) => <article className={`agent-chat-message is-${message.role}`} key={message.id}><span className="agent-chat-message-label">{message.role === "user" ? "나" : agent.name}</span><div>{message.body}</div><div className="agent-chat-attachments">{message.attachments?.map((id, index) => <a key={id} href={imageUrl(id)} target="_blank" rel="noreferrer"><Image unoptimized width={96} height={96} src={imageUrl(id)} alt={`보낸 이미지 ${index + 1}`} /></a>)}</div>{message.body ? <button type="button" className="agent-chat-copy" onClick={() => { void navigator.clipboard.writeText(message.body).then(() => setCopied(message.id)).catch(() => setError("복사하지 못했습니다.")); }}>{copied === message.id ? "복사됨" : message.role === "user" ? "메시지 복사" : "답변 복사"}</button> : null}</article>)}
@@ -257,9 +282,8 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
         <input ref={fileRef} type="file" aria-label="이미지 선택" accept="image/png,image/jpeg,image/webp" multiple hidden onChange={(event) => { void addImages(Array.from(event.target.files || [])); event.target.value = ""; }} />
         <div className="agent-chat-attachments">{attachments.map((id, index) => <div key={id}><Image unoptimized width={96} height={96} src={imageUrl(id)} alt={`첨부 이미지 ${index + 1}`} /><button type="button" aria-label={`이미지 ${index + 1} 제거`} disabled={pending || uploading} onClick={() => { requestRef.current = undefined; setAttachments((current) => current.filter((item) => item !== id)); }}>제거</button></div>)}</div>
         {uploading ? <p role="status">이미지를 올리는 중…</p> : null}
-        <div className="agent-chat-input-shell"><textarea aria-label="메시지" disabled={pending || loading} maxLength={8000} rows={3} placeholder={`${agent.name}에게 메시지 보내기`} value={draft} onChange={(e) => { requestRef.current = undefined; setDraft(e.target.value); }} onPaste={(event) => { const files = Array.from(event.clipboardData.files); if (files.length) { event.preventDefault(); void addImages(files); } }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && !window.matchMedia?.("(pointer: coarse)").matches) { e.preventDefault(); void send(); } }} />
-          <button type="button" className="agent-chat-attach" disabled={pending || loading || uploading || attachments.length >= 6} onClick={() => fileRef.current?.click()}>＋ 이미지</button>
-          <div className="agent-chat-input-tools"><select aria-label="대화 모델" value={model} disabled={pending} onChange={(e) => setModel(e.target.value)}>{chatModels.map((item) => <option key={item.id} value={item.id}>{item.label}{status[item.provider] === false ? " · 연결 필요" : ""}</option>)}</select>{pending ? <button type="button" aria-label="응답 중지" onClick={() => void stopResponse()}>■</button> : <button type="submit" aria-label="메시지 보내기" disabled={(!draft.trim() && !attachments.length) || loading || uploading}>↑</button>}</div>
+        <div className="agent-chat-input-shell"><textarea aria-label="메시지" disabled={pending || loading} maxLength={8000} rows={2} placeholder={`${agent.name}에게 메시지 보내기`} value={draft} onChange={(e) => { requestRef.current = undefined; setDraft(e.target.value); }} onPaste={(event) => { const files = Array.from(event.clipboardData.files); if (files.length) { event.preventDefault(); void addImages(files); } }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && !window.matchMedia?.("(pointer: coarse)").matches) { e.preventDefault(); void send(); } }} />
+          <div className="agent-chat-input-tools"><button type="button" aria-label="이미지 추가" className="agent-chat-attach" disabled={pending || loading || uploading || attachments.length >= 6} onClick={() => fileRef.current?.click()}>＋ 이미지</button><select aria-label="대화 모델" value={model} disabled={pending} onChange={(e) => setModel(e.target.value)}>{chatModels.map((item) => <option key={item.id} value={item.id}>{item.label}{status[item.provider] === false ? " · 연결 필요" : ""}</option>)}</select>{pending ? <button type="button" aria-label="응답 중지" onClick={() => void stopResponse()}>■</button> : <button type="submit" aria-label="메시지 보내기" disabled={(!draft.trim() && !attachments.length) || loading || uploading}>↑</button>}</div>
         </div>
         <p className="agent-chat-caption">{agentPanelContextTitle(pathname)} · 구독 한도 사용 · 지침 설정에서 허용한 자료만 조회</p>
       </form>

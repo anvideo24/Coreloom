@@ -87,6 +87,8 @@ describe("agent conversation interactions", () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");
     fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.click(screen.getByRole("tab", { name: "자료 접근" }));
+    vi.stubGlobal("confirm", vi.fn(() => true));
     const quotes = await screen.findByRole("checkbox", { name: "견적서" });
     expect((quotes as HTMLInputElement).checked).toBe(false);
     fireEvent.click(quotes);
@@ -110,10 +112,33 @@ describe("agent conversation interactions", () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");
     fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.click(await screen.findByText("고급 설정"));
     const input = await screen.findByLabelText("추가 지침");
     fireEvent.change(input, { target: { value: "새 지침" } });
     fireEvent.click(screen.getByText("지침 저장"));
     await waitFor(() => expect(saveAgentSettingsAction).toHaveBeenCalledWith(agent.id, expect.objectContaining({ instructions: "새 지침" })));
     await screen.findByText("저장했습니다. 다음 답변에 적용됩니다.");
+  });
+  it("guards page navigation while settings are unsaved", async () => {
+    const dirty = vi.fn();
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    render(<AgentChat agent={agent} onSettingsDirtyChange={dirty} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "변경 중" } });
+    await waitFor(() => expect(dirty).toHaveBeenLastCalledWith(true));
+    const link = document.createElement("a"); link.href = "/dashboard"; document.body.append(link);
+    expect(link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))).toBe(false);
+  });
+  it("confirms newly added PC roots without exposing their paths", async () => {
+    const confirm = vi.fn((_message: string) => false); vi.stubGlobal("confirm", confirm);
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?"); fireEvent.click(screen.getByText("지침 설정")); fireEvent.click(screen.getByRole("tab", { name: "자료 접근" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "PC 지정 폴더" }));
+    fireEvent.change(screen.getByLabelText("이 PC의 허용 폴더"), { target: { value: "C:\\private-work" } });
+    fireEvent.click(screen.getByRole("button", { name: "조회 권한 저장" }));
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("새로 허용할 업무 폴더: 1개"));
+    expect(confirm.mock.calls[0][0]).not.toContain("private-work");
+    expect(saveAgentAccessAction).not.toHaveBeenCalled();
   });
 });

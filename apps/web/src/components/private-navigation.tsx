@@ -69,10 +69,12 @@ function NavToggleButton({
 export function PrivateNavigation() {
   const pathname = usePathname();
   const [drawerOpen, setDrawerOpen] = useState(true);
+  const [overlayMode, setOverlayMode] = useState(false);
+  const [overlayOpen, setOverlayOpen] = useState(false);
   const [hoverPeek, setHoverPeek] = useState(false);
   const [sidebarReady, setSidebarReady] = useState(false);
   const hidePeekTimer = useRef(0);
-  const navVisible = drawerOpen || hoverPeek;
+  const navVisible = overlayMode ? overlayOpen : drawerOpen || hoverPeek;
   const [openTab, setOpenTab] = useState<CompactTabId | null>(null);
   const drawerTitleId = useId();
   const sheetTitleId = useId();
@@ -86,6 +88,15 @@ export function PrivateNavigation() {
   }, []);
 
   useEffect(() => {
+    const sync = () => setOverlayMode(document.documentElement.clientWidth < 1200 || document.documentElement.dataset.agentDockNav === "rail");
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-agent-dock-nav"] });
+    window.addEventListener("resize", sync);
+    return () => { observer.disconnect(); window.removeEventListener("resize", sync); };
+  }, []);
+
+  useEffect(() => {
     if (!sidebarReady) return;
     window.localStorage.setItem(WIDE_NAV_OPEN_STORAGE_KEY, serializeWideNavOpen(drawerOpen));
   }, [drawerOpen, sidebarReady]);
@@ -93,6 +104,7 @@ export function PrivateNavigation() {
   useEffect(() => {
     setOpenTab(null);
     setHoverPeek(false);
+    setOverlayOpen(false);
   }, [pathname]);
 
   useEffect(() => {
@@ -105,20 +117,31 @@ export function PrivateNavigation() {
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      const agentOpen = document.querySelector('.agent-panel-layer.is-open');
       if (event.key === "Escape") {
+        if (overlayMode && overlayOpen) {
+          event.preventDefault();
+          setOverlayOpen(false);
+          return;
+        }
+        if (agentOpen) return;
+        // A fullscreen AI conversation is the top layer; its own handler owns Escape.
+        if (document.querySelector('.agent-panel-layer.is-open[data-mode="modal"]')) return;
         setDrawerOpen(false);
         setHoverPeek(false);
         setOpenTab(null);
         return;
       }
+      if (document.querySelector('.agent-panel-layer.is-open[data-mode="modal"]')) return;
       if (!isNavToggleHotkey(event) || isEditableHotkeyTarget(event.target)) return;
       if (!isWideNavigationViewport()) return;
       event.preventDefault();
-      setDrawerOpen((open) => !open);
+      if (overlayMode) setOverlayOpen((open) => !open);
+      else setDrawerOpen((open) => !open);
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
+  }, [overlayMode, overlayOpen]);
 
   useEffect(() => {
     if (!openTab) return;
@@ -135,12 +158,14 @@ export function PrivateNavigation() {
 
   function openDrawer() {
     setHoverPeek(false);
-    setDrawerOpen(true);
+    if (overlayMode) setOverlayOpen(true);
+    else setDrawerOpen(true);
   }
 
   function closeDrawer() {
     setHoverPeek(false);
-    setDrawerOpen(false);
+    if (overlayMode) setOverlayOpen(false);
+    else setDrawerOpen(false);
   }
 
   function cancelPeekHide() {
@@ -148,6 +173,7 @@ export function PrivateNavigation() {
   }
 
   function showHoverPeek() {
+    if (overlayMode || document.querySelector('.agent-panel-layer.is-open[data-mode="modal"]')) return;
     if (!isWideNavigationViewport()) return;
     if (!canHoverPeekWideNav(drawerOpen, isFineHoverPointer())) return;
     cancelPeekHide();
@@ -161,8 +187,9 @@ export function PrivateNavigation() {
   }
 
   const layerClass = ["private-drawer-layer"];
-  if (drawerOpen) layerClass.push("is-open");
-  if (!drawerOpen && hoverPeek) layerClass.push("is-peek");
+  if (overlayMode) layerClass.push("is-overlay-mode");
+  if (overlayMode ? overlayOpen : drawerOpen) layerClass.push("is-open");
+  if (!overlayMode && !drawerOpen && hoverPeek) layerClass.push("is-peek");
 
   return (
     <>
@@ -177,6 +204,7 @@ export function PrivateNavigation() {
 
       <div
         className={layerClass.join(" ")}
+        data-preferred-open={drawerOpen ? "true" : "false"}
         inert={!navVisible}
         onMouseEnter={showHoverPeek}
         onMouseLeave={hideHoverPeekSoon}
