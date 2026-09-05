@@ -19,7 +19,7 @@ import {
 /** 공용 정본 저장소는 이 제품 저장소와 같은 부모 폴더에 클론한다. */
 const SHARED_MANUAL_DIRECTORY_NAME = "working-method";
 
-function gitOutput(args: string[], cwd: string) {
+export function gitOutput(args: string[], cwd: string) {
   try {
     return execFileSync("git", args, { encoding: "utf8", cwd, stdio: ["ignore", "pipe", "ignore"] }).trim();
   } catch {
@@ -33,7 +33,7 @@ function gitOutput(args: string[], cwd: string) {
  */
 let cachedGitRoot: string | null | undefined;
 
-function gitRoot() {
+export function gitRoot() {
   if (cachedGitRoot === undefined) {
     cachedGitRoot = gitOutput(["rev-parse", "--show-toplevel"], process.cwd()) || null;
   }
@@ -112,7 +112,7 @@ export function readAdminManualRole(slug: string) {
   return { ...readManualFile(file), title: slug, slug };
 }
 
-function repositoryRoot() {
+export function repositoryRoot() {
   const root = gitRoot();
   if (root) return root;
   const directory = findManualDirectory();

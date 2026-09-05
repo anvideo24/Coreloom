@@ -16,7 +16,7 @@ function InlineText({ inlines }: { inlines: ManualInline[] }) {
   });
 }
 
-function ManualBlocks({ blocks }: { blocks: ManualBlock[] }) {
+export function ManualBlocks({ blocks }: { blocks: ManualBlock[] }) {
   return blocks.map((block, index) => {
     if (block.type === "heading" && block.level === 1) return <h2 key={index}>{block.text}</h2>;
     if (block.type === "heading" && block.level === 2) return <h3 key={index}>{block.text}</h3>;
