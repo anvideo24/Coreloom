@@ -11,7 +11,7 @@
 
 ## 시스템 구조도 — 구현·PC 검증, 대표 확인 2항목 남음
 
-2026-09-06 「구조도 남은 작업 모두 진행」 승인으로 `/admin/manual/system-map`을 구현했다. **7항목 통과, 2항목은 대표·실기기 확인 대기**다. 검증 코드 `76e097d`의 작업 가지 구현이며 main 병합은 별도다. 아래 SM 검사는 기존 개선 검증 28항목의 통과 수에 포함하지 않는다. 원본은 [시스템 구조도](system-map.md), 상세 증거는 [확인 기록](https://github.com/anvideo24/Coreloom/blob/codex/manual-system-map/manual/checks/system-map-2026-09-06.md)이다.
+2026-09-06 [PR #111](https://github.com/anvideo24/Coreloom/pull/111)이 `main`에 병합됐다(커밋 `7185ddd`). PR의 타입·시험·빌드 검사가 통과했고 개발 PC도 같은 내용임을 확인했다. **7항목 통과, 2항목은 대표·실기기 확인 대기**다. 검증 코드는 `76e097d`이며 병합으로 새 검증을 통과 처리하지 않는다. 아래 SM 검사는 기존 개선 검증 28항목의 통과 수에 포함하지 않는다. 원본은 [시스템 구조도](system-map.md), 상세 증거는 [확인 기록](https://github.com/anvideo24/Coreloom/blob/main/manual/checks/system-map-2026-09-06.md)이다.
 
 ### 목표와 화면 구성
 
@@ -73,7 +73,7 @@ PC 검증 후 브라우저 제어 연결이 끊겨 마지막 재확인과 임시
 | 대시보드 | `/dashboard` | 완료 | 조회 전용, Inbox·입금/지급 추이·프로젝트 단계. 승인 대기는 `/approvals`로. 2026-09-05 정확성 수리 — 입금·지급 예정 합계는 예정 상태만 세고, 프로젝트 「다음 행동」은 이름이 아니라 프로젝트 번호로만 맞춘다. 프로젝트에 연결되지 않은 견적·계약·청구는 어느 카드에도 안 붙는다(목록에는 남는다). 「현금 리듬」에 기록 없음이 정상과 구분된다 |
 | 매뉴얼 카테고리 홈 | `/admin/manual` | 완료 | 카드 입구. 규칙·일하는 방식·운영 세 묶음. 긴 원본은 칸을 고른 뒤에 연다. 2026-09-05 대표가 로그인해 확인 |
 | 업무 지도 | `/admin/manual/work-map` | 완료・main 병합 | 2026-09-06 [PR #109](https://github.com/anvideo24/Coreloom/pull/109), 병합 커밋 `63aa481`. 원본 `manual/work-map.md`의 흐름 6단계·보조 업무 4곳을 펼쳐 실제 목록으로 이동. 4개 화면 폭·전체 453개 테스트 및 PR의 타입·시험·빌드 검사 통과. 실제 Fold 기기는 미확인. DB·실행 기능 변경 없음. [검증 기록](checks/work-map-2026-09-06.md) |
-| 시스템 구조도 | `/admin/manual/system-map` | 구현·PC 검증・main 병합 전 | 다섯 구성의 관계를 Markdown 원본에서 읽어 펼침. SM-01~09 중 7 통과, 대표 이해도·실물 Fold 2 미확인. 전체 469개 시험 통과. DB·권한·실시간 감시 기능 변경 없음 |
+| 시스템 구조도 | `/admin/manual/system-map` | 완료・main 병합 | 2026-09-06 PR #111·`7185ddd` 병합, 타입·시험·빌드 검사 통과. 다섯 구성의 관계를 Markdown 원본에서 읽어 펼침. SM-01~09 중 7 통과, 대표 이해도·실물 Fold 2 미확인. 전체 469개 시험 통과. DB·권한·실시간 감시 기능 변경 없음 |
 | 운영 설명 화면 | `/admin/manual/overview` | 완료 | 읽기 전용, 배포 버전·커밋 표시. 홈에서 옮겨온 자리 |
 | 매뉴얼 읽기 위계·차례 | 원본 문서 화면 | 구현·PC 부분 검증 | 자동 차례·제목 크기·접히는 문서 정보·표 내부 스크롤. 홈 분류와 검증 판정은 그대로. main 포함은 [PR #107](https://github.com/anvideo24/Coreloom/pull/107)의 상태로 확인. [확인 기록](checks/manual-reading-2026-09-06.md) |
 | 공용 정본 화면 | `/admin/manual/shared/*` | 완료 | `working-method`의 `RULES`·`HOW`·`LESSONS`. 저장소가 없으면 「아직 없다」로 밝힘. 2026-09-05 대표가 로그인해 확인 |
