@@ -2,7 +2,7 @@
 
 ## 결과
 
-승인한 다섯 구성의 구조도를 `/admin/manual/system-map`에 구현했다. 읽기 전용이며 내용 정본은 `manual/system-map.md`다. SM-01~09 중 **7 통과, 2 미측정**. 작업 가지에서 확인했고 main 병합과 실제 Fold 검증은 별도다.
+승인한 다섯 구성의 구조도를 `/admin/manual/system-map`에 구현했다. 읽기 전용이며 내용 정본은 `manual/system-map.md`다. 2026-09-06 [PR #111](https://github.com/anvideo24/Coreloom/pull/111)이 `main`에 병합됐다(`7185ddd`). PR 타입·시험·빌드 검사는 통과했다. 병합 직후 개발 PC 작업 내용과 원격 main의 차이가 없음을 확인했다. SM-01~09 중 **7 통과, 2 미측정**은 유지하며 실제 Fold 검증을 대신하지 않는다.
 
 검증 코드 커밋: `76e097d918a207f9348d024994a4e41c02b5722f` (코드·규칙·매뉴얼 통합 변경). 이후 변경은 이 확인 기록의 식별 정보뿐이다.
 
