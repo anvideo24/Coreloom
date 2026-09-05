@@ -2593,7 +2593,7 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
 .manual-toc summary { font-size: 0.875rem; font-weight: 700; min-height: 3rem; padding-top: 0.75rem; }
 .manual-toc nav { margin-top: var(--space-2); }
 .manual-toc ol { display: grid; gap: 0.25rem; margin: 0; padding-left: 1.25rem; }
-.manual-toc a { align-items: center; color: var(--ink-secondary); display: flex; font-size: 0.875rem; line-height: 1.5; min-height: 3rem; overflow-wrap: anywhere; }
+.manual-toc a { align-items: center; color: var(--ink-secondary); display: flex; font-size: 0.875rem; line-height: 1.5; min-height: 3rem; word-break: keep-all; overflow-wrap: anywhere; }
 .manual-toc a:hover, .manual-toc a:focus-visible { color: var(--accent-text); }
 .manual-document h2, .manual-document h3, .manual-document h4 { font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 .manual-document p, .manual-document li, .manual-document blockquote { color: var(--ink); line-height: 1.75; margin: 0; }
