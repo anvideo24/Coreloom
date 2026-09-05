@@ -68,8 +68,7 @@ export function AgentsPageClient({
           <p className="auth-eyebrow">CORELOOM / AGENTS</p>
           <h1>AI 에이전트</h1>
           <p>
-            사람 Neon 계정과 다른 시스템 계정으로 이름·목적·지침·모델(구독)·허용 업무·능력을 등록합니다.
-            기록 저장·외부 발송·금액 확정은 기본으로 꺼 두며, 대표가 에이전트마다 켤 수 있습니다. 로그인과 자동 실행은 포함하지 않습니다.
+            함께 일할 에이전트를 고르세요. 구독 모델로 대화하고, 각 에이전트의 일하는 방식과 지침을 관리합니다.
           </p>
         </div>
         <CreateIconButton label="새 에이전트" onClick={openCreate} />
@@ -78,14 +77,14 @@ export function AgentsPageClient({
       <section className="quote-list" aria-label="에이전트 목록">
         <div className="list-heading">
           <div>
-            <p className="setup-code">등록부</p>
-            <h2>시스템 계정</h2>
+            <p className="setup-code">나의 팀</p>
+            <h2>에이전트와 대화하기</h2>
           </div>
           <span>{agents.length}개</span>
         </div>
         {agents.length === 0 ? (
           <div className="empty-state quote-empty-inline">
-            <p>등록된 에이전트가 없습니다. 사람 계정 역할로 넣지 않습니다.</p>
+            <p>첫 에이전트의 이름과 맡길 일을 정해 보세요.</p>
             <button className="auth-submit" onClick={openCreate} type="button">첫 에이전트 만들기</button>
           </div>
         ) : (
@@ -98,7 +97,7 @@ export function AgentsPageClient({
                 <h3>{agent.name}</h3>
                 <p className="form-help">{formatAllowedWork(agent.allowedWork)}</p>
               </div>
-              <strong>{aiAgentStatusLabels[agent.status]}</strong>
+              <strong>{agent.status === "active" ? "대화 · 지침 →" : "이력 보기 →"}</strong>
             </a>
           ))
         )}
@@ -135,7 +134,7 @@ export function AgentsPageClient({
           <label className="quote-form-full">접근 범위<textarea name="accessScope" placeholder="볼 수 있는 고객·프로젝트·자료 범위" required /></label>
           <label className="quote-form-full">
             모델 (구독)
-            <select defaultValue="claude_subscription" name="modelProvider">
+            <select defaultValue="gpt_codex_subscription" name="modelProvider">
               {aiAgentModelProviders.map((provider) => (
                 <option key={provider} value={provider}>{aiAgentModelProviderLabels[provider]}</option>
               ))}
