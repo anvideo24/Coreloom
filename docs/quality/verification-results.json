@@ -571,6 +571,47 @@
       "planVersion": 1,
       "environment": "vitest · jsdom · 실제 화면 컴포넌트 렌더, 브라우저·실기기 아님",
       "note": "절대 수가 3과 2라 칸 하나 차이가 감소율을 크게 흔든다(1칸이면 33%, 반대로 늘면 0%). 목표 달성이지만 표본이 작다는 것을 함께 읽어야 한다. 세는 도구 자체에 시험 9건을 붙였고, 두 경로가 같은 결과를 냈는지 저장 스냅샷으로 대조했다."
+    },
+    {
+      "checkId": "F04-02",
+      "outcome": "pass",
+      "value": "네 사례(승인 없는 확정 시도·시간 초과·같은 요청 중복·서버 오류) 각각에서 공식 결정으로 안 보인다. 채팅 답변만으로는 어떤 기록도 확정이 되지 않는다. 지시문에 「하지 않은 일을 한 것처럼 말하지 마라」를 넣고 그 문장이 실제로 모델에 가는지 함께 쟀다. 오표시 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/agent-status.test.ts",
+        "checkedAt": "2026-09-05T11:37:58Z"
+      },
+      "codeCommit": "9f257ae9b7939b4dc48b1ddb7de7db33c30d9f7f",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수와 라우트 직접 실행, DB 없음",
+      "note": "시험이 진짜 잡는지 확인하려고 판정 조건을 일부러 뒤집어 3건이 실패하는 것을 보고 되돌렸다."
+    },
+    {
+      "checkId": "F04-03",
+      "outcome": "unverified",
+      "value": "확정·반려 각각 저장 후 재조회해 ID·내용·상태·결정 이력이 일치하고, 반려가 나중에 확정으로 뒤집히지 않는다. 다만 계획이 요구한 「서버에 다시 조회」가 아니다 — DB를 쓸 수 없어 도메인 함수와 메모리 저장소로 흉내 냈다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/agent-status.test.ts",
+        "checkedAt": "2026-09-05T11:37:58Z"
+      },
+      "codeCommit": "9f257ae9b7939b4dc48b1ddb7de7db33c30d9f7f",
+      "planVersion": 1,
+      "environment": "vitest · Node · 메모리 저장소로 대체, 실제 DB·감사 기록 없음",
+      "note": "실제 서버 재조회는 개발 DB 접근 승인이 있어야 잰다. 도메인 수준은 통과했다."
+    },
+    {
+      "checkId": "F04-04",
+      "outcome": "pass",
+      "value": "다섯 가지를 쟀다 — 브라우저 연결 끊김이 실행의 중지 신호를 건드리지 않고, 화면을 다시 열어도 실행이 안 멈추며, 실제 중지 클릭은 중지로 기록되고, 다른 사용자와 다른 에이전트는 남의 실행을 못 멈춘다. 누르지 않은 중지의 오표시 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/agent-status.test.ts",
+        "checkedAt": "2026-09-05T11:37:58Z"
+      },
+      "codeCommit": "9f257ae9b7939b4dc48b1ddb7de7db33c30d9f7f",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수와 라우트 직접 실행, DB 없음"
     }
   ]
 }
