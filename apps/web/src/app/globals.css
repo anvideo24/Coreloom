@@ -1745,6 +1745,11 @@ section.empty-state,
   font-size: 1.05rem;
   font-weight: 700;
 }
+
+/* ── 초안 버리기(F02-02) ────────────────────── */
+.draft-discard-confirm { align-items: center; display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.draft-discard-cancel { background: none; border: 0; color: var(--muted); cursor: pointer; font: inherit; font-size: 0.8125rem; min-height: 2.75rem; }
+
 .quote-costing {
   display: grid;
   gap: var(--space-4);
@@ -2575,6 +2580,16 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
 .manual-document th, .manual-document td { border: 1px solid var(--line); padding: 0.5rem 0.75rem; text-align: left; }
 .manual-document th { background: var(--canvas); font-weight: 700; }
 
+/* ── 나가는 길 ─────────────────────────────── */
+/* 좌측 메뉴 맨 아래. 자주 쓰는 것이 아니라 눈에 먼저 들어오면 안 되고, 없으면 못 나간다. */
+.private-drawer-foot { border-top: 1.5px solid color-mix(in srgb, var(--nav-muted), transparent 80%); margin-top: auto; padding-top: var(--space-3); }
+.nav-sign-out { background: none; border: 0; cursor: pointer; font: inherit; text-align: left; width: 100%; }
+.private-sheet-foot { border-top: 1.5px solid color-mix(in srgb, var(--nav-muted), transparent 80%); margin-top: var(--space-3); padding-top: var(--space-3); }
+.private-sheet-foot .nav-sign-out { min-height: 3rem; }
+.sign-out-confirm { display: grid; gap: var(--space-2); }
+.sign-out-cancel { background: none; border: 0; color: var(--nav-muted); cursor: pointer; font: inherit; font-size: 0.8125rem; min-height: 2.75rem; text-align: left; }
+.sign-out-error { color: var(--warning); display: block; font-size: 0.8125rem; padding: 0 var(--space-4); }
+
 /* ── 개선 목표·검증 현황(F07) ────────────────── */
 /* 표·카드 본문은 .manual-document table/th/td 스타일을 그대로 물려받는다 — 여기서는 감싸는 틀만 더한다. */
 .verification-section { display: grid; gap: var(--space-4); }
@@ -2613,6 +2628,8 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
 }
 
 @media (max-width: 39.98rem) {
+  /* 되돌릴 수 없는 것을 묻는 자리다. 손가락으로 눌러 빗나가면 안 된다(Material 48px). */
+  .draft-discard-confirm button, .sign-out-confirm button, .draft-discard-cancel, .sign-out-cancel { min-height: 3rem; }
   .verification-table-wrap { display: none; }
   .verification-cards { display: grid; }
   .verification-link { min-height: 3rem; }

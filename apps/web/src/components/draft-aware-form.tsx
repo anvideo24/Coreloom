@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState } from "react";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import {
@@ -9,6 +9,7 @@ import {
   readFormDraft,
   writeFormDraft,
 } from "@/lib/domain/form-draft";
+import { createSubmissionId } from "@/lib/domain/submission-dedupe";
 
 type DraftAwareFormProps = {
   scopeId: string;
@@ -17,6 +18,22 @@ type DraftAwareFormProps = {
   className?: string;
   children: React.ReactNode;
 };
+
+/**
+ * 폼 안 어디서나(예: 초안 버리기 버튼) "지금 초안이 실제로 남아 있나"와 "버리기"를 쓸 수
+ * 있게 하는 통로(F02-02). `DraftAwareForm`의 `<form>` 밑에 렌더되는 컴포넌트만 값을 받는다.
+ */
+type DraftFormContextValue = {
+  hasDraft: boolean;
+  discardDraft: () => void;
+};
+
+const DraftFormContext = createContext<DraftFormContextValue | null>(null);
+
+/** `DraftAwareForm` 밖에서 쓰면 null — 호출부가 조용히 아무것도 렌더하지 않게 한다. */
+export function useDraftFormContext() {
+  return useContext(DraftFormContext);
+}
 
 function browserDraftStorage() {
   return window.sessionStorage;
@@ -80,6 +97,16 @@ function applyFieldToElement(element: Element | RadioNodeList, value: string) {
 export function DraftAwareForm({ scopeId, formId, action, className, children }: DraftAwareFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const restoredRef = useRef(false);
+  // 이번에 열린 창 하나에서 쓸 제출 식별자(F02-03). 성공한 제출 뒤에만 새 값으로 바꾼다 —
+  // 실패한 시도는 같은 식별자를 유지해, 나중에 서버 쪽 판정이 연결됐을 때 "혹시 서버는 실은
+  // 처리했는데 응답만 실패로 왔다"인 경우에도 재시도가 중복을 만들지 않게 대비해 둔다.
+  const submissionIdRef = useRef(createSubmissionId());
+  // 초안이 실제로 남아 있을 때만 버리기 버튼을 보여주기 위한 상태(F02-02).
+  const [hasDraft, setHasDraft] = useState(false);
+  // 버리기를 누르면 이 값을 올려 children을 통째로 새로 mount한다 — 제어/비제어 입력,
+  // 탭 뒤에 숨은 필드까지 각자의 초기값(대개 빈 값)으로 한 번에 돌아간다. 복원과 반대 방향의
+  // 손질 코드를 따로 만들면 둘이 나중에 어긋난다.
+  const [fieldsResetKey, setFieldsResetKey] = useState(0);
 
   useEffect(() => {
     const form = formRef.current;
@@ -92,7 +119,11 @@ export function DraftAwareForm({ scopeId, formId, action, className, children }:
     } catch {
       /* sessionStorage 접근 불가는 초안 없음과 같다. */
     }
-    if (!fields) return;
+    if (!fields || Object.keys(fields).length === 0) {
+      setHasDraft(false);
+      return;
+    }
+    setHasDraft(true);
 
     const pending = new Set(Object.keys(fields));
     let observer: MutationObserver | null = null;
@@ -131,43 +162,68 @@ export function DraftAwareForm({ scopeId, formId, action, className, children }:
     const form = formRef.current;
     if (!form) return;
     try {
-      writeFormDraft(browserDraftStorage(), {
+      const written = writeFormDraft(browserDraftStorage(), {
         scopeId,
         formId,
         fields: formDataToDraftFields(new FormData(form)),
       });
+      // 다 지우면 writeFormDraft가 스스로 저장소를 비우고 null을 돌려준다 — 그 순간 곧바로
+      // 버리기 버튼도 사라져야 "늘 떠 있어 시끄러운" 상태를 피한다.
+      setHasDraft(!!written);
     } catch {
       /* 비공개 모드 등 */
     }
   }
 
+  function discardDraft() {
+    try {
+      clearFormDraft(browserDraftStorage(), scopeId, formId);
+    } catch {
+      /* 비공개 모드 등 — 지울 저장소가 없으면 지운 것과 같다. */
+    }
+    setHasDraft(false);
+    setFieldsResetKey((key) => key + 1);
+  }
+
   return (
-    <form
-      action={async (formData) => {
-        try {
-          await action(formData);
+    <DraftFormContext.Provider value={{ hasDraft, discardDraft }}>
+      <form
+        action={async (formData) => {
+          formData.set("submissionId", submissionIdRef.current);
           try {
-            clearFormDraft(browserDraftStorage(), scopeId, formId);
-          } catch {
-            /* ignore */
-          }
-        } catch (error) {
-          if (isRedirectError(error)) {
+            await action(formData);
+            // 성공했다. 다음 제출은 다른 시도이니 식별자를 새로 바꾼다.
+            submissionIdRef.current = createSubmissionId();
             try {
               clearFormDraft(browserDraftStorage(), scopeId, formId);
+              setHasDraft(false);
             } catch {
               /* ignore */
             }
+          } catch (error) {
+            if (isRedirectError(error)) {
+              // 이 앱의 저장 액션은 성공하면 redirect()로 끝난다 — 이것도 성공이다.
+              submissionIdRef.current = createSubmissionId();
+              try {
+                clearFormDraft(browserDraftStorage(), scopeId, formId);
+                setHasDraft(false);
+              } catch {
+                /* ignore */
+              }
+            }
+            // 리다이렉트가 아닌 실패는 식별자를 그대로 둔다. 서버 쪽 판정이 나중에 연결되면,
+            // 같은 시도를 다시 보낼 때 그 식별자로 "이미 처리했나"를 물을 수 있어야 하기
+            // 때문이다(예: 응답만 유실되고 실제로는 처리된 경우).
+            throw error;
           }
-          throw error;
-        }
-      }}
-      className={className}
-      onChange={persist}
-      onInput={persist}
-      ref={formRef}
-    >
-      {children}
-    </form>
+        }}
+        className={className}
+        onChange={persist}
+        onInput={persist}
+        ref={formRef}
+      >
+        <Fragment key={fieldsResetKey}>{children}</Fragment>
+      </form>
+    </DraftFormContext.Provider>
   );
 }
