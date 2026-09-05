@@ -7,6 +7,13 @@
       "ref": "claude/f07-verification-view",
       "recordedAt": "2026-09-05",
       "note": "조회 화면 최소 구현. main 병합·사용 환경 반영 전."
+    },
+    {
+      "featureId": "F07",
+      "stage": "on-main",
+      "ref": "b0ca699643bcebb3014224ed633fd5baf35a9431",
+      "recordedAt": "2026-09-05",
+      "note": "PR #89 병합. 사용 환경(대표 PC 로그인 화면) 확인 전."
     }
   ],
   "results": [
