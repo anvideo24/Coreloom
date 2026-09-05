@@ -34,6 +34,16 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("agent conversation interactions", () => {
+  it("clears the composer immediately and provides user message copy during generation", async () => {
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation((url, init) => init?.method === "POST" ? new Promise(() => {}) : originalFetch(url, init));
+    fireEvent.change(screen.getByLabelText("메시지"), { target: { value: "보낸 글" } });
+    fireEvent.click(screen.getByLabelText("메시지 보내기"));
+    expect((screen.getByLabelText("메시지") as HTMLTextAreaElement).value).toBe("");
+    expect(screen.getByRole("button", { name: "메시지 복사" })).toBeTruthy();
+  });
   it("pastes multiple images and preserves attachments and draft when sending fails", async () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");

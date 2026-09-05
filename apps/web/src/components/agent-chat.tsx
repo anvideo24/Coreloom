@@ -10,6 +10,7 @@ import { type AiAgentModelProvider } from "@/lib/domain/agents";
 import { AgentAccessSettings } from "@/components/agent-access-settings";
 
 export type ChatAgentItem = { id: string; name: string; purpose: string; modelProvider: AiAgentModelProvider };
+type PendingInput = { draft: string; attachments: string[]; requestId: string };
 
 export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; active?: boolean }) {
   const pathname = usePathname();
@@ -38,7 +39,38 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
   const fileRef = useRef<HTMLInputElement>(null);
   const followRef = useRef(true);
   const requestRef = useRef<string | undefined>(undefined);
+  const inFlightRef = useRef<PendingInput | undefined>(undefined);
   const storageKey = `coreloom-chat:${agent.id}`;
+
+  async function recover(input: PendingInput, signal: AbortSignal) {
+    const deadline = Date.now() + 540_000;
+    while (Date.now() < deadline) {
+      signal.throwIfAborted();
+      const response = await fetch(`/api/agents/chat?agentId=${agent.id}&requestId=${input.requestId}`, { signal });
+      if (!response.ok) throw new Error("연결 상태를 확인하지 못했습니다. 다시 열어 결과를 확인해 주세요.");
+      const data = await response.json();
+      if (data.threadId) { setThreadId(data.threadId); setThreads(data.threads); setMessages(data.messages); }
+      const reply = data.messages?.find((row: ChatMessage & { clientRequestId?: string }) => row.role === "assistant" && row.clientRequestId === input.requestId);
+      if (!data.running) {
+        if (reply?.status === "complete") { requestRef.current = undefined; inFlightRef.current = undefined; setError(""); return; }
+        throw new Error(reply?.body || "요청이 완료되지 않았습니다. 입력을 복원했으니 다시 보내 주세요.");
+      }
+      setError("연결을 복구하며 진행 중인 답변을 확인하고 있습니다.");
+      await new Promise<void>((resolve, reject) => {
+        const stop = () => { clearTimeout(timer); reject(new Error("연결 확인 종료")); };
+        const timer = setTimeout(() => { signal.removeEventListener("abort", stop); resolve(); }, 2000);
+        signal.addEventListener("abort", stop, { once: true });
+      });
+    }
+    throw new Error("응답 확인 시간이 초과됐습니다. 대화 이력을 확인해 주세요.");
+  }
+  async function resume(input: PendingInput) {
+    const controller = new AbortController(); abortRef.current = controller; setPending(true);
+    try { await recover(input, controller.signal); }
+    catch (caught) {
+      if (!controller.signal.aborted) { inFlightRef.current = undefined; setDraft(input.draft); setAttachments(input.attachments); setError(caught instanceof Error ? caught.message : "대화 복구에 실패했습니다."); }
+    } finally { setPending(false); abortRef.current = null; }
+  }
 
   async function load(id?: string, resetDraft = false) {
     const serial = ++selectionRef.current;
@@ -60,7 +92,7 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
 
   useEffect(() => {
     const controller = new AbortController();
-    let restored: { threadId?: string; model?: string; draft?: string; attachments?: string[]; requestId?: string } = {};
+    let restored: { threadId?: string; model?: string; draft?: string; attachments?: string[]; requestId?: string; inFlight?: PendingInput } = {};
     let stored = false;
     try { const raw = sessionStorage.getItem(storageKey); stored = !!raw; restored = JSON.parse(raw || "{}"); } catch { /* Storage is optional. */ }
     void fetch(`/api/agents/chat?agentId=${agent.id}${restored.threadId ? `&threadId=${encodeURIComponent(restored.threadId)}` : stored ? "&fresh=1" : ""}`, { signal: controller.signal })
@@ -73,6 +105,12 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
         if (typeof restored.draft === "string") setDraft(restored.draft.slice(0, 8000));
         if (Array.isArray(restored.attachments)) setAttachments(restored.attachments.filter((id) => typeof id === "string").slice(0, 6));
         readyRef.current = true;
+        if (restored.inFlight?.requestId) {
+          inFlightRef.current = restored.inFlight;
+          requestRef.current = restored.inFlight.requestId;
+          setDraft(""); setAttachments([]);
+          void resume(restored.inFlight);
+        }
       } })
       .catch(() => { if (!controller.signal.aborted) setError("대화 이력을 불러오지 못했습니다. 다시 열어 주세요."); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
@@ -83,8 +121,8 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
   }, []);
   useEffect(() => {
     if (!readyRef.current || loading) return;
-    try { sessionStorage.setItem(storageKey, JSON.stringify({ threadId, model, draft, attachments, requestId: requestRef.current })); } catch { /* Private browsing may disable storage. */ }
-  }, [storageKey, threadId, model, draft, attachments, loading]);
+    try { sessionStorage.setItem(storageKey, JSON.stringify({ threadId, model, draft, attachments, requestId: requestRef.current, inFlight: inFlightRef.current })); } catch { /* Private browsing may disable storage. */ }
+  }, [storageKey, threadId, model, draft, attachments, loading, pending]);
   useEffect(() => {
     if (!active || !readyRef.current || abortRef.current) return;
     const frame = requestAnimationFrame(() => {
@@ -107,6 +145,14 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
   }, [messages, pending]);
 
   function imageUrl(id: string) { return `/api/agents/chat/images?agentId=${agent.id}&id=${encodeURIComponent(id)}`; }
+  async function stopResponse() {
+    if (!requestRef.current) return;
+    try {
+      const response = await fetch("/api/agents/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "stop", agentId: agent.id, requestId: requestRef.current }) });
+      if (!response.ok) throw new Error();
+      setError("중지 요청을 보냈습니다. 서버 처리 결과를 확인합니다.");
+    } catch { setError("중지 요청이 전달되지 않았습니다. 연결을 확인해 주세요."); }
+  }
   async function addImages(files: File[]) {
     if (uploadRef.current || abortRef.current || loading) return;
     if (files.length + attachments.length > 6) { setError("이미지는 한 번에 최대 6장입니다."); return; }
@@ -134,10 +180,12 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
     if (abortRef.current || uploadRef.current || pending || loading || (!draft.trim() && !attachments.length)) return;
     const text = draft.trim() || "첨부 이미지를 확인해 주세요.";
     const requestId = requestRef.current ||= crypto.randomUUID();
-    try { sessionStorage.setItem(storageKey, JSON.stringify({ threadId, model, draft, attachments, requestId })); } catch { /* Optional cache. */ }
+    const input = { draft, attachments, requestId };
+    inFlightRef.current = input;
+    try { sessionStorage.setItem(storageKey, JSON.stringify({ threadId, model, draft: "", attachments: [], requestId, inFlight: input })); } catch { /* Optional cache. */ }
     const controller = new AbortController();
     abortRef.current = controller;
-    setPending(true); setError(""); followRef.current = true;
+    setPending(true); setError(""); setDraft(""); setAttachments([]); followRef.current = true;
     const optimisticId = crypto.randomUUID();
     setMessages((rows) => [...rows, { id: optimisticId, role: "user", body: text, model, status: "complete", attachments }]);
     let received = false;
@@ -156,7 +204,7 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
         for (const line of lines.filter(Boolean)) {
           const event = JSON.parse(line);
           if (event.type === "thread") { currentThread = event.id; setThreadId(event.id); }
-          if (event.type === "message") { received = true; receivedMessageId = event.message.id; if (!followRef.current) setNewReply(true); requestRef.current = undefined; setDraft(""); setAttachments([]); setMessages((rows) => rows.some((row) => row.id === event.message.id) ? rows : [...rows, event.message]); }
+          if (event.type === "message") { received = true; receivedMessageId = event.message.id; if (!followRef.current) setNewReply(true); requestRef.current = undefined; inFlightRef.current = undefined; setDraft(""); setAttachments([]); setMessages((rows) => rows.some((row) => row.id === event.message.id) ? rows : [...rows, event.message]); }
           if (event.type === "error") throw new Error(event.error);
         }
         if (done) break;
@@ -166,8 +214,16 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
       if (history.threads) setThreads(history.threads);
       if (history.messages?.some((row: ChatMessage) => row.id === receivedMessageId)) setMessages(history.messages);
     } catch (caught) {
-      setError(controller.signal.aborted ? "응답을 중지했습니다." : caught instanceof Error ? caught.message : "응답에 실패했습니다.");
-      if (!received) setMessages((rows) => rows.filter((row) => row.id !== optimisticId));
+      if (!received && !controller.signal.aborted) {
+        try { await recover(input, controller.signal); received = true; }
+        catch {
+          if (!controller.signal.aborted) {
+            inFlightRef.current = undefined; setDraft(input.draft); setAttachments(input.attachments);
+            setError(caught instanceof Error ? caught.message : "연결이 끊겨 입력을 복원했습니다.");
+            setMessages((rows) => rows.filter((row) => row.id !== optimisticId));
+          }
+        }
+      }
     } finally { setPending(false); abortRef.current = null; }
   }
 
@@ -193,7 +249,7 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
       <AgentAccessSettings agentId={agent.id} />
     </div> : view === "history" ? <div className="agent-chat-scroll"><h3>이전 대화</h3>{threads.length ? threads.map((thread) => <button className="agent-chat-history-item" type="button" key={thread.id} onClick={() => void load(thread.id, true)}><strong>{thread.title}</strong><span>{chatModels.find((m) => m.id === thread.model)?.label || thread.model}</span></button>) : <p className="form-help">첫 메시지를 보내면 대화가 여기에 남습니다.</p>}</div> : <>
       <div className="agent-chat-scroll" ref={scrollRef} onScroll={(event) => { const node = event.currentTarget; followRef.current = node.scrollHeight - node.scrollTop - node.clientHeight < 80; if (followRef.current) setNewReply(false); }} role="log" aria-label="대화 메시지" aria-live="polite" aria-busy={pending}>
-        {loading ? <p role="status">대화를 불러오는 중…</p> : messages.length === 0 ? <div className="agent-chat-welcome"><span className="agent-chat-avatar" aria-hidden="true">✳</span><h2>무엇을 함께 할까요?</h2><p>{agent.purpose}</p><div className="agent-chat-prompts">{["생각을 정리하고 싶어요", "업무 초안을 같이 작성해요", "부족한 정보를 먼저 질문해 주세요"].map((text) => <button type="button" key={text} onClick={() => { requestRef.current = undefined; setDraft(text); }}>{text}</button>)}</div></div> : messages.map((message) => <article className={`agent-chat-message is-${message.role}`} key={message.id}><span className="agent-chat-message-label">{message.role === "user" ? "나" : agent.name}</span><div>{message.body}</div><div className="agent-chat-attachments">{message.attachments?.map((id, index) => <a key={id} href={imageUrl(id)} target="_blank" rel="noreferrer"><Image unoptimized width={96} height={96} src={imageUrl(id)} alt={`보낸 이미지 ${index + 1}`} /></a>)}</div>{message.role === "assistant" && message.status === "complete" ? <button type="button" className="agent-chat-copy" onClick={() => { void navigator.clipboard.writeText(message.body).then(() => setCopied(message.id)).catch(() => setError("복사하지 못했습니다.")); }}>{copied === message.id ? "복사됨" : "답변 복사"}</button> : null}</article>)}
+        {loading ? <p role="status">대화를 불러오는 중…</p> : messages.length === 0 ? <div className="agent-chat-welcome"><span className="agent-chat-avatar" aria-hidden="true">✳</span><h2>무엇을 함께 할까요?</h2><p>{agent.purpose}</p><div className="agent-chat-prompts">{["생각을 정리하고 싶어요", "업무 초안을 같이 작성해요", "부족한 정보를 먼저 질문해 주세요"].map((text) => <button type="button" key={text} onClick={() => { requestRef.current = undefined; inFlightRef.current = undefined; setDraft(text); }}>{text}</button>)}</div></div> : messages.map((message) => <article className={`agent-chat-message is-${message.role}`} key={message.id}><span className="agent-chat-message-label">{message.role === "user" ? "나" : agent.name}</span><div>{message.body}</div><div className="agent-chat-attachments">{message.attachments?.map((id, index) => <a key={id} href={imageUrl(id)} target="_blank" rel="noreferrer"><Image unoptimized width={96} height={96} src={imageUrl(id)} alt={`보낸 이미지 ${index + 1}`} /></a>)}</div>{message.body ? <button type="button" className="agent-chat-copy" onClick={() => { void navigator.clipboard.writeText(message.body).then(() => setCopied(message.id)).catch(() => setError("복사하지 못했습니다.")); }}>{copied === message.id ? "복사됨" : message.role === "user" ? "메시지 복사" : "답변 복사"}</button> : null}</article>)}
         {pending ? <p className="agent-chat-waiting" role="status">답변을 생각하고 있어요…</p> : null}
       </div>
       {newReply ? <button type="button" className="agent-chat-latest" onClick={() => { followRef.current = true; setNewReply(false); scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" }); }}>새 답변 보기 ↓</button> : null}
@@ -203,7 +259,7 @@ export function AgentChat({ agent, active = true }: { agent: ChatAgentItem; acti
         {uploading ? <p role="status">이미지를 올리는 중…</p> : null}
         <div className="agent-chat-input-shell"><textarea aria-label="메시지" disabled={pending || loading} maxLength={8000} rows={3} placeholder={`${agent.name}에게 메시지 보내기`} value={draft} onChange={(e) => { requestRef.current = undefined; setDraft(e.target.value); }} onPaste={(event) => { const files = Array.from(event.clipboardData.files); if (files.length) { event.preventDefault(); void addImages(files); } }} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing && !window.matchMedia?.("(pointer: coarse)").matches) { e.preventDefault(); void send(); } }} />
           <button type="button" className="agent-chat-attach" disabled={pending || loading || uploading || attachments.length >= 6} onClick={() => fileRef.current?.click()}>＋ 이미지</button>
-          <div className="agent-chat-input-tools"><select aria-label="대화 모델" value={model} disabled={pending} onChange={(e) => setModel(e.target.value)}>{chatModels.map((item) => <option key={item.id} value={item.id}>{item.label}{status[item.provider] === false ? " · 연결 필요" : ""}</option>)}</select>{pending ? <button type="button" aria-label="응답 중지" onClick={() => abortRef.current?.abort()}>■</button> : <button type="submit" aria-label="메시지 보내기" disabled={(!draft.trim() && !attachments.length) || loading || uploading}>↑</button>}</div>
+          <div className="agent-chat-input-tools"><select aria-label="대화 모델" value={model} disabled={pending} onChange={(e) => setModel(e.target.value)}>{chatModels.map((item) => <option key={item.id} value={item.id}>{item.label}{status[item.provider] === false ? " · 연결 필요" : ""}</option>)}</select>{pending ? <button type="button" aria-label="응답 중지" onClick={() => void stopResponse()}>■</button> : <button type="submit" aria-label="메시지 보내기" disabled={(!draft.trim() && !attachments.length) || loading || uploading}>↑</button>}</div>
         </div>
         <p className="agent-chat-caption">{agentPanelContextTitle(pathname)} · 구독 한도 사용 · 지침 설정에서 허용한 자료만 조회</p>
       </form>

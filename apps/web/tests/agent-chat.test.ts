@@ -30,6 +30,23 @@ import { GET, POST } from "@/app/api/agents/chat/route";
 
 describe("chat route authorization", () => {
   beforeEach(() => vi.clearAllMocks());
+  it("does not cancel generation when the browser connection disappears", async () => {
+    vi.mocked(founderSession).mockResolvedValue({ state: "authorized", founder: { id: "test", email: "" } });
+    let signal: AbortSignal | undefined;
+    let finish!: () => void;
+    vi.mocked(sendAgentChat).mockImplementation(async (_actor, _input, currentSignal) => {
+      signal = currentSignal;
+      await new Promise<void>((resolve) => { finish = resolve; });
+      return { id: "reply", role: "assistant", body: "ok", model: "gpt-5.4-mini", status: "complete" } as Awaited<ReturnType<typeof sendAgentChat>>;
+    });
+    const connection = new AbortController();
+    const response = await POST(new Request("http://localhost/api/agents/chat", { method: "POST", signal: connection.signal, headers: { host: "localhost", origin: "http://localhost", "content-type": "application/json" }, body: JSON.stringify({ agentId: "00000000-0000-4000-8000-000000000001", requestId: "00000000-0000-4000-8000-000000000002", message: "test", model: "gpt-5.4-mini", pathname: "/agents" }) }));
+    connection.abort();
+    const aborted = signal?.aborted;
+    finish();
+    await response.body?.cancel();
+    expect(aborted).toBe(false);
+  });
   it("blocks logged-out users before querying conversations", async () => {
     vi.mocked(founderSession).mockResolvedValue({ state: "signed-out" });
     expect((await GET(new Request("http://localhost/api/agents/chat"))).status).toBe(401);
