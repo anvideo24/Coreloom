@@ -81,11 +81,14 @@ function WonAmountInput({
   onValueChange,
   "aria-label": ariaLabel,
   className,
+  name,
 }: {
   value: number;
   onValueChange: (value: number) => void;
   "aria-label"?: string;
   className?: string;
+  /** 초안 복원(F02)이 값을 찾을 수 있게 하는 이름표. 실제 제출은 packagesJson으로 간다. */
+  name?: string;
 }) {
   return (
     <input
@@ -93,6 +96,7 @@ function WonAmountInput({
       autoComplete="off"
       className={className}
       inputMode="numeric"
+      name={name}
       onChange={(event) => onValueChange(parseWonDigits(event.target.value))}
       type="text"
       value={formatWonDigits(value)}
@@ -416,6 +420,7 @@ export function QuoteCostingComposer({
           견적 주제
           <input
             aria-label="견적 주제"
+            data-draft-field="title"
             onChange={(event) => setTitle(event.target.value)}
             placeholder={clientName.trim() ? `${clientName.trim()} · 견적` : "짧은 견적 주제"}
             value={title}
@@ -425,6 +430,7 @@ export function QuoteCostingComposer({
           담당자
           <select
             aria-label="담당자"
+            data-draft-field="clientContactId"
             onChange={(event) => setClientContactId(event.target.value)}
             value={clientContactId}
           >
@@ -441,6 +447,7 @@ export function QuoteCostingComposer({
           발행일
           <input
             aria-label="발행일"
+            data-draft-field="issuedOn"
             onChange={(event) => {
               const next = event.target.value;
               setIssuedOn(next);
@@ -460,6 +467,7 @@ export function QuoteCostingComposer({
           유효기간
           <input
             aria-label="유효기간"
+            data-draft-field="validUntil"
             onChange={(event) => setValidUntil(event.target.value)}
             type="date"
             value={validUntil}
@@ -469,6 +477,7 @@ export function QuoteCostingComposer({
           부가세
           <select
             aria-label="부가세"
+            data-draft-field="vatMode"
             onChange={(event) => setVatMode(event.target.value as QuoteVatMode)}
             value={vatMode}
             {...(controlledVatMode != null ? { name: "vatMode" } : {})}
@@ -582,6 +591,7 @@ export function QuoteCostingComposer({
                           <label className="quote-package-title">
                             작업명
                             <input
+                              name={`package-${index}-title`}
                               onChange={(event) => updatePackage(index, { title: event.target.value })}
                               placeholder={`작업 패키지 ${index + 1}`}
                               required={tab === "internal"}
@@ -617,6 +627,7 @@ export function QuoteCostingComposer({
                             단가
                             <WonAmountInput
                               aria-label="단가"
+                              name={`package-${index}-monthlyRate`}
                               onValueChange={(monthlyRate) =>
                                 updatePackage(index, { monthlyRate, amountLocked: false })
                               }
@@ -676,6 +687,7 @@ export function QuoteCostingComposer({
                               aria-label="고객 문서 수량"
                               inputMode="numeric"
                               min={1}
+                              name={`package-${index}-quantity`}
                               onChange={(event) =>
                                 updatePackage(index, {
                                   quantity: Math.max(1, Math.round(Number(event.target.value) || 1)),

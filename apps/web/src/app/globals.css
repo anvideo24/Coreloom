@@ -1439,6 +1439,9 @@ html[data-create-panel-open="true"] .pwa-install-layer {
 .dash-vital p { color: var(--muted); font-size: 0.75rem; font-weight: 600; margin: 0; }
 .dash-vital strong { font-size: 1.75rem; font-weight: 800; letter-spacing: -0.04em; }
 .dash-vital span { color: var(--muted); font-size: 0.75rem; }
+/* 기록 없음은 "정상"이 아니다 — 판단할 데이터가 없다는 뜻이라 따로 옅게 표시한다(F05-04). */
+.dash-vital[data-state="empty"] strong { color: var(--muted); }
+.dash-vital[data-state="watch"] strong { color: var(--warning); }
 .dash-pulse { color: var(--accent); height: 1.5rem; width: 4.5rem; }
 .dash-main {
   display: grid;

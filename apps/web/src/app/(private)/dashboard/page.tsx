@@ -136,13 +136,21 @@ export default async function DashboardPage() {
           <p>미분류</p>
           <strong>{dashboard.vitals.unclassified}</strong>
         </div>
-        <div className="dash-vital">
+        <div className="dash-vital" data-state={dashboard.vitals.cashRhythm}>
           <p>현금 리듬</p>
-          <strong>{dashboard.vitals.cashRhythm === "watch" ? "주의" : "정상"}</strong>
+          <strong>
+            {dashboard.vitals.cashRhythm === "watch" ? "주의" : dashboard.vitals.cashRhythm === "empty" ? "기록 없음" : "정상"}
+          </strong>
           <svg aria-hidden="true" className="dash-pulse" viewBox="0 0 72 24">
             <polyline fill="none" points="0,14 10,14 14,6 20,20 26,12 36,12 40,4 48,18 54,12 72,12" stroke="currentColor" strokeWidth="2" />
           </svg>
-          <span>{dashboard.vitals.cashRhythm === "watch" ? "기한이 지난 입금 또는 업무가 있습니다" : "기한이 지난 입금·업무가 없습니다"}</span>
+          <span>
+            {dashboard.vitals.cashRhythm === "watch"
+              ? "기한이 지난 입금 또는 업무가 있습니다"
+              : dashboard.vitals.cashRhythm === "empty"
+                ? "등록된 입금·업무 기록이 아직 없습니다"
+                : "기한이 지난 입금·업무가 없습니다"}
+          </span>
         </div>
       </section>
 

@@ -117,6 +117,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       body: item.body,
       clientName: item.clientName,
       projectName: item.projectName,
+      projectId: item.projectId,
     })),
     projects: clientsProjects.projects.map((item) => ({
       id: item.id,
@@ -142,6 +143,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       status: item.status,
       clientName: item.clientName,
       projectName: item.projectName,
+      projectId: item.projectId,
     })),
     recentDecisions: recentDecisions.map((item) => ({
       id: item.id,
