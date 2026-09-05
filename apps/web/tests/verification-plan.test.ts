@@ -54,9 +54,11 @@ describe("parseVerificationPlan — 실제 계획서", () => {
 });
 
 describe("parseVerificationResults — 실제 결과 파일", () => {
-  it("파싱에 성공하고 결과 4건을 읽으며 F05-01은 fail이다", () => {
+  it("파싱에 성공하고 기준 측정에서 재현된 실패 4건이 들어 있으며 F05-01은 fail이다", () => {
     const file = parseVerificationResults(readResultsJson());
-    expect(file.results).toHaveLength(4);
+    // 결과 파일은 덧붙이기만 하는 파일이라 총 건수를 못 박지 않는다. 처음 넣은 실패 4건이 남아 있는지만 본다.
+    const baselineFailures = file.results.filter((result) => result.codeCommit.startsWith("866bb30") && result.outcome === "fail");
+    expect(baselineFailures.map((result) => result.checkId)).toEqual(["F02-01", "F05-01", "F05-02", "F05-03"]);
     const f0501 = file.results.find((result) => result.checkId === "F05-01");
     expect(f0501?.outcome).toBe("fail");
   });

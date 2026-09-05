@@ -65,6 +65,73 @@
       "planVersion": 1,
       "environment": "도메인 함수 직접 실행, 가상 데이터, DB 없음",
       "note": "기준 측정 기록에 시각이 없어 날짜만 적음."
+    },
+    {
+      "checkId": "F07-02",
+      "outcome": "pass",
+      "value": "계획서 검사 ID 28개 = 화면(PC 표·좁은 화면 카드) 28개. 결과 없는 검사도 줄로 남음.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/verification-integration.test.tsx",
+        "checkedAt": "2026-09-05T08:06:55Z"
+      },
+      "codeCommit": "a85c38aca38580b0b8d0b9d29947825d86c1d640",
+      "planVersion": 1,
+      "environment": "vitest 4.1.11 · Node 22 · 정적 렌더(renderToStaticMarkup), 브라우저·로그인 없음"
+    },
+    {
+      "checkId": "F07-03",
+      "outcome": "unverified",
+      "value": "5사례 중 4사례 자동 통과(결과 없음·실패·증거 없음·다른 계획 버전은 통과로 안 셈). 「다른 환경」은 자동 판정 규칙이 없어 환경을 그대로 표시하고 사람이 본다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/verification-plan.test.ts",
+        "checkedAt": "2026-09-05T08:06:55Z"
+      },
+      "codeCommit": "a85c38aca38580b0b8d0b9d29947825d86c1d640",
+      "planVersion": 1,
+      "environment": "vitest 4.1.11 · Node 22 · 정적 렌더(renderToStaticMarkup), 브라우저·로그인 없음",
+      "note": "「다른 환경」을 자동으로 판정하려면 검사마다 필요한 환경(예: 실제 휴대폰)을 계획에 적어야 한다. 그 규칙이 정해지면 재검증."
+    },
+    {
+      "checkId": "F07-04",
+      "outcome": "pass",
+      "value": "통과(커밋 A)→관련 파일 변경→재검증 필요→새 통과(커밋 B)→통과, 이력 2건 최신 먼저 보존(가상 데이터). 실제 저장소에서 HEAD 기준 변경 0건·없는 커밋은 null.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/verification-plan.test.ts",
+        "checkedAt": "2026-09-05T08:06:55Z"
+      },
+      "codeCommit": "a85c38aca38580b0b8d0b9d29947825d86c1d640",
+      "planVersion": 1,
+      "environment": "vitest 4.1.11 · Node 22 · 정적 렌더(renderToStaticMarkup), 브라우저·로그인 없음"
+    },
+    {
+      "checkId": "F07-05",
+      "outcome": "unverified",
+      "value": "공개 산출물 4파일(계획서·결과 파일·기준 측정·인계)에서 이메일·tailnet 주소·IPv4·연결 문자열·github 아닌 절대 주소 0건 자동 통과. 무권한 열람 차단은 기존 매뉴얼 화면과 같은 관문이지만 로그아웃 상태로 직접 열어 본 확인은 대표 대기.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/verification-integration.test.tsx",
+        "checkedAt": "2026-09-05T08:06:55Z"
+      },
+      "codeCommit": "a85c38aca38580b0b8d0b9d29947825d86c1d640",
+      "planVersion": 1,
+      "environment": "vitest 4.1.11 · Node 22 · 정적 렌더(renderToStaticMarkup), 브라우저·로그인 없음"
+    },
+    {
+      "checkId": "F07-06",
+      "outcome": "unverified",
+      "value": "실제 계획·결과로 정적 렌더한 목록·상세를 뷰포트 360·840·1280px에서 측정: 가로 넘침 0, 링크 높이 휴대폰 48px·PC 24px 이상, 배지 색은 제품 토큰. 로그인한 진짜 화면도, 실제 폴드 기기도 아니다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "manual/CHANGELOG.md",
+        "checkedAt": "2026-09-05T08:06:55Z",
+        "by": "Claude(Fable 5.1)"
+      },
+      "codeCommit": "a85c38aca38580b0b8d0b9d29947825d86c1d640",
+      "planVersion": 1,
+      "environment": "Chromium(Playwright) 정적 HTML, 뷰포트 360/840/1280, 실기기 아님"
     }
   ]
 }
