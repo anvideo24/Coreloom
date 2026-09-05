@@ -506,15 +506,6 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
     transform: translateY(0);
     visibility: visible;
   }
-  .agent-panel {
-    border-radius: 1.25rem 1.25rem 0 0;
-    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
-    height: min(92vh, 52rem);
-    left: 0;
-    position: absolute;
-    right: 0;
-    width: auto;
-  }
   .agent-panel-toggle {
     bottom: calc(4.1rem + env(safe-area-inset-bottom, 0px));
     right: var(--space-4);
@@ -712,6 +703,9 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   pointer-events: auto;
   transform: translateX(0);
 }
+.agent-panel-backdrop {
+  display: none;
+}
 .agent-panel {
   background: var(--surface);
   border-left: 1px solid var(--line);
@@ -723,6 +717,69 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   min-height: 0;
   width: var(--agent-panel-width);
 }
+
+@media (max-width: 39.98rem) {
+  .agent-panel-layer {
+    width: 100%;
+  }
+  .agent-panel-backdrop {
+    background: rgb(28 25 22 / 35%);
+    border: 0;
+    cursor: pointer;
+    display: block;
+    inset: 0;
+    position: absolute;
+  }
+  .agent-panel {
+    /* 탭바·세이프에어리어 사이에 고정 — 짧은 폴드 커버에서도 헤더(닫기)가 화면 안에 남는다 */
+    border-left: 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 32px rgb(28 25 22 / 14%);
+    height: auto;
+    left: 0;
+    max-height: none;
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    top: max(0.35rem, env(safe-area-inset-top, 0px));
+    width: auto;
+    z-index: 1;
+  }
+  .agent-panel-icon-button {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+  .agent-panel-head {
+    background: var(--surface);
+    padding-top: 0.65rem;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .agent-panel-head-actions {
+    flex-shrink: 0;
+  }
+  .agent-panel-picker-button {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .agent-panel-picker-button-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .agent-panel-body {
+    padding: var(--space-3) var(--space-3) var(--space-2);
+  }
+  .agent-panel-composer {
+    padding: 0.4rem 0.65rem 0.55rem;
+  }
+  .agent-panel-model select {
+    max-width: 9.5rem;
+  }
+}
+
 .agent-panel-head {
   align-items: center;
   border-bottom: 1px solid var(--line);

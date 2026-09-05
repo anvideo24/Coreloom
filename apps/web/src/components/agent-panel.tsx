@@ -163,6 +163,15 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
       </button>
 
       <div className={open ? "agent-panel-layer is-open" : "agent-panel-layer"} inert={!open}>
+        <button
+          aria-label="에이전트 패널 닫기"
+          className="agent-panel-backdrop"
+          onClick={() => {
+            setPickerOpen(false);
+            setOpen(false);
+          }}
+          type="button"
+        />
         <aside aria-labelledby={titleId} className="agent-panel" id="agent-panel">
           <div className="agent-panel-head">
             <div className="agent-panel-picker">
@@ -173,7 +182,9 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
                 onClick={() => setPickerOpen((value) => !value)}
                 type="button"
               >
-                {selected?.name ?? "에이전트 선택"}
+                <span className="agent-panel-picker-button-label">
+                  {selected?.name ?? "에이전트 선택"}
+                </span>
                 <span aria-hidden="true">▾</span>
               </button>
               {pickerOpen ? (
@@ -218,7 +229,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
                 onClick={() => setOpen(false)}
                 type="button"
               >
-                »
+                ×
               </button>
             </div>
           </div>
