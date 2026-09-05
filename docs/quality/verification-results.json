@@ -70,6 +70,20 @@
       "ref": "8cdb2456ad42d72b07d95dffcb7ffba8e86e1b92",
       "recordedAt": "2026-09-05",
       "note": "PR #93 병합. F03-01·02 사람 측정 전."
+    },
+    {
+      "featureId": "F05",
+      "stage": "in-progress",
+      "ref": "claude/f05-f02-coverage",
+      "recordedAt": "2026-09-05",
+      "note": "정확성 결함 3건 수리. main 병합 전."
+    },
+    {
+      "featureId": "F02",
+      "stage": "in-progress",
+      "ref": "claude/f05-f02-coverage",
+      "recordedAt": "2026-09-05",
+      "note": "복원 결함 3건 수리. 실기기 8조합 측정 전. main 병합 전."
     }
   ],
   "results": [
@@ -424,6 +438,107 @@
       "planVersion": 1,
       "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
       "note": "앞선 통과 줄을 정정한다. 로그아웃 시 초안이 남는지 확인이 남았다."
+    },
+    {
+      "checkId": "F05-01",
+      "outcome": "pass",
+      "value": "말일 5종을 고정 fixture로 쟀다 — 평년 2월 28일, 윤년 2월 29일, 30일 말일, 31일 말일, 연도 전환(12월 31일과 1월 1일이 각각 제 달에만 잡힘). 각 경우 월 예정 합계가 입력 금액과 정확히 같고 마지막 주 구간의 끝이 실제 말일이다. 오차 0원.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T10:44:23Z"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F05-02",
+      "outcome": "pass",
+      "value": "예정·확인 두 상태 × 청구월=예정월·청구월≠예정월 네 조합을 쟀다. 상태 값의 뜻(scheduled=예정, deposited=입금 확인)을 시험 파일 머리에 고정했다. 확인된 건이 예정 합계에 섞이던 결함을 찾아 고쳤다. 분류 오류 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T10:44:23Z"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F05-03",
+      "outcome": "pass",
+      "value": "같은 고객사의 두 프로젝트와 이름만 같은 다른 회사 사례를 projectId 정답으로 대조했다. 다음 행동이 고객사 이름 문자열로 매칭되던 결함을 찾아 projectId 기준으로 고쳤다. 프로젝트에 연결되지 않은 항목은 어느 카드에도 안 붙는다. 혼입 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T10:44:23Z"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F05-04",
+      "outcome": "pass",
+      "value": "기록 전무·기록 있고 연체 없음·연체 있음 세 상태가 서로 다른 값과 문구로 갈린다. 기록이 없을 때 「정상」으로 보이던 것을 「기록 없음」으로 갈랐다. 혼동 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/dashboard.test.ts",
+        "checkedAt": "2026-09-05T10:44:23Z"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수 직접 실행, DB 없음",
+      "note": "연체 입금과 업무 지연은 아직 하나의 「주의」로 묶여 있다. 원인 구분은 다음 범위다."
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "unverified",
+      "value": "PC 8조합(고객사·견적 폼 × 닫기→재열기·새로고침·화면 이동→복귀·저장 실패→복구)을 실제 폼 컴포넌트를 렌더해 쟀고 전부 값이 보존된다. 문자열·선택은 공통으로, 견적은 날짜와 품목·수량·단가까지 대조했다. 실제 휴대폰 8조합은 사람이 기기로 재야 한다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/form-draft-scenarios.test.tsx",
+        "checkedAt": "2026-09-05T10:44:23Z"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "vitest · jsdom · 실제 폼 컴포넌트 렌더, 브라우저·실기기 아님",
+      "measured": {
+        "covered": 8,
+        "total": 16
+      },
+      "note": "이 과정에서 복원이 화면에는 반영되지 않던 결함 3건을 찾아 고쳤다. 저장 계층만 재던 이전 측정으로는 안 드러났다."
+    },
+    {
+      "checkId": "F02-04",
+      "outcome": "unverified",
+      "value": "사용자·폼 키 분리와 스코프 불일치 거부, 입력 본문 로그 없음까지는 쟀다. 계획이 요구한 로그아웃 처리 검사는 할 수 없다 — 제품에 로그아웃 흐름이 아직 없다. 화면·인증 코드 어디에도 나가는 길이 없음을 전수로 확인했다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "apps/web/src/lib/auth/",
+        "checkedAt": "2026-09-05T10:44:59Z",
+        "by": "Claude(Fable 5.1)"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "저장소 전수 검색(로그아웃·sign out 관련 문자열 0건)",
+      "note": "로그아웃 기능을 만들면 그때 이 검사를 다시 잰다. 지금은 초안이 사용자별 키로 갈려 다른 사람이 읽지는 못한다."
+    },
+    {
+      "checkId": "F07-05",
+      "outcome": "unverified",
+      "value": "공개 산출물의 비밀 노출은 자동 검사로 0건이다. 무권한 열람 확인은 대표 대기 상태 그대로다.",
+      "evidence": {
+        "kind": "human",
+        "ref": "manual/CHANGELOG.md",
+        "checkedAt": "2026-09-05T10:44:59Z",
+        "by": "Claude(Fable 5.1)"
+      },
+      "codeCommit": "6a18ab4703eb4ea73b8c10d4d6859207c237091d",
+      "planVersion": 1,
+      "environment": "코드 확인",
+      "note": "앞선 줄이 「로그아웃 상태로 열어 본다」고 적었으나 제품에 로그아웃이 없어 그대로는 못 한다. 시크릿 창처럼 로그인하지 않은 브라우저로 여는 방식으로 잰다."
     }
   ]
 }
