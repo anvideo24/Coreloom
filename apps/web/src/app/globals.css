@@ -731,25 +731,52 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
     position: absolute;
   }
   .agent-panel {
+    /* 탭바·세이프에어리어 사이에 고정 — 짧은 폴드 커버에서도 헤더(닫기)가 화면 안에 남는다 */
     border-left: 0;
     border-radius: 1.25rem 1.25rem 0 0;
     bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -12px 32px rgb(28 25 22 / 14%);
     height: auto;
     left: 0;
-    max-height: calc(
-      100dvh - 3.5rem - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 0.35rem
-    );
+    max-height: none;
     overflow: hidden;
     position: absolute;
     right: 0;
-    top: auto;
+    top: max(0.35rem, env(safe-area-inset-top, 0px));
     width: auto;
     z-index: 1;
   }
   .agent-panel-icon-button {
-    min-height: 2.5rem;
-    min-width: 2.5rem;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+  .agent-panel-head {
+    background: var(--surface);
+    padding-top: 0.65rem;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .agent-panel-head-actions {
+    flex-shrink: 0;
+  }
+  .agent-panel-picker-button {
+    min-width: 0;
+    overflow: hidden;
+  }
+  .agent-panel-picker-button-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .agent-panel-body {
+    padding: var(--space-3) var(--space-3) var(--space-2);
+  }
+  .agent-panel-composer {
+    padding: 0.4rem 0.65rem 0.55rem;
+  }
+  .agent-panel-model select {
+    max-width: 9.5rem;
   }
 }
 
@@ -761,12 +788,6 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   gap: var(--space-2);
   justify-content: space-between;
   padding: 0.65rem 0.85rem;
-}
-
-@media (max-width: 39.98rem) {
-  .agent-panel-head {
-    padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
-  }
 }
 .agent-panel-picker { flex: 1; min-width: 0; position: relative; }
 .agent-panel-picker-button {

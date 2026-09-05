@@ -182,7 +182,9 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
                 onClick={() => setPickerOpen((value) => !value)}
                 type="button"
               >
-                {selected?.name ?? "에이전트 선택"}
+                <span className="agent-panel-picker-button-label">
+                  {selected?.name ?? "에이전트 선택"}
+                </span>
                 <span aria-hidden="true">▾</span>
               </button>
               {pickerOpen ? (
