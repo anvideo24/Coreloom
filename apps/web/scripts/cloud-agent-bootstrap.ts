@@ -17,9 +17,14 @@ import {
  */
 function main() {
   const source = Object.fromEntries(
-    [...cloudAgentRequiredSecrets, ...cloudAgentLoginSecrets, "CORELOOM_DATABASE_BRANCH" as const].map(
-      (name) => [name, process.env[name]],
-    ),
+    [
+      ...cloudAgentRequiredSecrets,
+      ...cloudAgentLoginSecrets,
+      "CORELOOM_DATABASE_BRANCH" as const,
+      // 이 이름을 빠뜨리면 확인 값이 `.env.local`에 안 실려 migrate 가 늘 거부하고,
+      // `cloud:dev` 가 서버를 띄우기 전에 죽는다.
+      "CORELOOM_DATABASE_HOST" as const,
+    ].map((name) => [name, process.env[name]]),
   );
 
   const missing = missingCloudAgentSecrets(source);
