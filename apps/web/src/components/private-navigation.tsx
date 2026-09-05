@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+
+import { SignOutButton } from "@/components/sign-out-button";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
@@ -203,6 +205,9 @@ export function PrivateNavigation() {
               </div>
             ))}
           </nav>
+          <div className="private-drawer-foot">
+            <SignOutButton className="nav-link nav-sign-out" />
+          </div>
         </aside>
       </div>
 
@@ -256,6 +261,16 @@ export function PrivateNavigation() {
               </Link>
             ))}
           </nav>
+          {/*
+            좁은 화면에서는 좌측 사이드바가 아예 안 뜬다(`display: none`). 나가는 길을 거기에만
+            두면 **휴대폰에서는 나갈 수 없다.** 잃어버리기 쉬운 쪽이 오히려 휴대폰이라
+            「설정」이 들어 있는 더보기 시트 아래에 같은 버튼을 둔다.
+          */}
+          {openTab === "more" ? (
+            <div className="private-sheet-foot">
+              <SignOutButton className="nav-link nav-sign-out" />
+            </div>
+          ) : null}
         </div>
       </div>
     </>

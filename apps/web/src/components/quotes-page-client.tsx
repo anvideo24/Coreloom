@@ -9,6 +9,8 @@ import { ClientCompanyFields } from "@/components/client-company-fields";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
 import { DraftAwareForm } from "@/components/draft-aware-form";
+import { DraftDiscardButton } from "@/components/draft-discard-button";
+import { DraftSubmitButton } from "@/components/draft-submit-button";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
 import {
   QuoteCostingComposer,
@@ -168,15 +170,14 @@ export function QuotesPageClient({
               등록이 끝나면 이 견적 패널로 돌아와 방금 만든 고객사가 선택된 상태로 이어집니다.
             </p>
             <ClientCompanyFields includeFirstContact />
-            <div className="quote-form-full" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
-              <button className="auth-submit" type="submit">
-                고객사 저장 후 견적 이어쓰기
-              </button>
+            <div className="quote-form-full" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "center" }}>
+              <DraftSubmitButton className="auth-submit">고객사 저장 후 견적 이어쓰기</DraftSubmitButton>
               {clients.length > 0 ? (
                 <button className="text-link" onClick={() => setPanelMode("quote")} type="button">
                   기존 고객사 선택
                 </button>
               ) : null}
+              <DraftDiscardButton />
             </div>
           </DraftAwareForm>
         ) : (
@@ -204,9 +205,10 @@ export function QuotesPageClient({
                 versionNumber={1}
               />
             </div>
-            <button className="auth-submit" type="submit">
-              견적 버전 1 저장
-            </button>
+            <div className="quote-form-full" style={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
+              <DraftSubmitButton className="auth-submit">견적 버전 1 저장</DraftSubmitButton>
+              <DraftDiscardButton />
+            </div>
           </DraftAwareForm>
         )}
       </CreatePanel>

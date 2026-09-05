@@ -673,6 +673,47 @@
       "planVersion": 1,
       "environment": "개발 데이터베이스 스키마 조회(읽기 전용). 마이그레이션 33개 적용됨",
       "note": "제약이 실제로 막는지는 화면에서 잘못된 조합을 시도해 보면 확인된다. 개발 DB에 업무가 0건이라 기존 자료 보존은 잴 대상이 없었다."
+    },
+    {
+      "checkId": "F02-02",
+      "outcome": "pass",
+      "value": "초안 버리기를 만들었다. 되물은 뒤에만 지우고, 저장소와 화면 입력칸을 함께 비운다. 버린 뒤 재열기·새로고침 어느 쪽에도 되살아나지 않는다. 초안이 없으면 버튼이 아예 안 보인다. 복원 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/form-draft-controls.test.tsx",
+        "checkedAt": "2026-09-05T12:47:20Z"
+      },
+      "codeCommit": "0b48cb8db3d79908c46bb3882f8f2432af7a53d6",
+      "planVersion": 1,
+      "environment": "vitest · jsdom · 실제 폼·메뉴 컴포넌트 렌더, 브라우저·실기기 아님"
+    },
+    {
+      "checkId": "F02-03",
+      "outcome": "unverified",
+      "value": "화면에서는 막는다 — 제출 중 버튼이 비활성이고, 성공한 뒤에는 다음 제출에 새 식별자를 쓴다. 그러나 계획이 요구한 「같은 제출 식별자로 재시도했을 때 저장 결과 건수」를 서버에서 잰 것이 아니다. 새로고침하면 화면 방어가 통째로 사라지고, 서버 쪽 걸러내기는 아직 없다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/form-draft-controls.test.tsx",
+        "checkedAt": "2026-09-05T12:47:20Z"
+      },
+      "codeCommit": "0b48cb8db3d79908c46bb3882f8f2432af7a53d6",
+      "planVersion": 1,
+      "environment": "vitest · jsdom · 실제 폼·메뉴 컴포넌트 렌더, 브라우저·실기기 아님",
+      "note": "서버가 쓸 판정 함수는 만들어 뒀고 저장소 연결이 남았다. 그 한계를 시험으로도 남겼다."
+    },
+    {
+      "checkId": "F02-04",
+      "outcome": "pass",
+      "value": "로그아웃을 만들어 이제 잴 수 있다. 나갈 때 이 브라우저의 작성 중 초안이 지워지고, 초안이 아닌 값은 안 건드린다. 서버가 거부하면 나가지 않고 초안도 그대로 남는다. 사용자·폼 열쇠 분리와 스코프 불일치 거부, 입력 본문을 로그하지 않는 것은 앞서 확인했다. 노출 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/sign-out.test.tsx",
+        "checkedAt": "2026-09-05T12:47:20Z"
+      },
+      "codeCommit": "0b48cb8db3d79908c46bb3882f8f2432af7a53d6",
+      "planVersion": 1,
+      "environment": "vitest · jsdom · 실제 폼·메뉴 컴포넌트 렌더, 브라우저·실기기 아님",
+      "note": "앞선 줄은 제품에 로그아웃이 없어 잴 수 없다고 적었다. 그 기능을 만들어 이 검사를 닫는다."
     }
   ]
 }

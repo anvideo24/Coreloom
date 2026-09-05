@@ -61,10 +61,17 @@ export function parseFormDraft(raw: string | null | undefined, expected: { scope
   }
 }
 
+/**
+ * 제출 식별자(F02-03)는 사람이 쓴 내용이 아니라 이번 제출 시도 하나를 가리키는 표다.
+ * 초안에 같이 저장했다가 나중에 되살리면, 이미 처리됐을 수도 있는 옛 식별자가 새 제출에
+ * 다시 실려 나가 오히려 혼란을 만든다. 애초에 이 이름은 초안 필드로 받지 않는다.
+ */
+const NON_DRAFT_FIELD_NAMES = new Set(["submissionId"]);
+
 export function sanitizeDraftFields(fields: Record<string, string>) {
   const next: Record<string, string> = {};
   for (const [key, value] of Object.entries(fields)) {
-    if (!key || key.startsWith("$ACTION")) continue;
+    if (!key || key.startsWith("$ACTION") || NON_DRAFT_FIELD_NAMES.has(key)) continue;
     if (typeof value !== "string") continue;
     if (value.length > 8000) continue;
     next[key] = value;
