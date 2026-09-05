@@ -56,6 +56,20 @@
       "ref": "4ca7014b99f40fc6360d26f0822247d2538e6ece",
       "recordedAt": "2026-09-05",
       "note": "PR #92 병합. 실기기 16조합·F02-02·03 측정 전."
+    },
+    {
+      "featureId": "F01",
+      "stage": "on-main",
+      "ref": "8cdb2456ad42d72b07d95dffcb7ffba8e86e1b92",
+      "recordedAt": "2026-09-05",
+      "note": "PR #93 병합. F01-03 사람 측정 전."
+    },
+    {
+      "featureId": "F03",
+      "stage": "on-main",
+      "ref": "8cdb2456ad42d72b07d95dffcb7ffba8e86e1b92",
+      "recordedAt": "2026-09-05",
+      "note": "PR #93 병합. F03-01·02 사람 측정 전."
     }
   ],
   "results": [
