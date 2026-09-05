@@ -65,6 +65,7 @@ export async function listFounderQuotes(authUserId: string) {
       issuedOn: quoteVersions.issuedOn,
       validUntil: quoteVersions.validUntil,
       clientName: clientCompanies.name,
+      projectId: quotes.projectId,
       createdAt: quoteVersions.createdAt,
     })
     .from(quoteVersions)

@@ -88,6 +88,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       versionNumber: item.versionNumber,
       title: item.title,
       clientName: item.clientName,
+      projectId: item.projectId ?? null,
       totalAmount: item.totalAmount,
       emailRequested: emailRequested.has(item.versionId),
     })),
@@ -95,6 +96,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       contractId: item.contractId,
       title: item.title,
       clientName: item.clientName,
+      projectId: item.projectId ?? null,
       status: item.status,
       totalAmount: item.totalAmount,
     })),
@@ -106,6 +108,7 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       amount: item.amount,
       billingDate: item.billingDate,
       dueDate: item.dueDate,
+      projectId: item.projectId ?? null,
       status: item.status,
     })),
     pendingProposals: proposals.pending.map((item) => ({

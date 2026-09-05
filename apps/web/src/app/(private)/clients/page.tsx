@@ -17,7 +17,7 @@ export default async function ClientsPage() {
   return (
     <main className="operations-shell">
       <Suspense fallback={<p className="empty-state">고객사를 불러오는 중…</p>}>
-        <ClientsPageClient clients={clients} />
+        <ClientsPageClient clients={clients} draftScopeId={session.founder.id} />
       </Suspense>
     </main>
   );

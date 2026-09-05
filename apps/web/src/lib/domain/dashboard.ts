@@ -90,11 +90,19 @@ function weekdayMondayIndex(iso: string) {
 
 export function monthWeekBuckets(today: string): Array<{ label: string; start: string; end: string }> {
   const monthStart = `${today.slice(0, 7)}-01`;
-  return [0, 1, 2, 3].map((index) => ({
-    label: `${index + 1}주`,
-    start: shiftIsoDate(monthStart, index * 7),
-    end: shiftIsoDate(monthStart, index * 7 + 6),
-  }));
+  const [year, month] = today.slice(0, 7).split("-").map(Number);
+  const monthEnd = `${today.slice(0, 7)}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
+  const buckets: Array<{ label: string; start: string; end: string }> = [];
+  let start = monthStart;
+  let index = 0;
+  while (start <= monthEnd) {
+    const unboundedEnd = shiftIsoDate(start, 6);
+    const end = unboundedEnd > monthEnd ? monthEnd : unboundedEnd;
+    buckets.push({ label: `${index + 1}주`, start, end });
+    start = shiftIsoDate(end, 1);
+    index += 1;
+  }
+  return buckets;
 }
 
 export function weekDaysAround(today: string, taskDates: string[]): DashboardWeekDay[] {
@@ -160,6 +168,7 @@ export function buildFounderDashboard(input: {
     versionNumber: number;
     title: string;
     clientName: string;
+    projectId: string | null;
     totalAmount: number;
     emailRequested: boolean;
   }>;
@@ -167,6 +176,7 @@ export function buildFounderDashboard(input: {
     contractId: string;
     title: string;
     clientName: string;
+    projectId: string | null;
     status: string;
     totalAmount: number;
   }>;
@@ -178,6 +188,7 @@ export function buildFounderDashboard(input: {
     amount: number;
     billingDate: string;
     dueDate: string;
+    projectId: string | null;
     status: string;
   }>;
   pendingProposals: Array<{
@@ -419,7 +430,7 @@ export function buildFounderDashboard(input: {
   const cashWeeks = monthWeekBuckets(today).map((week) => ({
     label: week.label,
     inflow: input.billings
-      .filter((item) => item.billingDate >= week.start && item.billingDate <= week.end)
+      .filter((item) => item.dueDate >= week.start && item.dueDate <= week.end)
       .reduce((sum, item) => sum + item.amount, 0),
     outflow: input.expenses
       .filter((item) => item.settlementDate >= week.start && item.settlementDate <= week.end)
@@ -436,9 +447,9 @@ export function buildFounderDashboard(input: {
         statusLabel: projectStatusLabel(item.status),
         progressPercent: item.progressPercent,
         stages: {
-          quote: input.quotes.some((row) => row.clientName === item.clientName),
-          contract: input.contracts.some((row) => row.clientName === item.clientName && row.status === "executed"),
-          billing: input.billings.some((row) => row.clientName === item.clientName),
+          quote: input.quotes.some((row) => row.projectId === item.id),
+          contract: input.contracts.some((row) => row.projectId === item.id && row.status === "executed"),
+          billing: input.billings.some((row) => row.projectId === item.id),
         },
         nextAction: next ? `${next.kindLabel} · ${next.title}` : "다음 할 일이 없습니다",
       };

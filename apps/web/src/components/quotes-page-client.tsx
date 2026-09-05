@@ -6,6 +6,7 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { saveQuoteVersionAction } from "@/app/(private)/quotes/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
+import { DraftAwareForm } from "@/components/draft-aware-form";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
 import {
   QuoteCostingComposer,
@@ -38,6 +39,7 @@ export function QuotesPageClient({
   versions,
   issuer,
   companyProfileStorage = "ready",
+  draftScopeId,
 }: {
   clients: Client[];
   projects: Project[];
@@ -45,6 +47,7 @@ export function QuotesPageClient({
   versions: Version[];
   issuer: QuoteIssuerProfile;
   companyProfileStorage?: CompanyProfileStorageState;
+  draftScopeId: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -139,7 +142,12 @@ export function QuotesPageClient({
       </section>
 
       <CreatePanel onClose={close} open={open && canCreate} size="xlarge" title="새 견적">
-        <form action={saveQuoteVersionAction} className="quote-form quote-form-costing">
+        <DraftAwareForm
+          action={saveQuoteVersionAction}
+          className="quote-form quote-form-costing"
+          formId="quote-create"
+          scopeId={draftScopeId}
+        >
           <div className="quote-form-meta quote-form-meta-compact">
             <QuoteClientProjectFields
               clientId={clientId}
@@ -160,7 +168,7 @@ export function QuotesPageClient({
           <button className="auth-submit" type="submit">
             견적 버전 1 저장
           </button>
-        </form>
+        </DraftAwareForm>
       </CreatePanel>
     </>
   );
