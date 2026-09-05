@@ -26,7 +26,9 @@ describe("개선 목표·검증 현황 — 실제 파일 끝까지", () => {
     if (!status.available) return;
     expect(status.plan.features.map((feature) => feature.id)).toEqual(["F01", "F02", "F03", "F04", "F05", "F06", "F07"]);
     expect(status.gitAvailable).toBe(true);
-    expect(status.statuses.find((item) => item.feature.id === "F07")?.implementation?.stage).toBe("in-progress");
+    // 구현 단계는 결과 파일에 덧붙여지며 바뀌는 값이라 특정 단계를 못 박지 않는다. 기록이 있고 「미착수」가 아닌지만 본다.
+    const f07Stage = status.statuses.find((item) => item.feature.id === "F07")?.implementation?.stage;
+    expect(["in-progress", "on-main", "in-use"]).toContain(f07Stage);
   });
 
   it("F07-02: 화면에 그려지는 검사 ID 집합이 계획서 ID 집합과 같다(결과 없는 검사 포함)", () => {
