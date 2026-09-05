@@ -70,6 +70,7 @@ export function AdminManualFrame({
   intro,
   blocks,
   children,
+  contentLayout = "document",
 }: {
   /** 홈은 고르는 입구라 되돌아갈 곳이 없다. 나머지 화면은 홈으로 돌아가는 길을 위에 둔다. */
   home?: boolean;
@@ -81,6 +82,8 @@ export function AdminManualFrame({
   intro: string;
   blocks?: ManualBlock[];
   children?: ReactNode;
+  /** 업무 지도처럼 읽기 폭·문서 카드가 필요 없는 구조화된 화면. */
+  contentLayout?: "document" | "canvas";
 }) {
   const headings = blocks ? headingEntries(blocks) : [];
   const hasToc = !home && headings.length > 0;
@@ -110,7 +113,7 @@ export function AdminManualFrame({
           <nav aria-label="이 문서의 차례" className="manual-toc manual-toc-desktop"><p>이 문서의 차례</p><ol>{headings.map((heading) => <li key={heading.id}><a href={`#${heading.id}`}>{heading.text}</a></li>)}</ol></nav>
           <details className="manual-toc manual-toc-mobile"><summary>이 문서의 차례</summary><nav aria-label="이 문서의 차례"><ol>{headings.map((heading) => <li key={heading.id}><a href={`#${heading.id}`}>{heading.text}</a></li>)}</ol></nav></details>
         </> : null}
-        {home ? (blocks ? <ManualBlocks blocks={blocks} /> : children) : <div className="manual-document">{blocks ? <ManualBlocks blocks={blocks} /> : children}</div>}
+        {home ? (blocks ? <ManualBlocks blocks={blocks} /> : children) : <div className={contentLayout === "canvas" ? "manual-canvas" : "manual-document"}>{blocks ? <ManualBlocks blocks={blocks} /> : children}</div>}
       </section>
     </main>
   );
