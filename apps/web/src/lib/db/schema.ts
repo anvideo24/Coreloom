@@ -660,10 +660,12 @@ export const agentChatMessages = pgTable("agent_chat_messages", {
   threadId: uuid("thread_id").notNull().references(() => agentChatThreads.id),
   role: text("role").notNull(),
   body: text("body").notNull(),
+  attachments: jsonb("attachments").$type<string[]>().notNull().default([]),
+  clientRequestId: uuid("client_request_id"),
   model: text("model").notNull(),
   status: text("status").notNull().default("complete"),
   createdAt,
-}, (table) => [index("agent_chat_messages_thread_idx").on(table.threadId, table.createdAt)]);
+}, (table) => [index("agent_chat_messages_thread_idx").on(table.threadId, table.createdAt), uniqueIndex("agent_chat_messages_request_role_idx").on(table.clientRequestId, table.role)]);
 
 export const aiAgentWorkLogs = pgTable(
   "ai_agent_work_logs",

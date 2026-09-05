@@ -64,7 +64,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
           </select>
           <div className="agent-panel-head-actions"><Link className="agent-panel-icon-button" href={selected ? `/agents/${selected.id}` : "/agents"} onClick={() => setOpen(false)} aria-label="에이전트 페이지 열기">↗</Link><button aria-label="패널 닫기" className="agent-panel-icon-button" onClick={() => setOpen(false)} type="button">×</button></div>
         </header>
-        {selected ? <AgentChat key={selected.id} agent={selected} /> : <div className="agent-chat-welcome"><h2>함께 일할 에이전트</h2><p>목적과 지침을 정하면 여기서 바로 대화할 수 있어요.</p><Link className="auth-submit" href="/agents?new=1" onClick={() => setOpen(false)}>에이전트 만들기</Link></div>}
+        {selected ? <AgentChat key={selected.id} agent={selected} active={open} /> : <div className="agent-chat-welcome"><h2>함께 일할 에이전트</h2><p>목적과 지침을 정하면 여기서 바로 대화할 수 있어요.</p><Link className="auth-submit" href="/agents?new=1" onClick={() => setOpen(false)}>에이전트 만들기</Link></div>}
       </aside>
     </div>
   </>;
