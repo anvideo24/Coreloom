@@ -79,9 +79,10 @@ describe("buildVerificationStatus — 실제 계획 + 실제 결과", () => {
     expect(f0104?.effective).toBe("no-result");
   });
 
-  it("F05: fail 3건, none 1건", () => {
+  it("F05: pass 3건, none 1건", () => {
     const f05 = statuses.find((status) => status.feature.id === "F05");
-    expect(f05?.counts.fail).toBe(3);
+    expect(f05?.counts.pass).toBe(3);
+    expect(f05?.counts.fail).toBe(0);
     expect(f05?.counts.none).toBe(1);
   });
 });
