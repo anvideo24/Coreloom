@@ -32,6 +32,9 @@
 - 매뉴얼 입구·대화 패널의 표시 텍스트 72개를 점검해 작은 주황 제목 1개가 3.48:1임을 확인했다. 글자용 색 토큰으로 고친 뒤 같은 캔버스 대비 계산은 5.19:1이며 회귀시험 통과. 전 제품 색 대비 검증은 아니다.
 - 실제 Fold 키보드, 실제 브라우저 200% 확대와 최종 경고 화면 재검증이 남는다. 후속 변경의 main 병합·배포는 아직이다.
 
+- 후속 IAB 실사용 확인: `/admin/manual` AI 설정에서 일회성 미저장 문구를 입력한 뒤 패널을 닫고 공용 규칙 링크를 선택했다. 닫힌 패널 밖 문서 본문에 native guard가 표시됐고, innerWidth 342·height 798에서 clientWidth 331, scroll overflow 0px를 확인했다. 대화상자는 292.76×324.30px, x=19·y=236.82로 전체 화면 안에 있었고 세 선택지 버튼 높이는 약 48px이었다.
+- 같은 세션에서 Escape는 guard만 닫았다. AI 패널을 다시 열었을 때 미저장 초안이 유지됐고, 다시 패널을 닫고 링크를 눌러 `버리고 계속`을 선택하면 `/admin/manual/shared/rules`로 실제 이동했다. 시험 문구와 guard는 남지 않았다. IAB viewport는 확인 후 원복했다. 실제 설정·권한은 저장하지 않았다. 실제 Fold 키보드와 실제 브라우저 200% 확대는 여전히 미검증이며 후속 PR #105는 main 반영 전이다.
+
 ### 최초 집중 시험
 
 `apps/web`에서 `npx vitest run tests/private-navigation-ui.test.tsx tests/private-navigation.test.tsx tests/agent-panel-layout.test.ts tests/agent-panel.test.ts tests/agent-chat-ui.test.tsx tests/agent-chat.test.ts` 및 `npx tsc --noEmit`. 집중 시험 36개 통과. 임시 메뉴의 실제 열림 클래스 검사는 수정 전 실패·수정 후 통과를 확인했다.
