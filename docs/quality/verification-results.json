@@ -28,6 +28,34 @@
       "ref": "cursor/stage3-accuracy-and-drafts-09f4",
       "recordedAt": "2026-09-05",
       "note": "고객사·견적 패널 sessionStorage 초안. 실기기 16조합 측정 전. main 병합 전."
+    },
+    {
+      "featureId": "F01",
+      "stage": "in-progress",
+      "ref": "cursor/stage4-client-quote-approvals-09f4",
+      "recordedAt": "2026-09-05",
+      "note": "견적 패널 안 고객사 등록·재입력 제거. main 병합 전."
+    },
+    {
+      "featureId": "F03",
+      "stage": "in-progress",
+      "ref": "cursor/stage4-client-quote-approvals-09f4",
+      "recordedAt": "2026-09-05",
+      "note": "확정 전 검토 카드·승인/중복 게이트. 사람 탐색 측정 전. main 병합 전."
+    },
+    {
+      "featureId": "F05",
+      "stage": "on-main",
+      "ref": "4ca7014b99f40fc6360d26f0822247d2538e6ece",
+      "recordedAt": "2026-09-05",
+      "note": "PR #92 병합. 사용 환경 확인 전."
+    },
+    {
+      "featureId": "F02",
+      "stage": "on-main",
+      "ref": "4ca7014b99f40fc6360d26f0822247d2538e6ece",
+      "recordedAt": "2026-09-05",
+      "note": "PR #92 병합. 실기기 16조합·F02-02·03 측정 전."
     }
   ],
   "results": [
@@ -219,6 +247,71 @@
       "codeCommit": "24f902a885fa226f1171138e3d48a3868d11647b",
       "planVersion": 1,
       "environment": "vitest · Node · sessionStorage 대체 메모리 저장소"
+    },
+    {
+      "checkId": "F01-01",
+      "outcome": "pass",
+      "value": "고객사 등록에서 넣은 상호·담당을 견적 폼에서 다시 치지 않고 id 선택만 하면 재입력 0. 같은 문자열을 다시 치면 2로 집계되는 대조 시험 포함.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/quote-client-flow.test.ts",
+        "checkedAt": "2026-09-05T09:25:00Z"
+      },
+      "codeCommit": "3cfd089597ddc34219f9c371bf1ab51e4e6e5379",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 흐름 함수"
+    },
+    {
+      "checkId": "F01-02",
+      "outcome": "pass",
+      "value": "견적 패널 createClientFromQuoteAction이 /quotes?new=1&clientId=… 로 돌아와 /clients 왕복 0. 화면 소스에 disabled={!canCreate}·href=\"/clients\" 없음.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/quote-client-flow.test.ts",
+        "checkedAt": "2026-09-05T09:25:00Z"
+      },
+      "codeCommit": "3cfd089597ddc34219f9c371bf1ab51e4e6e5379",
+      "planVersion": 1,
+      "environment": "vitest · Node · 액션 경로·화면 소스 검사"
+    },
+    {
+      "checkId": "F01-04",
+      "outcome": "pass",
+      "value": "저장 스냅샷과 재조회 스냅샷이 clientId·품목·합계에서 불일치 0. 어긋난 필드는 이름 목록으로 드러남.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/quote-client-flow.test.ts",
+        "checkedAt": "2026-09-05T09:25:00Z"
+      },
+      "codeCommit": "3cfd089597ddc34219f9c371bf1ab51e4e6e5379",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 스냅샷 대조"
+    },
+    {
+      "checkId": "F03-03",
+      "outcome": "pass",
+      "value": "확정 전 검토 요약이 대상·금액·증빙·결과 네 칸을 항상 노출. 비용·매출·청구·계약 상세에 ApprovalReviewCard 연결.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/approval-gates.test.ts",
+        "checkedAt": "2026-09-05T09:25:00Z"
+      },
+      "codeCommit": "3cfd089597ddc34219f9c371bf1ab51e4e6e5379",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 요약 + 상세 화면 연결"
+    },
+    {
+      "checkId": "F03-04",
+      "outcome": "pass",
+      "value": "비용·매출·입금·계약·AI 제안 확정이 approved=false면 거부. 이미 confirmed/deposited인 건 재확정 거부.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/approval-gates.test.ts",
+        "checkedAt": "2026-09-05T09:25:00Z"
+      },
+      "codeCommit": "3cfd089597ddc34219f9c371bf1ab51e4e6e5379",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 게이트 직접 실행"
     }
   ]
 }

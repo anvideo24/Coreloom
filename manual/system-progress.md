@@ -11,7 +11,7 @@
 
 ## 개선 검증 계획 — 구현 현황과 별도
 
-기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 실제 결과는 [결과 파일](../docs/quality/verification-results.json)에서 본다. F07 목표·체크리스트 조회 화면(`/admin/manual/progress`, 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인은 아직이다. 사람이 재야 하는 F07-01·05·06은 대표 확인을 기다린다. 3단계 코드 수정(F05 대시보드 월말·입금예정·프로젝트 단계, F02 sessionStorage 초안)은 가지 `cursor/stage3-accuracy-and-drafts-09f4`에 있으며, F05-01·02·03·F02-01(자동)·F02-04 통과 줄을 결과 파일에 덧붙였다. F02 실기기 16조합·F02-02·03과 main 병합은 아직이다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. 읽을 문서와 범위는 [커서 인계](handoffs/2026-09-05-cursor-stage3-accuracy-and-drafts.md)에 있다. 그날 오전의 [Claude 인계](handoffs/2026-09-05-claude-measurable-improvements.md)는 2단계 착수 전 시점이다.
+기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 실제 결과는 [결과 파일](../docs/quality/verification-results.json)에서 본다. F07 목표·체크리스트 조회 화면(`/admin/manual/progress`, 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인은 아직이다. 사람이 재야 하는 F07-01·05·06은 대표 확인을 기다린다. 3단계(F05·F02)는 PR #92로 `main`에 들어갔다. 4단계 코드 수정(F01 견적 안 고객사 등록·재입력 제거, F03 확정 전 검토 카드·승인/중복 게이트)은 가지 `cursor/stage4-client-quote-approvals-09f4`에 있으며, F01-01·02·04·F03-03·04 통과 줄을 결과 파일에 덧붙였다. F01-03·F03-01·02 사람 측정과 main 병합은 아직이다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. 읽을 문서와 범위는 [커서 인계](handoffs/2026-09-05-cursor-stage4-client-quote-approvals.md)에 있다. 3단계 인계는 [여기](handoffs/2026-09-05-cursor-stage3-accuracy-and-drafts.md), 그날 오전의 [Claude 인계](handoffs/2026-09-05-claude-measurable-improvements.md)는 2단계 착수 전 시점이다.
 
 ## 핵심 기반
 

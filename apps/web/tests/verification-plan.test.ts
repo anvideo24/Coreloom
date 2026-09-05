@@ -74,9 +74,23 @@ describe("buildVerificationStatus — 실제 계획 + 실제 결과", () => {
     const screenIds = new Set(statuses.flatMap((status) => status.checks.map((check) => check.check.id)));
     expect(screenIds).toEqual(planIds);
 
-    const f0104 = statuses.find((status) => status.feature.id === "F01")
-      ?.checks.find((check) => check.check.id === "F01-04");
-    expect(f0104?.effective).toBe("no-result");
+    const f0103 = statuses.find((status) => status.feature.id === "F01")
+      ?.checks.find((check) => check.check.id === "F01-03");
+    expect(f0103?.effective).toBe("no-result");
+  });
+
+  it("F01: pass 3건, none 1건", () => {
+    const f01 = statuses.find((status) => status.feature.id === "F01");
+    expect(f01?.counts.pass).toBe(3);
+    expect(f01?.counts.fail).toBe(0);
+    expect(f01?.counts.none).toBe(1);
+  });
+
+  it("F03: pass 2건, none 2건", () => {
+    const f03 = statuses.find((status) => status.feature.id === "F03");
+    expect(f03?.counts.pass).toBe(2);
+    expect(f03?.counts.fail).toBe(0);
+    expect(f03?.counts.none).toBe(2);
   });
 
   it("F05: pass 3건, none 1건", () => {
