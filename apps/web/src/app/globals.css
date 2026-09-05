@@ -562,6 +562,40 @@ html[data-create-panel-open="true"] .pwa-install-layer {
   width: 1.5px;
 }
 
+.create-menu {
+  position: relative;
+}
+.create-menu-panel {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  box-shadow: 0 10px 28px rgb(28 25 22 / 14%);
+  display: grid;
+  gap: 0.15rem;
+  min-width: 9.5rem;
+  padding: 0.35rem;
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 40;
+}
+.create-menu-item {
+  background: transparent;
+  border: 0;
+  border-radius: calc(var(--radius-control) - 2px);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  padding: 0.55rem 0.7rem;
+  text-align: left;
+  white-space: nowrap;
+}
+.create-menu-item:hover {
+  background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+}
+
 .create-panel-layer {
   inset: 0;
   position: fixed;
