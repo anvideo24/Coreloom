@@ -15,10 +15,11 @@ on:
 permissions:
   contents: read
 
-# 같은 가지에 새로 밀어 넣으면 앞의 실행은 접는다.
+# PR 은 새로 밀어 넣으면 앞의 실행을 접는다 — 어차피 마지막 것만 보면 된다.
+# main 은 접지 않는다. 접으면 그 커밋이 **검사 없이 지나간다.** 실제로 한 번 그랬다.
 concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
