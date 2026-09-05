@@ -87,6 +87,14 @@ export function readAdminManualOverview() {
   return { ...readManualFile(ADMIN_MANUAL_OVERVIEW_FILE), title: "운영 매뉴얼" };
 }
 
+export function readAdminManualWorkMap() {
+  const source = readManualFile("work-map.md");
+  return {
+    ...source,
+    manualCommit: gitOutput(["log", "-1", "--format=%H", "--", "manual/work-map.md"], repositoryRoot() || source.directory) || source.manualCommit,
+  };
+}
+
 export function readAdminManualChangelog() {
   return { ...readManualFile(ADMIN_MANUAL_CHANGELOG_FILE), title: "변경 기록" };
 }

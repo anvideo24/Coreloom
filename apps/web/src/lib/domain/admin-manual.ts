@@ -80,6 +80,13 @@ export const adminManualHomeSections: { title: string; description: string; card
     description: "이 제품을 어떻게 쓰고 지금 어디까지 됐는지.",
     cards: [
       {
+        href: "/admin/manual/work-map",
+        label: "업무 지도",
+        summary: "고객사부터 입금까지. 업무의 역할과 연결을 한눈에 봅니다.",
+        source: "Coreloom / manual/work-map.md",
+        origin: "product",
+      },
+      {
         href: ADMIN_MANUAL_OVERVIEW_HREF,
         label: "운영 설명",
         summary: "시스템 구조와 운영 방법 전문. 길어서 여기서만 폅니다.",
@@ -164,6 +171,7 @@ export function resolveManualHref(href: string) {
   const trimmed = href.trim();
   if (/^https:\/\//i.test(trimmed) || /^http:\/\//i.test(trimmed)) return trimmed;
   const normalized = trimmed.replaceAll("\\", "/").replace(/^\.\//, "");
+  if (normalized === "work-map.md" || normalized === "manual/work-map.md") return "/admin/manual/work-map";
   if (normalized.endsWith(ADMIN_MANUAL_OVERVIEW_FILE)) return ADMIN_MANUAL_OVERVIEW_HREF;
   if (normalized.endsWith(ADMIN_MANUAL_CHANGELOG_FILE)) return "/admin/manual/changelog";
   if (normalized.endsWith(ADMIN_MANUAL_PROGRESS_FILE)) return "/admin/manual/progress";
