@@ -79,25 +79,29 @@ describe("buildVerificationStatus — 실제 계획 + 실제 결과", () => {
     expect(f0103?.effective).toBe("no-result");
   });
 
-  it("F01: pass 3건, none 1건", () => {
-    const f01 = statuses.find((status) => status.feature.id === "F01");
-    expect(f01?.counts.pass).toBe(3);
-    expect(f01?.counts.fail).toBe(0);
-    expect(f01?.counts.none).toBe(1);
+  /*
+   * 여기에 「F01은 통과 3건」처럼 그때의 숫자를 못 박는 시험이 있었다. 결과가 하나 늘 때마다 깨져
+   * 하루에 세 번 기대치를 고쳤고, 세 번째부터는 시험이 판정자가 아니라 거울이었다.
+   * 숫자 대신 결과가 늘어도 변하지 않는 셈법만 잰다.
+   */
+  it("기능마다 칸 수의 합이 검사 수와 맞고, 분모는 제외를 뺀 수다", () => {
+    for (const feature of statuses) {
+      const { required, pass, fail, recheck, unverified, excluded, none } = feature.counts;
+      const total = pass + fail + recheck + unverified + excluded + none;
+      expect(total, `${feature.feature.id} 칸 수 합이 검사 수와 다르다`).toBe(feature.checks.length);
+      expect(required, `${feature.feature.id} 분모가 제외를 빼고 세지 않았다`).toBe(feature.checks.length - excluded);
+      expect(pass).toBeLessThanOrEqual(required);
+    }
   });
 
-  it("F03: pass 2건, none 2건", () => {
-    const f03 = statuses.find((status) => status.feature.id === "F03");
-    expect(f03?.counts.pass).toBe(2);
-    expect(f03?.counts.fail).toBe(0);
-    expect(f03?.counts.none).toBe(2);
-  });
-
-  it("F05: pass 3건, none 1건", () => {
-    const f05 = statuses.find((status) => status.feature.id === "F05");
-    expect(f05?.counts.pass).toBe(3);
-    expect(f05?.counts.fail).toBe(0);
-    expect(f05?.counts.none).toBe(1);
+  it("결과가 하나도 없는 기능은 전부 결과 없음이고 완료가 아니다", () => {
+    const untouched = statuses.filter((feature) => feature.checks.every((check) => check.latest === null));
+    for (const feature of untouched) {
+      expect(feature.counts.none).toBe(feature.checks.length);
+      expect(feature.counts.pass).toBe(0);
+      expect(feature.complete).toBe(false);
+      expect(feature.nextAction).toContain("결과 없음");
+    }
   });
 });
 

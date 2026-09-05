@@ -13,6 +13,8 @@
 
 기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 실제 결과는 [결과 파일](../docs/quality/verification-results.json)에서 본다. F07 목표·체크리스트 조회 화면(`/admin/manual/progress`, 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인은 아직이다. 사람이 재야 하는 F07-01·05·06은 대표 확인을 기다린다. 3단계(F05·F02)는 PR #92, 4단계(F01·F03)는 PR #93으로 `main`에 들어갔다. F01-01·02·04·F03-03·04 통과 줄은 결과 파일에 있다. F01-03·F03-01·02 사람 측정은 아직이다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. 다음은 5단계 F04이며 [Claude 인계](handoffs/2026-09-05-claude-stage5-ai-status.md)를 본다. 4단계 인계는 [여기](handoffs/2026-09-05-cursor-stage4-client-quote-approvals.md), 3단계는 [여기](handoffs/2026-09-05-cursor-stage3-accuracy-and-drafts.md), 그날 오전의 [Claude 인계](handoffs/2026-09-05-claude-measurable-improvements.md)는 2단계 착수 전 시점이다.
 
+🔴 **통과 수를 읽을 때** — 목표가 요구한 범위를 다 재야 통과다. 2026-09-05에 통과 6건이 범위 미달로 정정됐다. 지금은 화면이 그것을 세지만, 목표에 셀 수 있는 수가 없는 검사는 여전히 사람이 값을 읽어야 한다.
+
 ## 핵심 기반
 
 | 기능 | 경로 | 상태 | 비고 |

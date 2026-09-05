@@ -37,6 +37,15 @@ export type PlanCheck = {
   method: string;
   /** 계획서 「현재 판정」 칸 원문. 계획 당시 값이며 현재 상태가 아니다. */
   planVerdict: string;
+  /**
+   * 목표·방법 칸이 **셀 수 있는 수**를 요구하면 그 수(`16/16 시나리오`→16, `5사례`→5, `3/3`→3).
+   * 없으면 null. 이게 있으면 결과에 `measured`를 요구하고, 덜 쟀으면 통과로 안 센다.
+   *
+   * 왜 있나 — 2026-09-05에 「16/16 시나리오」가 목표인 검사가 **1개만 재고 통과**로 들어왔다.
+   * 결과 줄 스스로 「나머지 15개는 미측정」이라 적어 두고도 초록불이 켜졌다. 사람이 값을 읽어야만
+   * 드러나는 자리였다. 셀 수 있는 것은 코드가 센다.
+   */
+  requiredCount: number | null;
 };
 
 export type PlanFeature = {
@@ -87,6 +96,11 @@ export type CheckResult = {
   planVersion: number;
   /** 기기·브라우저·뷰포트 또는 「도메인 함수 직접 실행」 */
   environment: string;
+  /**
+   * 목표가 셀 수 있는 수를 요구할 때, **몇 개를 실제로 쟀나**. `total`은 목표의 수와 같아야 한다.
+   * 덜 쟀으면 그 사실이 화면에 그대로 남고 통과로 세지 않는다.
+   */
+  measured?: { covered: number; total: number };
   note?: string;
 };
 
@@ -171,6 +185,24 @@ const CHECKED_AT_PATTERN = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|
 /** 40자 hex 커밋 해시. */
 const COMMIT_HASH_PATTERN = /^[0-9a-f]{40}$/i;
 
+/**
+ * 목표·방법 칸에서 **셀 수 있는 수**를 뽑는다. `16/16 시나리오`·`6/6 상태 분류`·`3/3`처럼 같은 수를
+ * 두 번 쓴 꼴, 그리고 `5사례`처럼 사례 수를 센 꼴만 인정한다. `0건`·`100%`·`30% 이상`은 개수가 아니다.
+ * 못 찾으면 null이고, 그때는 개수 관문이 안 걸린다(없는 수를 지어내지 않는다).
+ */
+function extractRequiredCount(target: string, method: string): number | null {
+  for (const text of [target, method]) {
+    const ratio = text.match(/(\d+)\s*\/\s*(\d+)/);
+    if (ratio && ratio[1] === ratio[2]) return Number(ratio[1]);
+    const cases = text.match(/(\d+)\s*사례/);
+    if (cases) return Number(cases[1]);
+  }
+  return null;
+}
+
+/** 통과라고 적으면서 본문에 「아직 안 쟀다」를 함께 적은 줄을 잡는다. */
+const SELF_ADMITTED_GAP = /미측정|측정\s*전|측정하지\s*않|아직\s*(?:이다|입니다|안\s|측정)/;
+
 function blockText(block: ManualBlock): string | null {
   if (block.type !== "paragraph") return null;
   return block.inlines.map((inline) => inline.text).join("");
@@ -220,6 +252,10 @@ const checkResultSchema = z
     codeCommit: z.string().regex(COMMIT_HASH_PATTERN, "codeCommit은 40자 hex여야 합니다."),
     planVersion: z.number().int(),
     environment: z.string(),
+    measured: z
+      .object({ covered: z.number().int().min(0), total: z.number().int().min(1) })
+      .strict()
+      .optional(),
     note: z.string().optional(),
   })
   .strict()
@@ -228,6 +264,9 @@ const checkResultSchema = z
       if (!value.value.trim()) ctx.addIssue({ code: "custom", message: `${value.checkId}: pass인데 value가 비어 있습니다.`, path: ["value"] });
       if (!value.evidence.ref.trim()) ctx.addIssue({ code: "custom", message: `${value.checkId}: pass인데 evidence.ref가 비어 있습니다.`, path: ["evidence", "ref"] });
       if (!value.environment.trim()) ctx.addIssue({ code: "custom", message: `${value.checkId}: pass인데 environment가 비어 있습니다.`, path: ["environment"] });
+    }
+    if (value.outcome === "pass" && value.measured && value.measured.covered > value.measured.total) {
+      ctx.addIssue({ code: "custom", message: `${value.checkId}: measured.covered가 total보다 큽니다.`, path: ["measured"] });
     }
     if (value.outcome === "excluded" && !value.note?.trim()) {
       ctx.addIssue({ code: "custom", message: `${value.checkId}: excluded인데 note(제외 사유)가 없습니다.`, path: ["note"] });
@@ -315,12 +354,15 @@ export function parseVerificationPlan(markdown: string): VerificationPlan {
           const checkId = row[idIndex].trim();
           if (seenCheckIds.has(checkId)) throw new Error(`검사 ID가 중복됩니다: ${checkId}`);
           seenCheckIds.add(checkId);
+          const target = (row[idIndex + 1] ?? "").trim();
+          const method = (row[idIndex + 2] ?? "").trim();
           checks.push({
             id: checkId,
             featureId: id,
-            target: (row[idIndex + 1] ?? "").trim(),
-            method: (row[idIndex + 2] ?? "").trim(),
+            target,
+            method,
             planVerdict: (row[idIndex + 3] ?? "").trim(),
+            requiredCount: extractRequiredCount(target, method),
           });
         }
         continue;
@@ -377,6 +419,9 @@ export function parseVerificationResults(json: string): VerificationResultsFile 
  *  3. latest.outcome이 `pass`여도 다음 하나라도 걸리면 통과가 아니다(`unverified` + reason):
  *     - planVersion !== plan.version → 「다른 계획 버전」
  *     - evidence.ref·environment·codeCommit·value 중 빈 것 → 「증거 없음」/「환경 없음」 등
+ *     - check.requiredCount가 있는데 measured가 없음 → 「잰 개수 없음(목표 N개)」
+ *     - measured.total !== requiredCount → 「목표 개수와 다름」
+ *     - measured.covered < measured.total → 「범위 미달 covered/total」
  *  4. 3을 통과한 pass에 대해 changedPathsSince(codeCommit)가
  *     - null이면 → `needs-recheck`(「검증 코드 버전을 찾지 못함」)
  *     - feature.paths 중 하나라도 바뀐 경로에 걸리면(경로 끝이 일치) → `needs-recheck`(「관련 파일 변경: …」)
@@ -438,6 +483,17 @@ export function buildVerificationStatus(input: BuildVerificationStatusInput): Fe
         if (!latest.environment.trim()) problems.push("환경 없음");
         if (!latest.codeCommit.trim()) problems.push("커밋 없음");
         if (!latest.value.trim()) problems.push("실측값 없음");
+        // 스스로 「아직 안 쟀다」고 적어 두고 통과 딱지를 붙인 줄이 실제로 들어왔다(2026-09-05).
+        // 파일 파싱에서 막으면 그 과거 기록 자체를 못 읽어 이력이 사라진다. 그래서 판정에서 막는다.
+        const admitted = SELF_ADMITTED_GAP.exec(`${latest.value} ${latest.note ?? ""}`);
+        if (admitted) problems.push(`스스로 적은 미측정: 「${admitted[0]}」`);
+        // 셀 수 있는 목표는 코드가 센다. 문장으로 타이르면 이번처럼 조용히 통과한다.
+        if (check.requiredCount !== null) {
+          const measured = latest.measured;
+          if (!measured) problems.push(`잰 개수 없음(목표 ${check.requiredCount}개)`);
+          else if (measured.total !== check.requiredCount) problems.push(`목표 개수와 다름(${measured.total} vs ${check.requiredCount})`);
+          else if (measured.covered < measured.total) problems.push(`범위 미달 ${measured.covered}/${measured.total}`);
+        }
 
         if (problems.length > 0) {
           effective = "unverified";
