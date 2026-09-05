@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { readAgentAccessAction, saveAgentAccessAction } from "@/app/(private)/agents/actions";
 import { accessLabels } from "@/lib/domain/agent-access";
+import { AgentFolderPicker, normalizeFolderSelections } from "@/components/agent-folder-picker";
 
 export type AgentAccessGuardHandlers = { save: () => Promise<boolean>; discard: () => void };
 
@@ -23,7 +24,7 @@ export function AgentAccessSettings({ agentId, onDirty, onGuardHandlers }: { age
     if (saveLockRef.current) return false;
     saveLockRef.current = true;
     const newlyEnabled = Object.entries(data.permissions).filter(([key, enabled]) => enabled && !savedPermissions[key]).map(([key]) => accessLabels[key as keyof typeof accessLabels]);
-    const nextRoots = roots.split(/\r?\n/).map((root) => root.trim()).filter(Boolean);
+    const nextRoots = normalizeFolderSelections(roots.split(/\r?\n/));
     const newlyAddedRootCount = data.permissions.read_pc ? nextRoots.filter((root) => !savedRoots.includes(root)).length : 0;
     const expansion = [newlyEnabled.length ? `새로 허용할 자료: ${newlyEnabled.join(", ")}` : "", newlyAddedRootCount ? `새로 허용할 업무 폴더: ${newlyAddedRootCount}개` : ""].filter(Boolean);
     if (expansion.length && !window.confirm(`${expansion.join("\n")}\n이 범위만 다음 요청부터 조회할 수 있습니다. 저장할까요?`)) { saveLockRef.current = false; return false; }
@@ -41,7 +42,8 @@ export function AgentAccessSettings({ agentId, onDirty, onGuardHandlers }: { age
       event.preventDefault(); await save();
     }}>
       <fieldset disabled={busy}><legend>허용할 자료</legend>{Object.entries(accessLabels).map(([key, label]) => <label className="agent-access-option" key={key}><input type="checkbox" checked={data.permissions[key as keyof typeof data.permissions]} onChange={(event) => { setData({ ...data, permissions: { ...data.permissions, [key]: event.target.checked } }); onDirty?.(true); }} />{label}</label>)}</fieldset>
-      <label>이 PC의 허용 폴더<textarea rows={3} value={roots} onChange={(e) => { setRoots(e.target.value); onDirty?.(true); }} placeholder="허용할 폴더의 절대 경로를 한 줄에 하나씩 입력" disabled={busy} /></label>
+      <AgentFolderPicker agentId={agentId} roots={normalizeFolderSelections(roots.split(/\r?\n/))} disabled={busy} onRootsChange={(next) => { setRoots(next.join("\n")); onDirty?.(true); }} />
+      <details><summary>직접 경로 입력 (고급)</summary><label>서버 PC의 허용 폴더<textarea rows={3} value={roots} onChange={(e) => { setRoots(e.target.value); onDirty?.(true); }} placeholder="서버 PC 폴더의 절대 경로를 한 줄에 하나씩 입력" disabled={busy} /></label></details>
       <p className="form-help">최대 8개 폴더. TXT·MD·CSV·JSON, 64KB 이하. 파일명으로 검색합니다. PDF·이미지 해석, 드라이브 전체·홈 전체·비밀 폴더·링크 경로는 지원하지 않습니다. 폴더 경로는 이 PC에만 저장됩니다.</p>
       <p className="form-help">프로젝트가 지정된 에이전트는 해당 프로젝트만 조회합니다. 앱·구독 사업 전용 에이전트의 고객사 ERP 조회는 차단됩니다. 수정·삭제·외부 발송은 이 대화에서 실행할 수 없습니다.</p>
       <button className="auth-submit" disabled={busy}>{busy ? "저장 중…" : "조회 권한 저장"}</button>

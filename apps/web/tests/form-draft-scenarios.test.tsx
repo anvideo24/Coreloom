@@ -124,7 +124,7 @@ function fillQuoteForm() {
   // 날짜
   fireEvent.change(screen.getByLabelText("발행일"), { target: { value: "2026-09-10" } });
   // 품목/수량/단가 — 내부 원가 탭으로 전환해야 보인다
-  fireEvent.click(screen.getByRole("tab", { name: "내부 원가" }));
+  fireEvent.click(screen.getByRole("tab", { name: "내부 원가 · 편집" }));
   fireEvent.change(screen.getByPlaceholderText("작업 패키지 1"), {
     target: { value: "UX-SYNTHETIC-작업명" },
   });
@@ -141,7 +141,7 @@ async function expectQuoteFormFilled() {
   // 품목 편집기는 "내부 원가" 탭에서만 DOM에 나타난다. 탭을 연 직후 값을 채우는 것은
   // MutationObserver 콜백(마이크로태스크)이라 한 틱 기다려야 한다 — 실제 사용자도
   // 탭을 열고 그 다음 프레임에 값을 보게 되는 것과 같다.
-  fireEvent.click(screen.getByRole("tab", { name: "내부 원가" }));
+  fireEvent.click(screen.getByRole("tab", { name: "내부 원가 · 편집" }));
   await waitFor(() => {
     expect((screen.getByPlaceholderText("작업 패키지 1") as HTMLInputElement).value).toBe(
       "UX-SYNTHETIC-작업명",

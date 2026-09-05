@@ -46,6 +46,7 @@ type ComposerProps = {
   initialValidUntil?: string;
   initialClientContactId?: string;
   initialNote?: string;
+  initialTab?: TabId;
   clientId?: string;
   clientName?: string;
   contacts?: QuoteComposerContact[];
@@ -178,6 +179,7 @@ export function QuoteCostingComposer({
   initialValidUntil,
   initialClientContactId = "",
   initialNote = "",
+  initialTab = "customer",
   clientId = "",
   clientName = "고객사",
   contacts = [],
@@ -196,7 +198,7 @@ export function QuoteCostingComposer({
     initialPackages?.length ? initialPackages : [createEmptyQuotePackage()],
   );
   const [expanded, setExpanded] = useState<Record<number, boolean>>({ 0: true });
-  const [tab, setTab] = useState<TabId>("customer");
+  const [tab, setTab] = useState<TabId>(initialTab);
   const [title, setTitle] = useState(initialTitle);
   const [localNote, setLocalNote] = useState(initialNote);
   const [localVatMode, setLocalVatMode] = useState<QuoteVatMode>(initialVatMode);
@@ -491,22 +493,24 @@ export function QuoteCostingComposer({
       <div className="quote-costing-toolbar">
         <div className="quote-costing-tabs" role="tablist" aria-label="견적 보기">
           <button
+            aria-label="고객용 · 미리보기"
             aria-selected={tab === "customer"}
             className={tab === "customer" ? "is-active" : undefined}
             onClick={() => setTab("customer")}
             role="tab"
             type="button"
           >
-            고객용
+            고객용 · 미리보기
           </button>
           <button
+            aria-label="내부 원가 · 편집"
             aria-selected={tab === "internal"}
             className={tab === "internal" ? "is-active" : undefined}
             onClick={() => setTab("internal")}
             role="tab"
             type="button"
           >
-            내부 원가
+            내부 원가 · 편집
           </button>
         </div>
       </div>
