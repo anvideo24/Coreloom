@@ -506,15 +506,6 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
     transform: translateY(0);
     visibility: visible;
   }
-  .agent-panel {
-    border-radius: 1.25rem 1.25rem 0 0;
-    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
-    height: min(92vh, 52rem);
-    left: 0;
-    position: absolute;
-    right: 0;
-    width: auto;
-  }
   .agent-panel-toggle {
     bottom: calc(4.1rem + env(safe-area-inset-bottom, 0px));
     right: var(--space-4);
@@ -712,6 +703,9 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   pointer-events: auto;
   transform: translateX(0);
 }
+.agent-panel-backdrop {
+  display: none;
+}
 .agent-panel {
   background: var(--surface);
   border-left: 1px solid var(--line);
@@ -723,6 +717,42 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   min-height: 0;
   width: var(--agent-panel-width);
 }
+
+@media (max-width: 39.98rem) {
+  .agent-panel-layer {
+    width: 100%;
+  }
+  .agent-panel-backdrop {
+    background: rgb(28 25 22 / 35%);
+    border: 0;
+    cursor: pointer;
+    display: block;
+    inset: 0;
+    position: absolute;
+  }
+  .agent-panel {
+    border-left: 0;
+    border-radius: 1.25rem 1.25rem 0 0;
+    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -12px 32px rgb(28 25 22 / 14%);
+    height: auto;
+    left: 0;
+    max-height: calc(
+      100dvh - 3.5rem - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px) - 0.35rem
+    );
+    overflow: hidden;
+    position: absolute;
+    right: 0;
+    top: auto;
+    width: auto;
+    z-index: 1;
+  }
+  .agent-panel-icon-button {
+    min-height: 2.5rem;
+    min-width: 2.5rem;
+  }
+}
+
 .agent-panel-head {
   align-items: center;
   border-bottom: 1px solid var(--line);
@@ -731,6 +761,12 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
   gap: var(--space-2);
   justify-content: space-between;
   padding: 0.65rem 0.85rem;
+}
+
+@media (max-width: 39.98rem) {
+  .agent-panel-head {
+    padding-top: max(0.65rem, env(safe-area-inset-top, 0px));
+  }
 }
 .agent-panel-picker { flex: 1; min-width: 0; position: relative; }
 .agent-panel-picker-button {
