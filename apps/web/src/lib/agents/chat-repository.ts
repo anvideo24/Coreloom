@@ -29,6 +29,12 @@ export async function readAgentChats(actor: string, agentId: string, threadId?: 
   return { threads, messages, threadId };
 }
 
+export async function readAgentRequest(actor: string, agentId: string, requestId: string) {
+  const { db, workspace } = await chatAgent(actor, agentId);
+  const [row] = await db.select({ threadId: agentChatThreads.id }).from(agentChatMessages).innerJoin(agentChatThreads, eq(agentChatThreads.id, agentChatMessages.threadId)).where(and(eq(agentChatMessages.clientRequestId, requestId), eq(agentChatMessages.role, "user"), eq(agentChatThreads.workspaceId, workspace.id), eq(agentChatThreads.agentId, agentId))).limit(1);
+  return row ? readAgentChats(actor, agentId, row.threadId) : { threads: [], messages: [] };
+}
+
 export async function sendAgentChat(actor: string, input: { agentId: string; threadId?: string; message: string; model: string; pathname: string; attachments?: string[]; requestId?: string }, signal: AbortSignal, onThread: (id: string) => void) {
   const model = requireChatModel(input.model);
   const { db, agent, workspace } = await chatAgent(actor, input.agentId);
@@ -68,8 +74,9 @@ export async function sendAgentChat(actor: string, input: { agentId: string; thr
     await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: actor, eventType: "ai_agent.chat_completed", payload: { agentId: agent.id, threadId, model: model.id } });
     return message;
   } catch (error) {
-    const body = signal.aborted ? "응답을 중지했습니다." : "응답을 완료하지 못했습니다. 구독 연결·사용 한도를 확인한 뒤 다시 보내 주세요.";
+    const body = signal.aborted ? "사용자가 응답을 중지했습니다." : "응답을 완료하지 못했습니다. 구독 연결·사용 한도를 확인한 뒤 다시 보내 주세요.";
     await db.insert(agentChatMessages).values({ threadId, role: "assistant", body, model: model.id, status: "failed", clientRequestId: input.requestId }).onConflictDoNothing();
+    await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: actor, eventType: "ai_agent.chat_failed", payload: { agentId: agent.id, threadId, requestId: input.requestId, reason: signal.aborted ? "user_stop" : "generation_failed" } });
     throw error;
   } finally {
     await db.update(agentChatThreads).set({ busyUntil: null, updatedAt: new Date() }).where(eq(agentChatThreads.id, threadId));
