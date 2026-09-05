@@ -10,6 +10,13 @@ import {
 } from "@/lib/pwa/dev-origins";
 import { decideLocalMainSync, formatLocalUpBanner, PC_DEV_DASHBOARD } from "@/lib/pwa/local-up";
 import { funnelAuthDomainHint, funnelHttpsOrigins, tailscaleFunnelArgs, tailscaleFunnelDisableRootArgs } from "@/lib/pwa/tailscale-funnel";
+import {
+  isIosSafariUserAgent,
+  isStandaloneDisplay,
+  parsePwaInstallDismissedAt,
+  PWA_INSTALL_DISMISS_MS,
+  shouldOfferPwaInstall,
+} from "@/lib/pwa/install";
 import { coreloomWebManifest } from "@/lib/pwa/web-manifest";
 
 describe("private development origins", () => {
@@ -89,5 +96,85 @@ describe("local PC always-up", () => {
     expect(banner).toContain(PC_DEV_DASHBOARD);
     expect(banner).toContain("https://office.tailnet.ts.net");
     expect(banner).toContain("PC에서는 Tailscale 없이");
+  });
+});
+
+
+describe("PWA install offer", () => {
+  it("hides when already standalone or on a wide screen", () => {
+    expect(
+      shouldOfferPwaInstall({
+        secureContext: true,
+        standalone: true,
+        narrowViewport: true,
+        dismissedAt: null,
+        now: 1_000,
+        canNativeInstall: true,
+        iosSafari: false,
+      }),
+    ).toBe("hidden");
+    expect(
+      shouldOfferPwaInstall({
+        secureContext: true,
+        standalone: false,
+        narrowViewport: false,
+        dismissedAt: null,
+        now: 1_000,
+        canNativeInstall: true,
+        iosSafari: true,
+      }),
+    ).toBe("hidden");
+  });
+
+  it("offers a native install when Chrome can prompt, and an iOS guide otherwise", () => {
+    expect(
+      shouldOfferPwaInstall({
+        secureContext: true,
+        standalone: false,
+        narrowViewport: true,
+        dismissedAt: null,
+        now: 1_000,
+        canNativeInstall: true,
+        iosSafari: false,
+      }),
+    ).toBe("native");
+    expect(
+      shouldOfferPwaInstall({
+        secureContext: true,
+        standalone: false,
+        narrowViewport: true,
+        dismissedAt: null,
+        now: 1_000,
+        canNativeInstall: false,
+        iosSafari: true,
+      }),
+    ).toBe("ios-guide");
+  });
+
+  it("keeps a dismissed offer hidden for a week", () => {
+    expect(
+      shouldOfferPwaInstall({
+        secureContext: true,
+        standalone: false,
+        narrowViewport: true,
+        dismissedAt: 1_000,
+        now: 1_000 + PWA_INSTALL_DISMISS_MS - 1,
+        canNativeInstall: true,
+        iosSafari: false,
+      }),
+    ).toBe("hidden");
+    expect(parsePwaInstallDismissedAt("123")).toBe(123);
+    expect(parsePwaInstallDismissedAt("nope")).toBeNull();
+    expect(
+      isIosSafariUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
+      ),
+    ).toBe(true);
+    expect(
+      isIosSafariUserAgent(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/120.0.0.0 Mobile/15E148 Safari/604.1",
+      ),
+    ).toBe(false);
+    expect(isStandaloneDisplay({ displayModeStandalone: true, iosStandalone: false })).toBe(true);
   });
 });

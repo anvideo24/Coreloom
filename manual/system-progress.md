@@ -30,7 +30,7 @@
 | 클라우드 시각 검증 | — | 하지 않음 | Cursor는 브라우저 확인 금지. 화면은 개발 PC에서 대표가 확인 |
 | 운영 빌드 | `next build` | 완료 | 추적 기준을 저장소 뿌리로. `manual/`·뿌리 `RULES.md`가 배포 목록에 오름. `.env*`는 제외 |
 | 배포본 포장 | Dockerfile · standalone | 완료 | `output: "standalone"`. 진입점 `apps/web/server.js`. 정본 `docs/operations/deploy-packaging.md`. 호스팅 선정·Vercel 연결은 이후 |
-| 휴대폰 Funnel 웹앱 | — | PC 확인 필요 | HTTPS `:8443` → 로컬 3000, 로그인 Origin 허용 |
+| 휴대폰 Funnel 웹앱 | — | PC 확인 필요 | HTTPS `:8443` → 로컬 3000, 로그인 Origin 허용. 좁은 화면 **웹앱으로 설치** 칩(PWA)·SW 등록 |
 | 개발 DB 스키마 | — | 완료 | 0000–0028 전부 `ai-development`에 적용됨. 2026-09-05 스키마를 직접 조회해 확인. ⚠️ 이 줄은 손으로 적어 두 번 어긋났다 — 돌리기 전에 스키마를 먼저 조회할 것 |
 
 ## 회사 설립

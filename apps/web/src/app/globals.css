@@ -212,7 +212,8 @@ fieldset:disabled .auth-submit:disabled { cursor: not-allowed; }
 }
 
 html[data-create-panel-open="true"] .private-menu-button,
-html[data-create-panel-open="true"] .agent-panel-toggle {
+html[data-create-panel-open="true"] .agent-panel-toggle,
+html[data-create-panel-open="true"] .pwa-install-layer {
   display: none !important;
 }
 
@@ -660,6 +661,118 @@ html[data-create-panel-open="true"] .agent-panel-toggle {
 }
 .client-profile-full {
   grid-column: 1 / -1;
+}
+
+.pwa-install-layer {
+  display: none;
+}
+
+@media (max-width: 39.98rem) {
+  .pwa-install-layer {
+    bottom: calc(4.1rem + env(safe-area-inset-bottom, 0px));
+    display: block;
+    left: var(--space-4);
+    max-width: min(18.5rem, calc(100vw - 5.5rem));
+    position: fixed;
+    right: auto;
+    z-index: 44;
+  }
+  .private-app-shell:has(.agent-panel-layer.is-open) .pwa-install-layer {
+    display: none;
+  }
+  .pwa-install-chip {
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--line-strong);
+    border-radius: 1rem;
+    box-shadow: var(--shadow-card);
+    display: flex;
+    gap: 0.55rem;
+    padding: 0.55rem 0.55rem 0.55rem 0.75rem;
+  }
+  .pwa-install-copy {
+    display: grid;
+    flex: 1;
+    gap: 0.1rem;
+    min-width: 0;
+  }
+  .pwa-install-copy strong {
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .pwa-install-copy span {
+    color: var(--muted);
+    font-size: 0.6875rem;
+    line-height: 1.35;
+  }
+  .pwa-install-actions {
+    align-items: center;
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 0.2rem;
+  }
+  .pwa-install-primary {
+    background: var(--ink);
+    border: 0;
+    border-radius: 999px;
+    color: var(--surface);
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.75rem;
+    font-weight: 700;
+    min-height: 2rem;
+    padding: 0 0.75rem;
+  }
+  .pwa-install-dismiss {
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    color: var(--muted);
+    cursor: pointer;
+    font: inherit;
+    font-size: 1.1rem;
+    font-weight: 700;
+    min-height: 2rem;
+    min-width: 2rem;
+  }
+  .pwa-install-guide {
+    inset: 0;
+    position: fixed;
+    z-index: 70;
+  }
+  .pwa-install-guide-backdrop {
+    background: rgb(28 25 22 / 42%);
+    border: 0;
+    inset: 0;
+    position: absolute;
+  }
+  .pwa-install-guide-card {
+    background: var(--surface);
+    border-radius: 1.25rem 1.25rem 0 0;
+    bottom: 0;
+    display: grid;
+    gap: var(--space-3);
+    left: 0;
+    padding: var(--space-5) var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
+    position: absolute;
+    right: 0;
+  }
+  .pwa-install-guide-card h2 {
+    font-size: 1.125rem;
+    font-weight: 750;
+    letter-spacing: -0.03em;
+    margin: 0;
+  }
+  .pwa-install-guide-card ol {
+    color: var(--ink);
+    display: grid;
+    font-size: 0.875rem;
+    gap: 0.45rem;
+    line-height: 1.45;
+    margin: 0;
+    padding-left: 1.15rem;
+  }
 }
 
 .agent-panel-toggle {
@@ -2395,6 +2508,7 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
   .private-sheet-layer,
   .agent-panel-layer,
   .agent-panel-toggle,
+  .pwa-install-layer,
   .create-panel-layer { display: none !important; }
   .quote-print-actions { display: none; }
   .quote-print-shell { background: var(--surface); padding: 0; }

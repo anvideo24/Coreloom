@@ -1,5 +1,6 @@
 import { AgentPanel } from "@/components/agent-panel";
 import { PrivateNavigation } from "@/components/private-navigation";
+import { PwaInstallPrompt } from "@/components/pwa-install-prompt";
 import { listFounderAgentsForPanel } from "@/lib/agents/repository";
 import { founderSession } from "@/lib/auth/session";
 
@@ -13,6 +14,7 @@ export default async function PrivateLayout({ children }: Readonly<{ children: R
     <div className="private-app-shell">
       <PrivateNavigation />
       <div className="private-app-content">{children}</div>
+      <PwaInstallPrompt />
       <AgentPanel agents={agents} />
     </div>
   );
