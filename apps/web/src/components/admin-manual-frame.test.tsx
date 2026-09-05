@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "@testing-library/jest-dom/vitest";
-import { render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { cleanup, render, screen, within } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { AdminManualFrame } from "./admin-manual-frame";
 
@@ -12,6 +12,14 @@ const props = {
   title: "운영 설명",
   intro: "읽기 전용 매뉴얼",
 };
+
+beforeEach(() => {
+  expect(document.body.childElementCount).toBe(0);
+});
+
+afterEach(() => {
+  cleanup();
+});
 
 describe("AdminManualFrame manual reading hierarchy", () => {
   it("creates deterministic unique IDs for duplicate headings and links to them", () => {
