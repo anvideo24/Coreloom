@@ -74,9 +74,16 @@ describe("buildVerificationStatus — 실제 계획 + 실제 결과", () => {
     const screenIds = new Set(statuses.flatMap((status) => status.checks.map((check) => check.check.id)));
     expect(screenIds).toEqual(planIds);
 
-    const f0103 = statuses.find((status) => status.feature.id === "F01")
-      ?.checks.find((check) => check.check.id === "F01-03");
-    expect(f0103?.effective).toBe("no-result");
+    // 「어느 검사가 결과 없음인가」는 결과가 쌓이면 바뀐다. 못 박지 않고, 결과가 없는 검사는
+    // 반드시 no-result로 남고 통과로 세지 않는다는 성질만 잰다.
+    const everyCheck = statuses.flatMap((status) => status.checks);
+    for (const check of everyCheck) {
+      if (check.latest === null) {
+        expect(check.effective, `${check.check.id}: 결과가 없는데 no-result가 아니다`).toBe("no-result");
+      }
+    }
+    const countedWithoutResult = everyCheck.filter((check) => check.latest === null && check.effective === "pass");
+    expect(countedWithoutResult, "결과가 없는 검사가 통과로 세어졌다").toEqual([]);
   });
 
   /*
