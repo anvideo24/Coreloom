@@ -14,8 +14,32 @@ import {
 import { founderSession } from "@/lib/auth/session";
 import { chatAgent } from "@/lib/agents/chat-repository";
 import { aiAgents, auditEvents } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { z } from "zod";
+import { accessLabels, accessPolicy } from "@/lib/domain/agent-access";
+import { readAgentRoots, saveAgentRoots } from "@/lib/agents/access-store";
+
+export async function readAgentAccessAction(agentId: string) {
+  const founder = await requireFounder();
+  const { db, agent, workspace } = await chatAgent(founder.id, z.string().uuid().parse(agentId));
+  const recent = await db.select({ payload: auditEvents.payload, at: auditEvents.createdAt }).from(auditEvents).where(and(eq(auditEvents.workspaceId, workspace.id), eq(auditEvents.eventType, "ai_agent.read"), sql`${auditEvents.payload}->>'agentId' = ${agent.id}`)).orderBy(desc(auditEvents.createdAt)).limit(10);
+  return { permissions: accessPolicy(agent.capabilities), roots: await readAgentRoots(workspace.id, agent.id), recent: recent.map((r) => ({ ...r, at: r.at.toISOString() })) };
+}
+
+export async function saveAgentAccessAction(agentId: string, input: { permissions: Record<string, boolean>; roots: string[] }) {
+  const founder = await requireFounder();
+  const data = z.object({ permissions: z.record(z.string(), z.boolean()).refine((p) => Object.keys(p).every((key) => key in accessLabels)), roots: z.array(z.string().trim().min(1).max(500)).max(8) }).strict().parse(input);
+  const { db, agent, workspace } = await chatAgent(founder.id, z.string().uuid().parse(agentId));
+  const permissions = accessPolicy(data.permissions);
+  if (permissions.read_pc && !data.roots.length) throw new Error("PC 조회를 켜려면 허용 폴더를 지정하세요.");
+  // Disable PC reads first: if filesystem validation or save fails, fail closed.
+  await db.update(aiAgents).set({ capabilities: { ...agent.capabilities, read_pc: false }, updatedAt: new Date() }).where(eq(aiAgents.id, agent.id));
+  await saveAgentRoots(workspace.id, agent.id, data.roots);
+  await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: founder.id, eventType: "ai_agent.access_updated", payload: { agentId: agent.id, permissions, rootCount: data.roots.length } });
+  await db.update(aiAgents).set({ capabilities: { ...agent.capabilities, ...permissions }, updatedAt: new Date() }).where(eq(aiAgents.id, agent.id));
+  revalidatePath("/", "layout");
+  return { saved: true };
+}
 
 export async function readAgentSettingsAction(agentId: string) {
   const founder = await requireFounder();
