@@ -11,7 +11,7 @@
 
 ## 개선 검증 계획 — 구현 현황과 별도
 
-기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 실제 결과는 [결과 파일](../docs/quality/verification-results.json)에서 본다. F07 목표·체크리스트 조회 화면(`/admin/manual/progress`, 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인은 아직이다. 사람이 재야 하는 F07-01·05·06은 대표 확인을 기다린다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. Claude 작업 재개 위치와 읽을 문서는 [인계 안내](handoffs/2026-09-05-claude-measurable-improvements.md)를 따른다.
+기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 실제 결과는 [결과 파일](../docs/quality/verification-results.json)에서 본다. F07 목표·체크리스트 조회 화면(`/admin/manual/progress`, 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인은 아직이다. 사람이 재야 하는 F07-01·05·06은 대표 확인을 기다린다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. 3단계(F05 대시보드 정확성·F02 초안 보존)는 커서가 이어받으며 읽을 문서와 범위는 [커서 인계](handoffs/2026-09-05-cursor-stage3-accuracy-and-drafts.md)에 있다. 그날 오전의 [Claude 인계](handoffs/2026-09-05-claude-measurable-improvements.md)는 2단계 착수 전 시점이다.
 
 ## 핵심 기반
 
