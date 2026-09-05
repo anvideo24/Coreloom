@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useId, useMemo, useState, useTransition } from "react";
+import { useEffect, useId, useMemo, useRef, useState, useTransition } from "react";
 
 import { invokeAgentFromPanelAction } from "@/app/(private)/agents/actions";
 import {
   AGENT_PANEL_OPEN_STORAGE_KEY,
   AGENT_PANEL_SELECTED_STORAGE_KEY,
   agentPanelContextTitle,
+  agentPanelVisualFrame,
   isAgentPanelToggleHotkey,
   parseAgentPanelOpen,
   serializeAgentPanelOpen,
@@ -39,6 +40,8 @@ type PanelMessage = {
 export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   const pathname = usePathname();
   const titleId = useId();
+  const layerRef = useRef<HTMLDivElement>(null);
+  const syncVisualFrameRef = useRef<() => void>(() => {});
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [selectedId, setSelectedId] = useState<string>("");
@@ -83,6 +86,48 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const layer = layerRef.current;
+    if (!layer) return;
+
+    function syncVisualFrame() {
+      const target = layerRef.current;
+      if (!target) return;
+      const visual = window.visualViewport;
+      const layoutHeight = window.innerHeight;
+      const visualHeight = visual?.height ?? layoutHeight;
+      const visualOffsetTop = visual?.offsetTop ?? 0;
+      const frame = agentPanelVisualFrame({
+        layoutHeight,
+        visualHeight,
+        visualOffsetTop,
+      });
+      target.style.setProperty("--agent-vv-top", `${frame.topPx}px`);
+      target.style.setProperty("--agent-vv-height", `${frame.heightPx}px`);
+      target.dataset.keyboard = frame.keyboardOpen ? "1" : "0";
+      if (frame.keyboardOpen && window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    }
+    syncVisualFrameRef.current = syncVisualFrame;
+
+    syncVisualFrame();
+    const visual = window.visualViewport;
+    visual?.addEventListener("resize", syncVisualFrame);
+    visual?.addEventListener("scroll", syncVisualFrame);
+    window.addEventListener("resize", syncVisualFrame);
+    return () => {
+      visual?.removeEventListener("resize", syncVisualFrame);
+      visual?.removeEventListener("scroll", syncVisualFrame);
+      window.removeEventListener("resize", syncVisualFrame);
+      syncVisualFrameRef.current = () => {};
+      layer.style.removeProperty("--agent-vv-top");
+      layer.style.removeProperty("--agent-vv-height");
+      delete layer.dataset.keyboard;
+    };
+  }, [open]);
 
   const selected = useMemo(
     () => agents.find((agent) => agent.id === selectedId) ?? null,
@@ -162,7 +207,11 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
         AI
       </button>
 
-      <div className={open ? "agent-panel-layer is-open" : "agent-panel-layer"} inert={!open}>
+      <div
+        className={open ? "agent-panel-layer is-open" : "agent-panel-layer"}
+        inert={!open}
+        ref={layerRef}
+      >
         <button
           aria-label="에이전트 패널 닫기"
           className="agent-panel-backdrop"
@@ -311,6 +360,9 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
               </div>
               <textarea
                 onChange={(event) => setDraft(event.target.value)}
+                onFocus={() => {
+                  window.requestAnimationFrame(() => syncVisualFrameRef.current());
+                }}
                 onKeyDown={(event) => {
                   if (event.key === "Enter" && !event.shiftKey) {
                     event.preventDefault();

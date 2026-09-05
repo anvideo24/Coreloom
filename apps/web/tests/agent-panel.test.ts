@@ -8,6 +8,7 @@ import {
   normalizeAgentPanelMessage,
   parseAgentPanelOpen,
   serializeAgentPanelOpen,
+  agentPanelVisualFrame,
 } from "@/lib/domain/agent-panel";
 
 describe("agent panel shell helpers", () => {
@@ -90,5 +91,30 @@ describe("agent subscription handoff", () => {
 
   it("rejects an empty panel message", () => {
     expect(() => normalizeAgentPanelMessage(" ")).toThrow("Panel message is required");
+  });
+});
+
+
+describe("agent panel visual frame", () => {
+  it("fills the visual viewport when the keyboard obscures the layout", () => {
+    expect(
+      agentPanelVisualFrame({
+        layoutHeight: 800,
+        visualHeight: 420,
+        visualOffsetTop: 0,
+      }),
+    ).toEqual({ keyboardOpen: true, topPx: 0, heightPx: 420 });
+  });
+
+  it("keeps the tab bar reserved when the keyboard is closed", () => {
+    expect(
+      agentPanelVisualFrame({
+        layoutHeight: 800,
+        visualHeight: 800,
+        visualOffsetTop: 0,
+        topInsetPx: 0,
+        tabBarPx: 56,
+      }),
+    ).toEqual({ keyboardOpen: false, topPx: 6, heightPx: 738 });
   });
 });
