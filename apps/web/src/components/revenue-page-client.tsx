@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 import { createRevenueEntryAction, createVentureAction } from "@/app/(private)/revenue/actions";
-import { CreateIconButton } from "@/components/create-icon-button";
+import { CreateMenuButton } from "@/components/create-menu-button";
 import { CreatePanel } from "@/components/create-panel";
 import { formatLedgerAccountLabel } from "@/lib/domain/ledger-accounts";
 import {
@@ -91,10 +91,13 @@ export function RevenuePageClient({
             않습니다.
           </p>
         </div>
-        <div className="quote-header-links">
-          <CreateIconButton label="매출 등록" onClick={openEntry} />
-          <CreateIconButton className="create-icon-button-secondary" label="사업 등록" onClick={openVenture} />
-        </div>
+        <CreateMenuButton
+          label="새로 만들기"
+          options={[
+            { label: "매출 등록", onClick: openEntry },
+            { label: "사업 등록", onClick: openVenture },
+          ]}
+        />
       </header>
 
       <section aria-label="매출 원장" className="quote-list">
