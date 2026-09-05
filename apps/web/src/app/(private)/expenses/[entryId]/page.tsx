@@ -23,9 +23,7 @@ export default async function ExpenseEntryDetailPage({ params }: { params: Promi
     subject: `${row.title} · ${row.counterparty}`,
     amount: entry.amount,
     currency: entry.currency,
-    evidence: [entry.note?.trim() || null, `지급 예정일 ${entry.settlementDate}`, `발생일 ${entry.occurredOn}`]
-      .filter(Boolean)
-      .join(" · "),
+    evidence: entry.note?.trim() || null,
     outcomeLabel: "비용 확정 — 금액 고정, 자동 이체·세금계산서 없음",
   });
 

@@ -22,9 +22,7 @@ export default async function RevenueEntryDetailPage({ params }: { params: Promi
     subject: `${row.title} · ${row.counterparty}`,
     amount: entry.amount,
     currency: entry.currency,
-    evidence: [entry.note?.trim() || null, `정산일 ${entry.settlementDate}`, `발생일 ${entry.occurredOn}`]
-      .filter(Boolean)
-      .join(" · "),
+    evidence: entry.note?.trim() || null,
     outcomeLabel: "매출 확정 — 금액 고정, 세금계산서 발행 없음",
   });
 
