@@ -128,7 +128,7 @@ export function QuotesPageClient({
         <section className="empty-state quote-empty">
           <h2>고객사가 아직 없습니다</h2>
           <p>견적서 작성 패널 안에서 고객사를 등록한 뒤 바로 이어서 작성합니다. 고객사 목록으로 나가지 않습니다.</p>
-          <button className="auth-submit" onClick={openCreate} type="button">
+          <button className={`auth-submit ${styles.emptyCreateButton}`} onClick={openCreate} type="button">
             견적에서 고객사 등록
           </button>
         </section>
@@ -151,7 +151,7 @@ export function QuotesPageClient({
         {versions.length === 0 ? (
           <div className="empty-state quote-empty-inline">
             <p>아직 저장된 견적서가 없습니다.</p>
-            <button className="auth-submit" onClick={openCreate} type="button">
+            <button className={`auth-submit ${styles.emptyCreateButton}`} onClick={openCreate} type="button">
               첫 견적 만들기
             </button>
           </div>
@@ -173,7 +173,7 @@ export function QuotesPageClient({
         )}
       </section>
 
-      <CreatePanel onClose={close} open={open} size="xlarge" title={panelTitle}>
+      <CreatePanel onClose={close} open={open} showHeader size="xlarge" title={panelTitle}>
         {panelMode === "new-client" ? (
           <DraftAwareForm
             action={createClientFromQuoteAction}

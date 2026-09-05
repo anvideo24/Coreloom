@@ -6,7 +6,10 @@ import { ClientCompanyFields } from "@/components/client-company-fields";
 import { QuoteCostingComposer } from "@/components/quote-costing-composer";
 import { ClientsPageClient } from "@/components/clients-page-client";
 import { QuotesPageClient } from "@/components/quotes-page-client";
+import { CreatePanel } from "@/components/create-panel";
+import { DraftAwareForm } from "@/components/draft-aware-form";
 import { resolveQuoteIssuerProfile } from "@/lib/quotes/issuer";
+import salesStyles from "@/components/sales-ux.module.css";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ replace: vi.fn() }),
@@ -64,5 +67,35 @@ describe("sales UX", () => {
     }
     fireEvent.change(search, { target: { value: "없는 항목" } });
     expect(screen.getByText("검색 결과가 없습니다.")).toBeTruthy();
+  });
+
+  it("고객사 빈 상태의 첫 생성 버튼은 내용 폭으로 유지한다", () => {
+    render(<ClientsPageClient draftScopeId="test" clients={[]} />);
+    expect(screen.getByRole("button", { name: "첫 고객사 만들기" }).classList.contains(salesStyles.emptyCreateButton)).toBe(true);
+  });
+
+  it("작성 패널 헤더의 닫기는 폼 초안을 보존한 채 다시 열 수 있다", async () => {
+    function Harness() {
+      const [open, setOpen] = React.useState(true);
+      return (
+        <>
+          <button onClick={() => setOpen(true)} type="button">다시 열기</button>
+          <CreatePanel open={open} onClose={() => setOpen(false)} showHeader title="초안 작성">
+            <DraftAwareForm action={vi.fn()} formId="sales-draft" scopeId="test-scope">
+              <label>상호<input name="name" /></label>
+            </DraftAwareForm>
+          </CreatePanel>
+        </>
+      );
+    }
+
+    render(<Harness />);
+    const input = screen.getByRole("textbox", { name: "상호" });
+    fireEvent.change(input, { target: { value: "닫아도 남는 초안" } });
+    expect(screen.getByRole("dialog").querySelector("button[aria-label='작성 닫기']")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "작성 닫기" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "다시 열기" }));
+    expect((await screen.findByRole("textbox", { name: "상호" }) as HTMLInputElement).value).toBe("닫아도 남는 초안");
   });
 });

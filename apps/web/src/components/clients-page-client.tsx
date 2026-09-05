@@ -79,7 +79,7 @@ export function ClientsPageClient({ clients, draftScopeId }: { clients: ClientRo
         {clients.length === 0 ? (
           <div className="empty-state quote-empty-inline">
             <p>등록된 고객사가 없습니다.</p>
-            <button className="auth-submit" onClick={openCreate} type="button">
+            <button className={`auth-submit ${styles.emptyCreateButton}`} onClick={openCreate} type="button">
               첫 고객사 만들기
             </button>
           </div>
@@ -97,7 +97,7 @@ export function ClientsPageClient({ clients, draftScopeId }: { clients: ClientRo
         )}
       </section>
 
-      <CreatePanel onClose={close} open={open} size="wide" title="새 고객사">
+      <CreatePanel onClose={close} open={open} showHeader size="wide" title="새 고객사">
         <DraftAwareForm action={createClientAction} className="quote-form" formId="client-create" scopeId={draftScopeId}>
           <ClientCompanyFields includeFirstContact progressiveDetails />
           <div className="quote-form-full" style={{ alignItems: "center", display: "flex", flexWrap: "wrap", gap: "0.75rem" }}>
