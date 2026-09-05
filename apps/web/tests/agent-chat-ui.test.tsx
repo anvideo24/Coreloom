@@ -16,6 +16,7 @@ const agent = { id: "00000000-0000-4000-8000-000000000001", name: "테스트 에
 
 beforeEach(() => {
   vi.clearAllMocks();
+  sessionStorage.clear();
   Element.prototype.scrollTo = vi.fn();
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     if (init?.method === "POST") {
@@ -33,6 +34,45 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("agent conversation interactions", () => {
+  it("pastes multiple images and preserves attachments and draft when sending fails", async () => {
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+    let count = 0;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (String(url).includes("/images")) return Response.json({ id: `image-${++count}` });
+      if (init?.method === "POST") return new Response(null, { status: 503 });
+      return originalFetch(url, init);
+    });
+    fireEvent.paste(screen.getByLabelText("메시지"), { clipboardData: { files: [new File(["a"], "a.png", { type: "image/png" }), new File(["b"], "b.png", { type: "image/png" })] } });
+    await screen.findByAltText("첨부 이미지 2");
+    fireEvent.change(screen.getByLabelText("메시지"), { target: { value: "두 장 확인" } });
+    fireEvent.click(screen.getByLabelText("메시지 보내기"));
+    await screen.findByRole("alert");
+    expect((screen.getByLabelText("메시지") as HTMLTextAreaElement).value).toBe("두 장 확인");
+    expect(screen.getByAltText("첨부 이미지 2")).toBeTruthy();
+    expect(vi.mocked(fetch).mock.calls.some(([, init]) => init?.method === "POST" && typeof init.body === "string" && JSON.parse(init.body).attachments?.length === 2)).toBe(true);
+    fireEvent.click(screen.getByLabelText("메시지 보내기"));
+    await waitFor(() => expect(screen.getByLabelText("메시지 보내기")).toBeTruthy());
+    const sends = vi.mocked(fetch).mock.calls.filter(([, init]) => init?.method === "POST" && typeof init.body === "string").map(([, init]) => JSON.parse(String(init!.body)));
+    expect(sends).toHaveLength(2);
+    expect(sends[1].requestId).toBe(sends[0].requestId);
+    fireEvent.click(screen.getByLabelText("이미지 1 제거"));
+    expect(screen.queryByAltText("첨부 이미지 2")).toBeNull();
+  });
+  it("restores the chosen conversation, model and unsent draft after remount", async () => {
+    const first = render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("대화 이력"));
+    fireEvent.click(screen.getByText("지난 대화"));
+    await screen.findByText("저장된 답변");
+    fireEvent.change(screen.getByLabelText("메시지"), { target: { value: "작성 중인 글" } });
+    first.unmount();
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("저장된 답변");
+    expect((screen.getByLabelText("메시지") as HTMLTextAreaElement).value).toBe("작성 중인 글");
+    expect((screen.getByLabelText("대화 모델") as HTMLSelectElement).value).toBe("gpt-5.4-mini");
+  });
   it("saves selected read permissions separately from instructions", async () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");

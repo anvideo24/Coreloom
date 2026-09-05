@@ -11,7 +11,7 @@ export function requireChatModel(id: string) {
   return model;
 }
 
-export type ChatMessage = { id: string; role: string; body: string; model: string; status: string };
+export type ChatMessage = { id: string; role: string; body: string; model: string; status: string; attachments?: string[] };
 export type ChatThread = { id: string; title: string; model: string };
 
 export function chatPrompt(agent: {

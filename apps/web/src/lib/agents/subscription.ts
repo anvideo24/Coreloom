@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import { existsSync } from "node:fs";
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir, homedir } from "node:os";
 import path from "node:path";
 import { requireChatModel } from "../domain/agent-chat";
@@ -70,21 +70,29 @@ export async function subscriptionStatus(provider: string) {
   } catch { return false; }
 }
 
-export async function generateSubscriptionReply(modelId: string, prompt: string, signal?: AbortSignal) {
+export async function generateSubscriptionReply(modelId: string, prompt: string, signal?: AbortSignal, images: Buffer[] = []) {
   const model = requireChatModel(modelId);
   if (!await subscriptionStatus(model.provider)) throw new Error("이 PC에서 해당 구독 계정 로그인이 필요합니다.");
   const directory = await mkdtemp(path.join(tmpdir(), "coreloom-chat-"));
   const exe = executable(model.provider);
   try {
+    if (images.length > 6) throw new Error("이미지는 최대 6장입니다.");
+    const imagePaths = await Promise.all(images.map(async (bytes, index) => {
+      const filename = path.join(directory, `image-${index + 1}.webp`);
+      await writeFile(filename, bytes, { mode: 0o600 });
+      return filename;
+    }));
     if (model.provider === "gpt_codex_subscription") {
       const outputPath = path.join(directory, "reply.txt");
-      await runSubscriptionProcess(exe.command, [...exe.prefix, "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--sandbox", "read-only", "-c", "features.shell_tool=false", "-c", "features.unified_exec=false", "--model", model.id, "--output-last-message", outputPath, "-C", directory, "-"], directory, prompt, signal);
+      await runSubscriptionProcess(exe.command, [...exe.prefix, "exec", "--ephemeral", "--ignore-user-config", "--ignore-rules", "--skip-git-repo-check", "--sandbox", "read-only", "-c", "features.shell_tool=false", "-c", "features.unified_exec=false", "--model", model.id, "--output-last-message", outputPath, "-C", directory, ...imagePaths.flatMap((file) => ["--image", file]), "-"], directory, prompt, signal);
       const reply = (await readFile(outputPath, "utf8")).trim();
       if (!reply || reply.length > 32_000) throw new Error("응답이 비어 있거나 너무 깁니다.");
       return reply;
     }
-    const output = await runSubscriptionProcess(exe.command, ["-p", "--safe-mode", "--tools", "", "--strict-mcp-config", "--no-session-persistence", "--model", model.id, "--output-format", "json"], directory, prompt, signal);
-    const result = JSON.parse(output);
+    const input = images.length ? JSON.stringify({ type: "user", message: { role: "user", content: [{ type: "text", text: prompt }, ...images.map((bytes) => ({ type: "image", source: { type: "base64", media_type: "image/webp", data: bytes.toString("base64") } }))] } }) + "\n" : prompt;
+    const output = await runSubscriptionProcess(exe.command, ["-p", "--safe-mode", "--tools", "", "--strict-mcp-config", "--no-session-persistence", "--model", model.id, "--output-format", images.length ? "stream-json" : "json", ...(images.length ? ["--input-format", "stream-json", "--verbose"] : [])], directory, input, signal);
+    const result = images.length ? output.trim().split("\n").map((line) => JSON.parse(line)).find((event) => event.type === "result") : JSON.parse(output);
+    if (!result) throw new Error("구독 실행기가 답변을 반환하지 않았습니다.");
     if (result.is_error || typeof result.result !== "string" || !result.result.trim() || result.result.length > 32_000) throw new Error("구독 실행기가 답변을 반환하지 않았습니다.");
     return result.result.trim() as string;
   } finally {

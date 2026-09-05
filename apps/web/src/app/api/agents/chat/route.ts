@@ -6,7 +6,7 @@ import { subscriptionStatus } from "@/lib/agents/subscription";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-const requestSchema = z.object({ agentId: z.string().uuid(), threadId: z.string().uuid().optional(), message: z.string().trim().min(1).max(8000), model: z.enum(chatModels.map((model) => model.id)), pathname: z.string().max(240).startsWith("/") });
+const requestSchema = z.object({ agentId: z.string().uuid(), requestId: z.string().uuid().optional(), threadId: z.string().uuid().optional(), message: z.string().trim().min(1).max(8000), attachments: z.array(z.string().uuid()).max(6).optional(), model: z.enum(chatModels.map((model) => model.id)), pathname: z.string().max(240).startsWith("/") });
 const responseHeaders = { "Cache-Control": "no-store" };
 
 export async function GET(request: Request) {
@@ -19,7 +19,7 @@ export async function GET(request: Request) {
   }
   const parsed = z.object({ agentId: z.string().uuid(), threadId: z.string().uuid().optional() }).safeParse({ agentId: params.get("agentId"), threadId: params.get("threadId") || undefined });
   if (!parsed.success) return Response.json({ error: "대화 선택을 확인해 주세요." }, { status: 400 });
-  try { return Response.json(await readAgentChats(session.founder.id, parsed.data.agentId, parsed.data.threadId), { headers: responseHeaders }); }
+  try { return Response.json(await readAgentChats(session.founder.id, parsed.data.agentId, parsed.data.threadId, params.get("fresh") === "1"), { headers: responseHeaders }); }
   catch { return Response.json({ error: "대화를 불러오지 못했습니다." }, { status: 400, headers: responseHeaders }); }
 }
 
