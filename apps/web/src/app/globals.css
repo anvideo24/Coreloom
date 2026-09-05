@@ -844,20 +844,28 @@ html[data-create-panel-open="true"] .pwa-install-layer {
     position: absolute;
   }
   .agent-panel {
-    /* 탭바·세이프에어리어 사이에 고정 — 짧은 폴드 커버에서도 헤더(닫기)가 화면 안에 남는다 */
+    /* visualViewport(--agent-vv-*)에 맞춤 — 키보드가 올라와도 헤더가 화면 안에 남는다 */
     border-left: 0;
     border-radius: 1.25rem 1.25rem 0 0;
-    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    bottom: auto;
     box-shadow: 0 -12px 32px rgb(28 25 22 / 14%);
-    height: auto;
+    height: var(
+      --agent-vv-height,
+      calc(
+        100dvh - 3.5rem - env(safe-area-inset-bottom, 0px) - max(0.35rem, env(safe-area-inset-top, 0px))
+      )
+    );
     left: 0;
     max-height: none;
     overflow: hidden;
     position: absolute;
     right: 0;
-    top: max(0.35rem, env(safe-area-inset-top, 0px));
+    top: var(--agent-vv-top, max(0.35rem, env(safe-area-inset-top, 0px)));
     width: auto;
     z-index: 1;
+  }
+  .agent-panel-layer[data-keyboard="1"] .agent-panel {
+    border-radius: 0;
   }
   .agent-panel-icon-button {
     min-height: 2.75rem;
@@ -865,9 +873,9 @@ html[data-create-panel-open="true"] .pwa-install-layer {
   }
   .agent-panel-head {
     background: var(--surface);
+    flex-shrink: 0;
     padding-top: 0.65rem;
-    position: sticky;
-    top: 0;
+    position: relative;
     z-index: 2;
   }
   .agent-panel-head-actions {
@@ -883,9 +891,11 @@ html[data-create-panel-open="true"] .pwa-install-layer {
     white-space: nowrap;
   }
   .agent-panel-body {
+    overscroll-behavior: contain;
     padding: var(--space-3) var(--space-3) var(--space-2);
   }
   .agent-panel-composer {
+    flex-shrink: 0;
     padding: 0.4rem 0.65rem 0.55rem;
   }
   .agent-panel-model select {

@@ -131,3 +131,41 @@ export function buildAgentPanelWorkNotes(input: {
   ].join("\n");
   return { requestNote, inputNote };
 }
+
+/** 좁은 화면 하단 탭바 높이(px). CSS `3.5rem`과 맞춘다. */
+export const AGENT_PANEL_MOBILE_TAB_BAR_PX = 56;
+
+/** 레이아웃 대비 시각 뷰포트가 이만큼 줄면 키보드가 열린 것으로 본다. */
+export const AGENT_PANEL_KEYBOARD_OPEN_PX = 100;
+
+/**
+ * 모바일에서 가상 키보드가 올라와도 헤더가 보이도록,
+ * visualViewport에 맞춘 패널 top·height를 계산한다.
+ */
+export function agentPanelVisualFrame(input: {
+  layoutHeight: number;
+  visualHeight: number;
+  visualOffsetTop: number;
+  tabBarPx?: number;
+  topInsetPx?: number;
+}) {
+  const tabBarPx = input.tabBarPx ?? AGENT_PANEL_MOBILE_TAB_BAR_PX;
+  const topInsetPx = input.topInsetPx ?? 0;
+  const obscured =
+    input.layoutHeight - input.visualHeight - input.visualOffsetTop > AGENT_PANEL_KEYBOARD_OPEN_PX;
+
+  if (obscured) {
+    return {
+      keyboardOpen: true as const,
+      topPx: Math.max(0, input.visualOffsetTop),
+      heightPx: Math.max(160, input.visualHeight),
+    };
+  }
+
+  const topPx = Math.max(topInsetPx, 6) + input.visualOffsetTop;
+  const heightPx = Math.max(
+    160,
+    input.visualHeight - (topPx - input.visualOffsetTop) - tabBarPx,
+  );
+  return { keyboardOpen: false as const, topPx, heightPx };
+}
