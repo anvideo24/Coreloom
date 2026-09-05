@@ -89,7 +89,7 @@ export const adminManualHomeSections: { title: string; description: string; card
       {
         href: "/admin/manual/progress",
         label: "시스템 진행 현황",
-        summary: "기능별로 어디까지 됐는지 보는 표.",
+        summary: "구현 현황 표와 기능별 개선 목표·검증 현황.",
         source: "Coreloom / manual/system-progress.md",
         origin: "product",
       },

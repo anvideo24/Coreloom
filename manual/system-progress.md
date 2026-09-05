@@ -11,7 +11,7 @@
 
 ## 개선 검증 계획 — 구현 현황과 별도
 
-기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 1단계 초안·부분 기준 측정만 준비했으며, F07 목표·체크리스트 조회 화면은 미착수다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. Claude 작업 재개 위치와 읽을 문서는 [인계 안내](handoffs/2026-09-05-claude-measurable-improvements.md)를 따른다.
+기능별 목표·28개 검증 항목은 [개선 계획](../docs/superpowers/plans/2026-09-05-measurable-improvements.md)에 있다. 실제 결과는 [결과 파일](../docs/quality/verification-results.json)에서 본다. F07 목표·체크리스트 조회 화면(`/admin/manual/progress`, 상세는 `/admin/manual/progress/[기능ID]`)은 가지 `claude/f07-verification-view`에서 구현 중이며, main 병합 전이다. 사람이 재야 하는 F07-01·05·06은 대표 확인을 기다린다. 위 구현 상태를 새 검증의 통과로 간주하지 않는다. Claude 작업 재개 위치와 읽을 문서는 [인계 안내](handoffs/2026-09-05-claude-measurable-improvements.md)를 따른다.
 
 ## 핵심 기반
 
@@ -30,6 +30,7 @@
 | 공용 정본 화면 | `/admin/manual/shared/*` | 완료 | `working-method`의 `RULES`·`HOW`·`LESSONS`. 저장소가 없으면 「아직 없다」로 밝힘. 2026-09-05 대표가 로그인해 확인 |
 | 이 제품 규칙 화면 | `/admin/manual/rules` | 완료 | 저장소 뿌리 `RULES.md`. 2026-09-05 대표가 로그인해 확인 |
 | 매뉴얼 화면 편집기 | — | 미착수 | 저장 = git 커밋이어야 함. DB만 두는 방식 금지 |
+| 개선 목표·검증 현황 화면 | `/admin/manual/progress` · `/admin/manual/progress/[기능ID]` | 진행 중 | 계획서+결과 JSON 읽기 전용. 가지에서 타입·시험 283건·빌드 통과. 정적 렌더로 360·840·1280px 가로 넘침 0 실측(로그인 화면 아님). F07-01·05·06은 대표 측정 대기. main 병합 전 |
 | 개발 PC 기동 | `npm run up` | 완료 | HTTP `127.0.0.1:3000`, Windows tsx 수정 포함 |
 | 클라우드 시각 검증 | — | 하지 않음 | Cursor는 브라우저 확인 금지. 화면은 개발 PC에서 대표가 확인 |
 | 운영 빌드 | `next build` | 완료 | 추적 기준을 저장소 뿌리로. `manual/`·뿌리 `RULES.md`가 배포 목록에 오름. `.env*`는 제외 |

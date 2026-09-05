@@ -2561,6 +2561,48 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
 .manual-document th, .manual-document td { border: 1px solid var(--line); padding: 0.5rem 0.75rem; text-align: left; }
 .manual-document th { background: var(--canvas); font-weight: 700; }
 
+/* ── 개선 목표·검증 현황(F07) ────────────────── */
+/* 표·카드 본문은 .manual-document table/th/td 스타일을 그대로 물려받는다 — 여기서는 감싸는 틀만 더한다. */
+.verification-section { display: grid; gap: var(--space-4); }
+.verification-note { color: var(--muted) !important; font-size: 0.875rem !important; line-height: 1.65; margin: 0 0 var(--space-2) !important; }
+.verification-table-wrap, .verification-check-table-wrap { overflow: auto; }
+.verification-cards, .verification-check-cards { display: none; gap: var(--space-4); }
+.verification-card, .verification-check-card {
+  background: var(--surface-raised);
+  border: 1.5px solid var(--line);
+  border-radius: var(--radius-control);
+  display: grid;
+  gap: var(--space-2);
+  padding: var(--space-5);
+}
+.verification-card h3 { font-size: 1rem; font-weight: 700; margin: 0; }
+.verification-check-card h4 { font-size: 0.9375rem; font-weight: 700; margin: 0; }
+.verification-card dl, .verification-check-card dl { display: grid; gap: 0.375rem; margin: 0; }
+.verification-card dt, .verification-check-card dt { color: var(--muted); font-size: 0.75rem; font-weight: 700; }
+.verification-card dd, .verification-check-card dd { margin: 0 0 var(--space-2); }
+.verification-detail-nav { display: flex; flex-wrap: wrap; gap: var(--space-4); margin-bottom: var(--space-2); }
+.verification-history { margin-top: var(--space-2); }
+.verification-history summary { color: var(--accent); cursor: pointer; font-size: 0.8125rem; font-weight: 600; min-height: 1.75rem; }
+.verification-link { align-items: center; display: inline-flex; min-height: 1.5rem; }
+/* 표 머리와 짧은 값(상태·숫자·ID·커밋)은 낱말 중간에서 안 꺾는다. 1280px에서 「미착수」가 「미착/수」로 갈라졌다. */
+.verification-table th, .verification-nowrap { white-space: nowrap; }
+/* 검사 표는 6열이라 928px 본문에서도 칸이 글자 폭까지 쪼그라들었다(1280px 실측). 최소 폭을 주고 좁으면 표 안에서만 가로로 민다. */
+.verification-check-table-wrap table { min-width: 52rem; }
+.verification-stack { display: grid; gap: 0.25rem; }
+.verification-reason { color: var(--muted); display: block; font-size: 0.8125rem; margin-top: 0.375rem; }
+
+/* 검사 표(6열·최소 52rem)는 펼친 폴드·태블릿 폭(840px 실측)에서 표 안쪽 가로 스크롤이 생긴다. 밀어 읽게 두지 않고 카드로 바꾼다. */
+@media (max-width: 55.98rem) {
+  .verification-check-table-wrap { display: none; }
+  .verification-check-cards { display: grid; }
+}
+
+@media (max-width: 39.98rem) {
+  .verification-table-wrap { display: none; }
+  .verification-cards { display: grid; }
+  .verification-link { min-height: 3rem; }
+}
+
 /* ── 반응형 ─────────────────────────────────── */
 @media (max-width: 48rem) {
   .operations-shell {

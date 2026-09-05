@@ -12,6 +12,8 @@ describe("deploy packaging", () => {
     expect(config).toContain("outputFileTracingRoot");
     expect(config).toContain("**/.env*");
     expect(config).toContain("../../manual/**/*.md");
+    expect(config).toContain("../../docs/superpowers/plans/*.md");
+    expect(config).toContain("../../docs/quality/*.json");
   });
 
   it("ships a root Dockerfile that starts apps/web/server.js", () => {

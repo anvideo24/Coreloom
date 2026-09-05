@@ -1,0 +1,70 @@
+{
+  "schemaVersion": 1,
+  "implementation": [
+    {
+      "featureId": "F07",
+      "stage": "in-progress",
+      "ref": "claude/f07-verification-view",
+      "recordedAt": "2026-09-05",
+      "note": "조회 화면 최소 구현. main 병합·사용 환경 반영 전."
+    }
+  ],
+  "results": [
+    {
+      "checkId": "F02-01",
+      "outcome": "fail",
+      "value": "PC 고객사 폼 닫기→재열기 1회 관찰에서 초안 손실(empty=true, restored=false). 16개 조합 중 1개만 관찰했고 나머지 15개는 미측정.",
+      "evidence": {
+        "kind": "human",
+        "ref": "docs/quality/baseline-2026-09-05.md#B02",
+        "checkedAt": "2026-09-05",
+        "by": "Codex"
+      },
+      "codeCommit": "866bb3004928a59321f03b36c4dfc3d2ce4aaf6f",
+      "planVersion": 1,
+      "environment": "PC Chrome 2560×1215, 로그인 상태, 가상 상호 입력",
+      "note": "기준 측정 기록에 시각이 없어 날짜만 적음."
+    },
+    {
+      "checkId": "F05-01",
+      "outcome": "fail",
+      "value": "청구일 9월29일 100원이 월 집계에 0원으로 표시. 월 구간 마지막이 9월28일.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/baseline-2026-09-05.md#B03",
+        "checkedAt": "2026-09-05T07:06:31Z"
+      },
+      "codeCommit": "866bb3004928a59321f03b36c4dfc3d2ce4aaf6f",
+      "planVersion": 1,
+      "environment": "도메인 함수 직접 실행, 가상 데이터, DB 없음"
+    },
+    {
+      "checkId": "F05-02",
+      "outcome": "fail",
+      "value": "청구일 9월2일·입금 예정일 10월2일 100원이 9월 입금 집계에 포함.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/baseline-2026-09-05.md#B04",
+        "checkedAt": "2026-09-05"
+      },
+      "codeCommit": "866bb3004928a59321f03b36c4dfc3d2ce4aaf6f",
+      "planVersion": 1,
+      "environment": "도메인 함수 직접 실행, 가상 데이터, DB 없음",
+      "note": "기준 측정 기록에 시각이 없어 날짜만 적음."
+    },
+    {
+      "checkId": "F05-03",
+      "outcome": "fail",
+      "value": "같은 가상 고객사의 프로젝트 2개, 견적 1개인데 두 프로젝트 모두 견적 단계 true. 도메인 입력에 견적의 프로젝트 구분이 없음.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/baseline-2026-09-05.md#B05",
+        "checkedAt": "2026-09-05"
+      },
+      "codeCommit": "866bb3004928a59321f03b36c4dfc3d2ce4aaf6f",
+      "planVersion": 1,
+      "environment": "도메인 함수 직접 실행, 가상 데이터, DB 없음",
+      "note": "기준 측정 기록에 시각이 없어 날짜만 적음."
+    }
+  ]
+}

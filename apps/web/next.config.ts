@@ -21,7 +21,12 @@ const nextConfig: NextConfig = {
   // 빌드가 통째로 멈춘다.
   outputFileTracingRoot: join(__dirname, "../.."),
   outputFileTracingIncludes: {
-    "/admin/manual/**": ["../../manual/**/*.md", "../../RULES.md"],
+    "/admin/manual/**": [
+      "../../manual/**/*.md",
+      "../../RULES.md",
+      "../../docs/superpowers/plans/*.md",
+      "../../docs/quality/*.json",
+    ],
   },
   // 설정 파일을 읽는 라우트 때문에 `.env.local`이 추적 목록에 들어간다. 그대로 두면
   // 배포본을 싸는 순간 연결 문자열과 API 키가 같이 실린다. 목록에서 빼 둔다.
