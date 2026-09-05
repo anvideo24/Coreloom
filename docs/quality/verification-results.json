@@ -84,6 +84,13 @@
       "ref": "claude/f05-f02-coverage",
       "recordedAt": "2026-09-05",
       "note": "복원 결함 3건 수리. 실기기 8조합 측정 전. main 병합 전."
+    },
+    {
+      "featureId": "F06",
+      "stage": "in-progress",
+      "ref": "claude/f06-business-work",
+      "recordedAt": "2026-09-05",
+      "note": "코드·시험 완료. 마이그레이션 미실행, main 병합 전."
     }
   ],
   "results": [
@@ -612,6 +619,38 @@
       "codeCommit": "9f257ae9b7939b4dc48b1ddb7de7db33c30d9f7f",
       "planVersion": 1,
       "environment": "vitest · Node · 도메인 함수와 라우트 직접 실행, DB 없음"
+    },
+    {
+      "checkId": "F06-01",
+      "outcome": "unverified",
+      "value": "세 유형(회사 운영·자체 사업·고객사 프로젝트)으로 업무를 만들고 다시 조회해 내용과 연결이 같은지 3/3 대조했다. 고객사 없는 두 유형에서 고객사가 비어 있음도 함께 확인했다. 다만 마이그레이션을 아직 안 돌려 실제 데이터베이스에서 잰 것이 아니다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/work-kind.test.ts",
+        "checkedAt": "2026-09-05T12:10:21Z"
+      },
+      "codeCommit": "113a2a85ff309015ed67465a025df2f726a0fd5d",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수와 가상 저장소, 실제 DB 미적용",
+      "measured": {
+        "covered": 3,
+        "total": 3
+      },
+      "note": "개발 DB에 마이그레이션을 적용하고 화면에서 세 유형을 실제로 등록해 보면 통과로 올릴 수 있다."
+    },
+    {
+      "checkId": "F06-02",
+      "outcome": "unverified",
+      "value": "음성 사례 4건을 쟀다 — 회사 운영 업무에 프로젝트 붙이기, 자체 사업 업무에 고객사 붙이기, 고객사 유형인데 프로젝트 없음, 남의 워크스페이스 사업 붙이기. 전부 거부된다. 다만 데이터베이스의 CHECK 제약은 아직 적용되지 않아 코드 층에서만 확인했다.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "apps/web/tests/work-kind.test.ts",
+        "checkedAt": "2026-09-05T12:10:21Z"
+      },
+      "codeCommit": "113a2a85ff309015ed67465a025df2f726a0fd5d",
+      "planVersion": 1,
+      "environment": "vitest · Node · 도메인 함수와 가상 저장소, 실제 DB 미적용",
+      "note": "같은 규칙이 코드와 데이터베이스 두 곳에 있다. 마이그레이션 적용 후 DB 제약도 실제로 막는지 확인해야 한다."
     }
   ]
 }
