@@ -3,8 +3,10 @@ import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { AgentChat } from "@/components/agent-chat";
+import { AgentPanel } from "@/components/agent-panel";
 
-vi.mock("next/navigation", () => ({ usePathname: () => "/agents" }));
+const routerPush = vi.hoisted(() => vi.fn());
+vi.mock("next/navigation", () => ({ usePathname: () => "/agents", useRouter: () => ({ push: routerPush }) }));
 vi.mock("@/app/(private)/agents/actions", () => ({
   readAgentSettingsAction: vi.fn().mockResolvedValue({ workStyle: "", answerStyle: "", procedure: "", instructions: "이전 지침", modelProvider: "gpt_codex_subscription" }),
   saveAgentSettingsAction: vi.fn().mockResolvedValue({ saved: true }),
@@ -18,6 +20,8 @@ beforeEach(() => {
   vi.clearAllMocks();
   sessionStorage.clear();
   Element.prototype.scrollTo = vi.fn();
+  HTMLDialogElement.prototype.showModal = vi.fn(function showModal(this: HTMLDialogElement) { this.open = true; });
+  HTMLDialogElement.prototype.close = vi.fn(function close(this: HTMLDialogElement) { this.open = false; });
   vi.stubGlobal("fetch", vi.fn(async (url: string, init?: RequestInit) => {
     if (init?.method === "POST") {
       const encoder = new TextEncoder();
@@ -34,6 +38,31 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.unstubAllGlobals(); });
 
 describe("agent conversation interactions", () => {
+  it("keeps the selected agent and shows a body-level guard when the panel is hidden", async () => {
+    localStorage.setItem("coreloom.agent-panel-open", "1");
+    localStorage.removeItem("coreloom.agent-panel-selected");
+    vi.stubGlobal("visualViewport", undefined);
+    const another = { ...agent, id: "00000000-0000-4000-8000-000000000002", name: "다른 테스트 에이전트" };
+    const { container } = render(<AgentPanel agents={[agent, another]} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "보존할 설정" } });
+    const select = screen.getByLabelText("에이전트 선택") as HTMLSelectElement;
+    fireEvent.change(select, { target: { value: another.id } });
+    await screen.findByRole("dialog", { name: "저장하지 않은 설정" });
+    expect(select.value).toBe(agent.id);
+    fireEvent.click(screen.getByRole("button", { name: "계속 편집" }));
+    expect(select.value).toBe(agent.id);
+    fireEvent.click(screen.getByRole("button", { name: /^패널 닫기$/ }));
+    const link = document.createElement("a"); link.href = "/dashboard"; document.body.append(link);
+    fireEvent.click(link);
+    const dialog = await screen.findByRole("dialog", { name: "저장하지 않은 설정" });
+    expect(dialog.parentElement).toBe(document.body);
+    expect(container.querySelector(".agent-panel-layer")?.classList.contains("is-open")).toBe(false);
+    fireEvent.click(screen.getByRole("button", { name: "버리고 계속" }));
+    expect(routerPush).toHaveBeenCalledWith("/dashboard");
+    link.remove(); localStorage.clear();
+  });
   it("clears the composer immediately and provides user message copy during generation", async () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");
@@ -129,6 +158,74 @@ describe("agent conversation interactions", () => {
     await waitFor(() => expect(dirty).toHaveBeenLastCalledWith(true));
     const link = document.createElement("a"); link.href = "/dashboard"; document.body.append(link);
     expect(link.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }))).toBe(false);
+  });
+  it("saves an unsaved conversation setting before continuing to history", async () => {
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "변경 중" } });
+    fireEvent.click(screen.getByText("대화 이력"));
+    expect(await screen.findByRole("dialog", { name: "저장하지 않은 설정" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "저장하고 계속" }));
+    await waitFor(() => expect(saveAgentSettingsAction).toHaveBeenCalledWith(agent.id, expect.objectContaining({ workStyle: "변경 중" })));
+    expect(await screen.findByText("이전 대화")).toBeTruthy();
+  });
+  it("keeps an access draft and stays in settings when its expansion confirmation is cancelled", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.click(screen.getByRole("tab", { name: "자료 접근" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "견적서" }));
+    fireEvent.click(screen.getByText("대화 이력"));
+    fireEvent.click(await screen.findByRole("button", { name: "저장하고 계속" }));
+    expect(saveAgentAccessAction).not.toHaveBeenCalled();
+    expect(screen.queryByText("이전 대화")).toBeNull();
+    expect((screen.getByRole("checkbox", { name: "견적서" }) as HTMLInputElement).checked).toBe(true);
+  });
+  it("discards unsaved conversation settings only after the explicit discard action", async () => {
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?");
+    fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "버릴 변경" } });
+    fireEvent.click(screen.getByText("대화 이력"));
+    fireEvent.click(await screen.findByRole("button", { name: "계속 편집" }));
+    expect((screen.getByLabelText("일하는 방식") as HTMLTextAreaElement).value).toBe("버릴 변경");
+    fireEvent.click(screen.getByText("대화 이력"));
+    fireEvent.click(await screen.findByRole("button", { name: "버리고 계속" }));
+    expect(await screen.findByText("이전 대화")).toBeTruthy();
+  });
+  it("does not continue when saving conversation settings fails", async () => {
+    vi.mocked(saveAgentSettingsAction).mockRejectedValueOnce(new Error("offline"));
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?"); fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "실패 유지" } });
+    fireEvent.click(screen.getByText("대화 이력")); fireEvent.click(await screen.findByRole("button", { name: "저장하고 계속" }));
+    expect(await screen.findByText("저장하지 못했거나 권한 변경 확인이 취소되었습니다. 초안은 그대로 유지됩니다.")).toBeTruthy();
+    expect(screen.queryByText("이전 대화")).toBeNull();
+    expect((screen.getByLabelText("일하는 방식") as HTMLTextAreaElement).value).toBe("실패 유지");
+  });
+  it("does not save an already saved conversation again when access saving fails", async () => {
+    vi.stubGlobal("confirm", vi.fn(() => true)); vi.mocked(saveAgentAccessAction).mockRejectedValueOnce(new Error("offline"));
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?"); fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "먼저 저장" } });
+    fireEvent.click(screen.getByRole("tab", { name: "자료 접근" })); fireEvent.click(await screen.findByRole("checkbox", { name: "견적서" }));
+    fireEvent.click(screen.getByText("대화 이력")); fireEvent.click(await screen.findByRole("button", { name: "저장하고 계속" }));
+    await screen.findByRole("alert");
+    fireEvent.click(screen.getByRole("button", { name: "저장하고 계속" }));
+    await waitFor(() => expect(saveAgentAccessAction).toHaveBeenCalledTimes(2));
+    expect(saveAgentSettingsAction).toHaveBeenCalledTimes(1);
+  });
+  it("blocks same-tick repeated instruction saves while the first save is pending", async () => {
+    let resolveSave!: () => void;
+    vi.mocked(saveAgentSettingsAction).mockImplementationOnce(() => new Promise((resolve) => { resolveSave = () => resolve({ saved: true }); }));
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?"); fireEvent.click(screen.getByText("지침 설정"));
+    fireEvent.change(await screen.findByLabelText("일하는 방식"), { target: { value: "한 번만 저장" } });
+    const save = screen.getByRole("button", { name: "지침 저장" }); fireEvent.click(save); fireEvent.click(save);
+    expect(saveAgentSettingsAction).toHaveBeenCalledTimes(1);
+    resolveSave(); await screen.findByText("저장했습니다. 다음 답변에 적용됩니다.");
   });
   it("confirms newly added PC roots without exposing their paths", async () => {
     const confirm = vi.fn((_message: string) => false); vi.stubGlobal("confirm", confirm);
