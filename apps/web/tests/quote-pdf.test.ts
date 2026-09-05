@@ -30,5 +30,7 @@ describe("createQuotePdf", () => {
     });
 
     expect(pdf.subarray(0, 5).toString()).toBe("%PDF-");
-  }, 15000);
+    // 한국어 글꼴을 통째로 PDF 에 심는 작업이라 원래 느리다(내 PC 에서 9 초).
+    // 15 초로는 CI 의 느린 기계에서 넘긴다 — 실제로 넘겨서 main 이 빨개졌다.
+  }, 60000);
 });
