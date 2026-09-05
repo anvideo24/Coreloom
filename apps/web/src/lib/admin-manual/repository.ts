@@ -99,6 +99,14 @@ export function readAdminManualChangelog() {
   return { ...readManualFile(ADMIN_MANUAL_CHANGELOG_FILE), title: "변경 기록" };
 }
 
+export function readAdminManualSystemMap() {
+  const source = readManualFile("system-map.md");
+  return {
+    ...source,
+    manualCommit: gitOutput(["log", "-1", "--format=%H", "--", "manual/system-map.md"], repositoryRoot() || source.directory) || source.manualCommit,
+  };
+}
+
 export function readAdminManualProgress() {
   return { ...readManualFile(ADMIN_MANUAL_PROGRESS_FILE), title: "시스템 진행 현황" };
 }
