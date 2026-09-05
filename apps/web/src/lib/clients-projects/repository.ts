@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
+import { isUniqueViolationError } from "@/lib/db/postgres-errors";
 import { auditEvents, clientCompanies, clientContacts, projects } from "@/lib/db/schema";
 import {
   normalizeClientCompanyProfile,
@@ -12,6 +13,8 @@ import {
   type ClientCompanyProfile,
 } from "@/lib/domain/clients-projects";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
+
+const CLIENT_COMPANIES_SUBMISSION_INDEX = "client_companies_submission_idx";
 
 const clientCompanyColumns = {
   id: clientCompanies.id,
@@ -108,15 +111,37 @@ export async function getFounderClient(authUserId: string, clientId: string) {
 
 export async function createFounderClient(input: {
   actorUserId: string;
+  /** F02-03: 같은 제출을 두 번 저장하지 않기 위한 열쇠. 없으면 평소대로(중복 방지 없이) 저장한다. */
+  submissionId?: string;
 } & Parameters<typeof normalizeClientCompanyProfile>[0]) {
   const workspace = await ensureFounderWorkspace(input.actorUserId, "clients-projects");
   const database = createDatabase();
   const profile = normalizeClientCompanyProfile(input);
-  const [created] = await database
-    .insert(clientCompanies)
-    .values({ workspaceId: workspace.id, ...profile })
-    .onConflictDoNothing()
-    .returning({ id: clientCompanies.id });
+  const submissionId = input.submissionId;
+
+  let created: { id: string } | undefined;
+  try {
+    [created] = await database
+      .insert(clientCompanies)
+      .values({ workspaceId: workspace.id, ...profile, ...(submissionId ? { submissionId } : {}) })
+      // 유일 인덱스 두 개 중 이름 쪽만 조정자로 지정한다. submissionId 위반은 이 조정자 밖이라
+      // 그대로 예외로 올라오고, 아래 catch에서 "이미 저장된 그 줄"을 찾아 성공으로 마무리한다.
+      // 조정자를 지정하지 않으면(둘 다 무시) submissionId 중복이 이름 중복과 구분되지 않는다.
+      .onConflictDoNothing({ target: [clientCompanies.workspaceId, clientCompanies.name] })
+      .returning({ id: clientCompanies.id });
+  } catch (error) {
+    if (submissionId && isUniqueViolationError(error, CLIENT_COMPANIES_SUBMISSION_INDEX)) {
+      const [existing] = await database
+        .select({ id: clientCompanies.id })
+        .from(clientCompanies)
+        .where(and(eq(clientCompanies.workspaceId, workspace.id), eq(clientCompanies.submissionId, submissionId)))
+        .limit(1);
+      // 같은 제출이 이미 저장돼 있으면 그 줄을 그대로 성공 결과로 돌려준다 — 사용자 눈에는
+      // 한 번 저장한 것과 구별되지 않는다. 못 찾았으면(경합 등 드문 경우) 원래 오류를 올린다.
+      if (existing) return existing;
+    }
+    throw error;
+  }
 
   if (!created) {
     throw new Error("같은 이름의 고객사가 이미 있습니다.");

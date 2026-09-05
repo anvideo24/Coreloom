@@ -154,6 +154,13 @@ export const clientCompanies = pgTable(
     bankAccount: text("bank_account"),
     accountHolder: text("account_holder"),
     bankBookRef: text("bank_book_ref"),
+    /**
+     * 같은 저장 요청이 두 번 오면 두 번째를 막는 열쇠(F02-03). 화면 방어는 새로고침 한 번에
+     * 사라지므로, 마지막 관문은 여기다. 아래 유일 인덱스가 같은 값을 두 번 못 넣게 한다.
+     * 예전 줄은 비어 있고, Postgres는 빈 값끼리는 서로 다르게 보므로 기존 자료에 영향이 없다.
+     * 대화 메시지가 이미 같은 방식을 쓴다(`client_request_id`).
+     */
+    submissionId: uuid("submission_id"),
     createdAt,
     updatedAt,
     deletedAt,
@@ -161,6 +168,7 @@ export const clientCompanies = pgTable(
   (table) => [
     uniqueIndex("client_companies_workspace_name_idx").on(table.workspaceId, table.name),
     index("client_companies_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
+    uniqueIndex("client_companies_submission_idx").on(table.submissionId),
   ],
 );
 
@@ -215,6 +223,13 @@ export const quotes = pgTable(
     workspaceId: uuid("workspace_id").notNull().references(() => workspaces.id),
     clientCompanyId: uuid("client_company_id").notNull().references(() => clientCompanies.id),
     projectId: uuid("project_id").references(() => projects.id),
+    /**
+     * 같은 저장 요청이 두 번 오면 두 번째를 막는 열쇠(F02-03). 화면 방어는 새로고침 한 번에
+     * 사라지므로, 마지막 관문은 여기다. 아래 유일 인덱스가 같은 값을 두 번 못 넣게 한다.
+     * 예전 줄은 비어 있고, Postgres는 빈 값끼리는 서로 다르게 보므로 기존 자료에 영향이 없다.
+     * 대화 메시지가 이미 같은 방식을 쓴다(`client_request_id`).
+     */
+    submissionId: uuid("submission_id"),
     createdAt,
     updatedAt,
     deletedAt,
@@ -222,6 +237,7 @@ export const quotes = pgTable(
   (table) => [
     index("quotes_workspace_updated_at_idx").on(table.workspaceId, desc(table.updatedAt)),
     index("quotes_client_company_updated_at_idx").on(table.clientCompanyId, desc(table.updatedAt)),
+    uniqueIndex("quotes_submission_idx").on(table.submissionId),
   ],
 );
 
