@@ -5,9 +5,9 @@ import { homedir } from "node:os";
 const extensions = new Set([".txt", ".md", ".csv", ".json"]);
 const blocked = /^(?:\..*|node_modules|appdata|windows|program files(?: \(x86\))?|programdata|library|google|chrome|chromium|edge|firefox|credentials?|secrets?|tokens?|passwords?|auth)(?:$|[._-])/i;
 const secretText = /(?:-----BEGIN [A-Z ]*PRIVATE KEY-----|\b(?:password|passwd|token|secret|authorization|cookie|api[_-]?key|access[_-]?token|refresh[_-]?token|client[_-]?secret|cookie[_-]?secret)\s*["']?\s*[:=]\s*\S+|postgres(?:ql)?:\/\/|\bsk-[A-Za-z0-9_-]{16,}|\bnpg_[A-Za-z0-9]+|https?:\/\/[^\s/]*\.ts\.net\b)/i;
-function safeParts(value: string) { return value.split(/[\\/]+/).every((p) => !blocked.test(p)); }
+export function safeParts(value: string) { return value.split(/[\\/]+/).every((p) => !blocked.test(p)); }
 function inside(root: string, target: string) { const relative = path.relative(root, target); return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative); }
-async function noLinks(target: string) {
+export async function noLinks(target: string) {
   let current = path.parse(target).root;
   for (const part of target.slice(current.length).split(path.sep).filter(Boolean)) {
     current = path.join(current, part);

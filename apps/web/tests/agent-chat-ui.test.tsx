@@ -7,6 +7,7 @@ import { AgentPanel } from "@/components/agent-panel";
 
 const routerPush = vi.hoisted(() => vi.fn());
 vi.mock("next/navigation", () => ({ usePathname: () => "/agents", useRouter: () => ({ push: routerPush }) }));
+vi.mock("@/app/(private)/agents/folder-actions", () => ({ browseAgentFoldersAction: vi.fn() }));
 vi.mock("@/app/(private)/agents/actions", () => ({
   readAgentSettingsAction: vi.fn().mockResolvedValue({ workStyle: "", answerStyle: "", procedure: "", instructions: "이전 지침", modelProvider: "gpt_codex_subscription" }),
   saveAgentSettingsAction: vi.fn().mockResolvedValue({ saved: true }),
@@ -14,6 +15,7 @@ vi.mock("@/app/(private)/agents/actions", () => ({
   saveAgentAccessAction: vi.fn().mockResolvedValue({ saved: true }),
 }));
 import { saveAgentSettingsAction, saveAgentAccessAction } from "@/app/(private)/agents/actions";
+import { browseAgentFoldersAction } from "@/app/(private)/agents/folder-actions";
 const agent = { id: "00000000-0000-4000-8000-000000000001", name: "테스트 에이전트", purpose: "초안 작성", modelProvider: "gpt_codex_subscription" as const };
 
 beforeEach(() => {
@@ -232,10 +234,24 @@ describe("agent conversation interactions", () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?"); fireEvent.click(screen.getByText("지침 설정")); fireEvent.click(screen.getByRole("tab", { name: "자료 접근" }));
     fireEvent.click(await screen.findByRole("checkbox", { name: "PC 지정 폴더" }));
-    fireEvent.change(screen.getByLabelText("이 PC의 허용 폴더"), { target: { value: "C:\\private-work" } });
+    fireEvent.click(screen.getByText("직접 경로 입력 (고급)"));
+    fireEvent.change(screen.getByLabelText("서버 PC의 허용 폴더"), { target: { value: "C:\\private-work" } });
     fireEvent.click(screen.getByRole("button", { name: "조회 권한 저장" }));
     expect(confirm).toHaveBeenCalledWith(expect.stringContaining("새로 허용할 업무 폴더: 1개"));
     expect(confirm.mock.calls[0][0]).not.toContain("private-work");
+    expect(saveAgentAccessAction).not.toHaveBeenCalled();
+  });
+  it("keeps a picked folder draft when confirmation is cancelled and discards it explicitly", async () => {
+    vi.mocked(browseAgentFoldersAction).mockImplementation(async (_agentId, folder) => folder ? { currentPath: "C:\\example-work", label: "업무", parentPath: null, canSelect: true, entries: [], truncated: false } : { currentPath: null, label: "서버 PC", parentPath: null, canSelect: false, entries: [{ name: "업무", path: "C:\\example-work" }], truncated: false });
+    vi.stubGlobal("confirm", vi.fn(() => false));
+    render(<AgentChat agent={agent} />);
+    await screen.findByText("무엇을 함께 할까요?"); fireEvent.click(screen.getByText("지침 설정")); fireEvent.click(screen.getByRole("tab", { name: "자료 접근" }));
+    fireEvent.click(await screen.findByRole("checkbox", { name: "PC 지정 폴더" }));
+    fireEvent.click(screen.getByRole("button", { name: "폴더 선택" })); fireEvent.click(await screen.findByRole("button", { name: "업무" })); fireEvent.click(await screen.findByRole("button", { name: "이 폴더 추가" }));
+    fireEvent.click(screen.getByText("대화 이력")); fireEvent.click(await screen.findByRole("button", { name: "저장하고 계속" }));
+    expect(screen.getByRole("list", { name: "추가할 업무 폴더" })).toBeTruthy();
+    fireEvent.click(screen.getByText("대화 이력")); fireEvent.click(await screen.findByRole("button", { name: "버리고 계속" }));
+    expect(await screen.findByText("이전 대화")).toBeTruthy();
     expect(saveAgentAccessAction).not.toHaveBeenCalled();
   });
 });

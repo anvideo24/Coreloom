@@ -1,0 +1,30 @@
+.header {
+  align-items: center;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex: 0 0 auto;
+  gap: var(--space-3);
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-5);
+}
+
+.header h2 {
+  font-size: 1.125rem;
+  margin: 0;
+}
+
+.closeButton {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  cursor: pointer;
+  font: inherit;
+  min-height: 3rem;
+  padding: 0 var(--space-3);
+}
+
+.closeButton:focus-visible {
+  outline: 2.5px solid color-mix(in srgb, var(--accent), transparent 50%);
+  outline-offset: 2px;
+}

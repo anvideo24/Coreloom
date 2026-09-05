@@ -190,8 +190,7 @@ async function runPathA() {
   fireEvent.change(clientSelect, { target: { value: newClient.id } });
   tally.fillField("고객사 선택", "select");
 
-  fireEvent.click(screen.getByRole("tab", { name: "내부 원가" }));
-  tally.recordTransition("tab", "A: 내부 원가 탭 전환(품목 칸 노출)");
+  expect(screen.getByRole("tab", { name: "내부 원가 · 편집" }).getAttribute("aria-selected")).toBe("true");
 
   await waitFor(() => screen.getByPlaceholderText("작업 패키지 1"));
   fireEvent.change(screen.getByPlaceholderText("작업 패키지 1"), {
@@ -282,8 +281,7 @@ async function runPathB() {
     expect((screen.getByRole("combobox", { name: "고객사" }) as HTMLSelectElement).value).toBe(newClient.id);
   });
 
-  fireEvent.click(screen.getByRole("tab", { name: "내부 원가" }));
-  tally.recordTransition("tab", "B: 내부 원가 탭 전환(품목 칸 노출)");
+  expect(screen.getByRole("tab", { name: "내부 원가 · 편집" }).getAttribute("aria-selected")).toBe("true");
 
   await waitFor(() => screen.getByPlaceholderText("작업 패키지 1"));
   fireEvent.change(screen.getByPlaceholderText("작업 패키지 1"), {
@@ -304,7 +302,7 @@ describe("F01-03: 직접 입력 필드 수 — 경로 A(기존 최소 경로) vs
     expect(tally.fieldNames()).toEqual(["상호", "고객사 선택", "작업명"]);
     expect(tally.directFieldCount).toBe(3);
     expect(tally.repeatedFieldCount).toBe(0);
-    expect(tally.transitionCounts()).toEqual({ page: 2, panel: 2, tab: 1, total: 5 });
+    expect(tally.transitionCounts()).toEqual({ page: 2, panel: 2, tab: 0, total: 4 });
     expect(clientFormData.get("name")).toBe(CLIENT_NAME);
     expect(quoteFormData.get("clientId")).toBe("new-client-a");
   });
@@ -314,7 +312,7 @@ describe("F01-03: 직접 입력 필드 수 — 경로 A(기존 최소 경로) vs
     expect(tally.fieldNames()).toEqual(["상호", "작업명"]);
     expect(tally.directFieldCount).toBe(2);
     expect(tally.repeatedFieldCount).toBe(0);
-    expect(tally.transitionCounts()).toEqual({ page: 1, panel: 1, tab: 2, total: 4 });
+    expect(tally.transitionCounts()).toEqual({ page: 1, panel: 1, tab: 1, total: 3 });
     expect(clientFormData.get("name")).toBe(CLIENT_NAME);
     expect(quoteFormData.get("clientId")).toBe("new-client-b");
   });
