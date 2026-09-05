@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { founderSession } from "@/lib/auth/session";
 import { normalizeQuoteEmailDraft } from "@/lib/domain/quote-email";
 import { parseQuotePackagesJson } from "@/lib/domain/quotes";
+import { parseSubmissionId } from "@/lib/domain/submission-id";
 import { createFounderQuoteVersion, sendFounderQuoteEmail } from "@/lib/quotes/repository";
 
 function value(formData: FormData, key: string) {
@@ -40,6 +41,7 @@ export async function saveQuoteVersionAction(formData: FormData) {
   const result = await createFounderQuoteVersion({
     actorUserId: session.founder.id,
     quoteId: value(formData, "quoteId") || undefined,
+    submissionId: parseSubmissionId(value(formData, "submissionId")),
     clientId: value(formData, "clientId"),
     projectId: value(formData, "projectId") || undefined,
     clientContactId: value(formData, "clientContactId") || undefined,

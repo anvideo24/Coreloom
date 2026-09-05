@@ -12,6 +12,7 @@ import {
   updateFounderProjectProgress,
 } from "@/lib/clients-projects/repository";
 import { quotePathAfterInlineClientCreate } from "@/lib/domain/quote-client-flow";
+import { parseSubmissionId } from "@/lib/domain/submission-id";
 
 function value(formData: FormData, key: string) {
   const item = formData.get(key);
@@ -49,6 +50,7 @@ export async function createClientAction(formData: FormData) {
   const founder = await authorizedFounder();
   const created = await createFounderClient({
     actorUserId: founder.id,
+    submissionId: parseSubmissionId(value(formData, "submissionId")),
     ...companyProfileFromForm(formData),
   });
   const contactName = value(formData, "contactName").trim();
@@ -75,6 +77,7 @@ export async function createClientFromQuoteAction(formData: FormData) {
   const founder = await authorizedFounder();
   const created = await createFounderClient({
     actorUserId: founder.id,
+    submissionId: parseSubmissionId(value(formData, "submissionId")),
     ...companyProfileFromForm(formData),
   });
   const contactName = value(formData, "contactName").trim();

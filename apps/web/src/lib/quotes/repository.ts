@@ -3,6 +3,7 @@ import "server-only";
 import { and, asc, desc, eq, isNull } from "drizzle-orm";
 
 import { createDatabase } from "@/lib/db/client";
+import { isUniqueViolationError } from "@/lib/db/postgres-errors";
 import {
   auditEvents,
   clientCompanies,
@@ -108,9 +109,18 @@ export async function getFounderQuoteDetail(authUserId: string, quoteId: string)
   return { quote, versions, contacts, issuer };
 }
 
+const QUOTES_SUBMISSION_INDEX = "quotes_submission_idx";
+
 export async function createFounderQuoteVersion(input: {
   actorUserId: string;
   quoteId?: string;
+  /**
+   * F02-03: 새 견적을 만들 때만 쓰는 열쇠. 기존 견적에 버전을 추가하는 경로는 `quotes` 표에
+   * 아무것도 새로 넣지 않으므로(이 함수의 `if (quoteId)` 분기), 이 값을 받아도 효과가 없다 —
+   * `quotes` 칸·유일 인덱스가 그 표에만 있기 때문이다(스키마 참고). 범위를 다른 표로 퍼뜨리지
+   * 않는다.
+   */
+  submissionId?: string;
   clientId: string;
   projectId?: string;
   clientContactId?: string;
@@ -209,11 +219,39 @@ export async function createFounderQuoteVersion(input: {
         .limit(1);
       if (!project) throw new Error("Project was not found");
     }
-    const [created] = await database
-      .insert(quotes)
-      .values({ workspaceId: workspace.id, clientCompanyId: client.id, projectId })
-      .returning({ id: quotes.id });
-    quoteId = created.id;
+    const submissionId = input.submissionId;
+    try {
+      const [created] = await database
+        .insert(quotes)
+        .values({
+          workspaceId: workspace.id,
+          clientCompanyId: client.id,
+          projectId,
+          ...(submissionId ? { submissionId } : {}),
+        })
+        .returning({ id: quotes.id });
+      quoteId = created.id;
+    } catch (error) {
+      if (!submissionId || !isUniqueViolationError(error, QUOTES_SUBMISSION_INDEX)) throw error;
+      // 같은 제출로 새 견적을 만드는 시도를 이미 한 번 처리했다. 오류를 보이지 않고, 그때
+      // 만든 견적·버전을 찾아 지금 성공한 것과 똑같이 끝낸다 — 두 번째 quoteVersions 행을
+      // 새로 만들지 않는다(만들면 quote_versions_quote_version_number_idx가 또 걸리거나,
+      // 걸리지 않더라도 존재하지 않아야 할 버전이 하나 더 생긴다).
+      const [existingQuote] = await database
+        .select({ id: quotes.id })
+        .from(quotes)
+        .where(and(eq(quotes.workspaceId, workspace.id), eq(quotes.submissionId, submissionId)))
+        .limit(1);
+      if (!existingQuote) throw error;
+      const [existingVersion] = await database
+        .select({ id: quoteVersions.id, versionNumber: quoteVersions.versionNumber })
+        .from(quoteVersions)
+        .where(eq(quoteVersions.quoteId, existingQuote.id))
+        .orderBy(desc(quoteVersions.versionNumber))
+        .limit(1);
+      if (!existingVersion) throw error;
+      return { quoteId: existingQuote.id, versionId: existingVersion.id, versionNumber: existingVersion.versionNumber };
+    }
   }
 
   const [version] = await database
