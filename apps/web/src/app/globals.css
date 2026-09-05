@@ -2107,6 +2107,17 @@ section.empty-state,
   margin: 0.25rem 0 0;
 }
 .quote-email-approval { align-items: start; color: var(--muted); grid-template-columns: auto 1fr; line-height: 1.6; gap: var(--space-3); }
+.approval-review-card {
+  display: grid;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  background: var(--surface-muted, color-mix(in oklab, var(--surface) 92%, var(--muted) 8%));
+}
+.approval-review-card div { display: grid; gap: 0.2rem; }
+.approval-review-card dt { color: var(--muted); font-size: 0.85rem; }
+.approval-review-card dd { margin: 0; font-weight: 600; }
 
 /* ── 목록 행 ─────────────────────────────────── */
 .quote-list { display: grid; gap: var(--space-2); margin-top: var(--space-6); }

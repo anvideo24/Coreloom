@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
+import { createClientFromQuoteAction } from "@/app/(private)/clients-projects/actions";
 import { saveQuoteVersionAction } from "@/app/(private)/quotes/actions";
+import { ClientCompanyFields } from "@/components/client-company-fields";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
 import { DraftAwareForm } from "@/components/draft-aware-form";
@@ -32,6 +34,8 @@ type Version = {
   validUntil?: string | Date | null;
 };
 
+type PanelMode = "quote" | "new-client";
+
 export function QuotesPageClient({
   clients,
   projects,
@@ -53,11 +57,20 @@ export function QuotesPageClient({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [open, setOpen] = useState(false);
+  const [panelMode, setPanelMode] = useState<PanelMode>("quote");
   const [clientId, setClientId] = useState(clients[0]?.id ?? "");
 
   useEffect(() => {
-    setOpen(searchParams.get("new") === "1");
-  }, [searchParams]);
+    const wantsNew = searchParams.get("new") === "1";
+    setOpen(wantsNew);
+    const requestedClientId = searchParams.get("clientId");
+    if (requestedClientId && clients.some((client) => client.id === requestedClientId)) {
+      setClientId(requestedClientId);
+      setPanelMode("quote");
+    } else if (wantsNew && clients.length === 0) {
+      setPanelMode("new-client");
+    }
+  }, [searchParams, clients]);
 
   useEffect(() => {
     if (!clients.some((client) => client.id === clientId)) {
@@ -67,16 +80,20 @@ export function QuotesPageClient({
 
   const close = useCallback(() => {
     setOpen(false);
-    if (searchParams.get("new") === "1") router.replace(pathname);
-  }, [pathname, router, searchParams]);
+    setPanelMode(clients.length === 0 ? "new-client" : "quote");
+    if (searchParams.get("new") === "1" || searchParams.get("clientId")) {
+      router.replace(pathname);
+    }
+  }, [clients.length, pathname, router, searchParams]);
 
   const openCreate = useCallback(() => {
+    setPanelMode(clients.length === 0 ? "new-client" : "quote");
     setOpen(true);
     router.replace(`${pathname}?new=1`);
-  }, [pathname, router]);
+  }, [clients.length, pathname, router]);
 
-  const canCreate = clients.length > 0;
   const clientName = clients.find((client) => client.id === clientId)?.name ?? "";
+  const panelTitle = panelMode === "new-client" ? "견적 안 고객사 등록" : "새 견적";
 
   return (
     <>
@@ -86,10 +103,10 @@ export function QuotesPageClient({
           <h1>견적서</h1>
           <p>
             고객용 탭은 발송될 INVOICE를 미리보기만 하고, 내부 원가 탭에서 단가·마진을 잡습니다. 수정은 새
-            버전으로 남습니다.
+            버전으로 남습니다. 고객사가 없으면 이 화면에서 바로 등록합니다.
           </p>
         </div>
-        <CreateIconButton disabled={!canCreate} label="새 견적" onClick={openCreate} />
+        <CreateIconButton label="새 견적" onClick={openCreate} />
       </header>
 
       {companyProfileStorage === "missing_table" ? (
@@ -98,13 +115,13 @@ export function QuotesPageClient({
         </p>
       ) : null}
 
-      {!canCreate ? (
+      {clients.length === 0 ? (
         <section className="empty-state quote-empty">
-          <h2>먼저 고객사를 등록해 주세요</h2>
-          <p>견적서는 고객사에 연결해 보관합니다.</p>
-          <a className="text-link" href="/clients">
-            고객사 등록으로 이동
-          </a>
+          <h2>고객사가 아직 없습니다</h2>
+          <p>견적서 작성 패널 안에서 고객사를 등록한 뒤 바로 이어서 작성합니다. 고객사 목록으로 나가지 않습니다.</p>
+          <button className="auth-submit" onClick={openCreate} type="button">
+            견적에서 고객사 등록
+          </button>
         </section>
       ) : null}
 
@@ -119,11 +136,9 @@ export function QuotesPageClient({
         {versions.length === 0 ? (
           <div className="empty-state quote-empty-inline">
             <p>아직 저장된 견적서가 없습니다.</p>
-            {canCreate ? (
-              <button className="auth-submit" onClick={openCreate} type="button">
-                첫 견적 만들기
-              </button>
-            ) : null}
+            <button className="auth-submit" onClick={openCreate} type="button">
+              첫 견적 만들기
+            </button>
           </div>
         ) : (
           versions.map((version) => (
@@ -141,34 +156,59 @@ export function QuotesPageClient({
         )}
       </section>
 
-      <CreatePanel onClose={close} open={open && canCreate} size="xlarge" title="새 견적">
-        <DraftAwareForm
-          action={saveQuoteVersionAction}
-          className="quote-form quote-form-costing"
-          formId="quote-create"
-          scopeId={draftScopeId}
-        >
-          <div className="quote-form-meta quote-form-meta-compact">
-            <QuoteClientProjectFields
-              clientId={clientId}
-              clients={clients}
-              onClientIdChange={setClientId}
-              projects={projects}
-            />
-          </div>
-          <div className="quote-form-full">
-            <QuoteCostingComposer
-              clientId={clientId}
-              clientName={clientName}
-              contacts={contacts}
-              issuer={issuer}
-              versionNumber={1}
-            />
-          </div>
-          <button className="auth-submit" type="submit">
-            견적 버전 1 저장
-          </button>
-        </DraftAwareForm>
+      <CreatePanel onClose={close} open={open} size="xlarge" title={panelTitle}>
+        {panelMode === "new-client" ? (
+          <DraftAwareForm
+            action={createClientFromQuoteAction}
+            className="quote-form"
+            formId="quote-inline-client-create"
+            scopeId={draftScopeId}
+          >
+            <p className="form-help quote-form-full">
+              등록이 끝나면 이 견적 패널로 돌아와 방금 만든 고객사가 선택된 상태로 이어집니다.
+            </p>
+            <ClientCompanyFields includeFirstContact />
+            <div className="quote-form-full" style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+              <button className="auth-submit" type="submit">
+                고객사 저장 후 견적 이어쓰기
+              </button>
+              {clients.length > 0 ? (
+                <button className="text-link" onClick={() => setPanelMode("quote")} type="button">
+                  기존 고객사 선택
+                </button>
+              ) : null}
+            </div>
+          </DraftAwareForm>
+        ) : (
+          <DraftAwareForm
+            action={saveQuoteVersionAction}
+            className="quote-form quote-form-costing"
+            formId="quote-create"
+            scopeId={draftScopeId}
+          >
+            <div className="quote-form-meta quote-form-meta-compact">
+              <QuoteClientProjectFields
+                clientId={clientId}
+                clients={clients}
+                onClientIdChange={setClientId}
+                onRequestNewClient={() => setPanelMode("new-client")}
+                projects={projects}
+              />
+            </div>
+            <div className="quote-form-full">
+              <QuoteCostingComposer
+                clientId={clientId}
+                clientName={clientName}
+                contacts={contacts}
+                issuer={issuer}
+                versionNumber={1}
+              />
+            </div>
+            <button className="auth-submit" type="submit">
+              견적 버전 1 저장
+            </button>
+          </DraftAwareForm>
+        )}
       </CreatePanel>
     </>
   );

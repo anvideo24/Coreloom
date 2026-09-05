@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { confirmRevenueEntryAction, refundRevenueEntryAction } from "@/app/(private)/revenue/actions";
+import { ApprovalReviewCard } from "@/components/approval-review-card";
 import { founderSession } from "@/lib/auth/session";
+import { buildApprovalReviewSummary } from "@/lib/domain/approvals";
 import { ledgerRowFromRevenueEntry, revenueEntryStatusLabels, UNCLASSIFIED_LABEL } from "@/lib/domain/revenue";
 import { getFounderRevenueEntryDetail } from "@/lib/revenue/repository";
 
@@ -16,6 +18,15 @@ export default async function RevenueEntryDetailPage({ params }: { params: Promi
   const entry = await getFounderRevenueEntryDetail(session.founder.id, entryId);
   if (!entry) notFound();
   const row = ledgerRowFromRevenueEntry(entry);
+  const review = buildApprovalReviewSummary({
+    subject: `${row.title} · ${row.counterparty}`,
+    amount: entry.amount,
+    currency: entry.currency,
+    evidence: [entry.note?.trim() || null, `정산일 ${entry.settlementDate}`, `발생일 ${entry.occurredOn}`]
+      .filter(Boolean)
+      .join(" · "),
+    outcomeLabel: "매출 확정 — 금액 고정, 세금계산서 발행 없음",
+  });
 
   return (
     <main className="operations-shell">
@@ -41,6 +52,7 @@ export default async function RevenueEntryDetailPage({ params }: { params: Promi
         <section className="quote-editor-card">
           <p className="setup-code">매출 확정</p>
           <p className="form-help">입금 또는 정산이 실제로 확인된 뒤에만 확정합니다. 확정된 금액은 덮어쓰지 않습니다. 세금계산서 발행은 포함되지 않습니다.</p>
+          <ApprovalReviewCard summary={review} />
           <form action={confirmRevenueEntryAction} className="quote-form">
             <input name="entryId" type="hidden" value={entry.id} />
             <label className="quote-email-approval quote-form-full">
