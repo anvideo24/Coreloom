@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AgentChat, type ChatAgentItem } from "@/components/agent-chat";
+import { AgentChat, type AgentChatGuardHandle, type ChatAgentItem } from "@/components/agent-chat";
 import { AGENT_PANEL_OPEN_STORAGE_KEY, AGENT_PANEL_SELECTED_STORAGE_KEY, agentPanelLayout, agentPanelVisualFrame, isAgentPanelToggleHotkey, parseAgentPanelOpen, serializeAgentPanelOpen } from "@/lib/domain/agent-panel";
 import { isEditableHotkeyTarget } from "@/lib/domain/private-navigation";
 
@@ -10,6 +11,7 @@ export type AgentPanelItem = ChatAgentItem;
 type AgentPanelLayout = ReturnType<typeof agentPanelLayout>;
 
 export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [ready, setReady] = useState(false);
   const [selectedId, setSelectedId] = useState("");
@@ -17,6 +19,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   const [layout, setLayout] = useState<AgentPanelLayout>(() => ({ mode: "modal", nav: "bottom" }));
   const layerRef = useRef<HTMLDivElement>(null);
   const toggleRef = useRef<HTMLButtonElement>(null);
+  const chatRef = useRef<AgentChatGuardHandle>(null);
   const selected = agents.find((agent) => agent.id === selectedId);
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -47,6 +50,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   }, [layout.mode, layout.nav, open]);
   useEffect(() => {
     function key(event: KeyboardEvent) {
+      if (document.querySelector(".agent-unsaved-settings-guard[open]")) return;
       if (event.key === "Escape" && (document.querySelector('.private-drawer-layer.is-overlay-mode.is-open, .private-drawer-layer.is-peek') || document.documentElement.dataset.createPanelOpen === "true")) return;
       if (event.key === "Escape" && open && !event.defaultPrevented) { event.preventDefault(); event.stopImmediatePropagation(); setOpen(false); }
       if (isAgentPanelToggleHotkey(event) && !isEditableHotkeyTarget(event.target)) { event.preventDefault(); setOpen((value) => !value); }
@@ -88,7 +92,7 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
   return <>
     <button ref={toggleRef} aria-controls="agent-panel" aria-expanded={open} aria-keyshortcuts="Control+J Meta+J" className="agent-panel-toggle" onClick={() => setOpen(!open)} title="Ctrl+J 또는 ⌘J" type="button">AI</button>
     <div className={open ? "agent-panel-layer is-open" : "agent-panel-layer"} data-mode={layout.mode} data-nav={layout.nav} inert={!open} ref={layerRef} onKeyDown={(event) => {
-      if (!modal || event.key !== "Tab") return;
+      if ((event.target as Element).closest("dialog[open]") || !modal || event.key !== "Tab") return;
       const items = Array.from(event.currentTarget.querySelectorAll<HTMLElement>(".agent-panel button:not([disabled]), .agent-panel a[href], .agent-panel select:not([disabled]), .agent-panel textarea:not([disabled]), .agent-panel input:not([disabled]), .agent-panel summary, .agent-panel [tabindex]:not([tabindex='-1'])")).filter((item) => item.offsetParent !== null);
       if (!items.length) return;
       const first = items[0]; const last = items[items.length - 1];
@@ -98,12 +102,12 @@ export function AgentPanel({ agents }: { agents: AgentPanelItem[] }) {
       <button aria-label="에이전트 패널 닫기" className="agent-panel-backdrop" onClick={() => setOpen(false)} type="button" />
       <aside aria-label="AI 에이전트 대화" aria-modal={modal || undefined} className="agent-panel" id="agent-panel" role={modal ? "dialog" : undefined}>
         <header className="agent-panel-head">
-          <select className="agent-panel-agent-select" aria-label="에이전트 선택" value={selectedId} onChange={(e) => { if (!settingsDirty || window.confirm("저장하지 않은 설정이 있습니다. 저장하지 않고 에이전트를 바꿀까요?")) { setSettingsDirty(false); setSelectedId(e.target.value); } }}>
+          <select className="agent-panel-agent-select" aria-label="에이전트 선택" value={selectedId} onChange={(e) => { const nextId = e.target.value; const change = () => { setSettingsDirty(false); setSelectedId(nextId); }; if (chatRef.current) chatRef.current.requestSettingsNavigation(change); else change(); }}>
             {!agents.length ? <option value="">에이전트 선택</option> : agents.map((agent) => <option value={agent.id} key={agent.id}>{agent.name}</option>)}
           </select>
-          <div className="agent-panel-head-actions"><Link className="agent-panel-icon-button" href={selected ? `/agents/${selected.id}` : "/agents"} onClick={() => setOpen(false)} aria-label="에이전트 페이지 열기">↗</Link><button aria-label="패널 닫기" className="agent-panel-icon-button" onClick={() => setOpen(false)} type="button">×</button></div>
+          <div className="agent-panel-head-actions"><Link className="agent-panel-icon-button" href={selected ? `/agents/${selected.id}` : "/agents"} onClick={(event) => { const href = event.currentTarget.getAttribute("href") || "/agents"; if (!chatRef.current) { setOpen(false); return; } event.preventDefault(); chatRef.current.requestSettingsNavigation(() => router.push(href)); }} aria-label="에이전트 페이지 열기">↗</Link><button aria-label="패널 닫기" className="agent-panel-icon-button" onClick={() => setOpen(false)} type="button">×</button></div>
         </header>
-        {selected ? <AgentChat key={selected.id} agent={selected} active={open} onSettingsDirtyChange={setSettingsDirty} /> : <div className="agent-chat-welcome"><h2>함께 일할 에이전트</h2><p>목적과 지침을 정하면 여기서 바로 대화할 수 있어요.</p><Link className="auth-submit" href="/agents?new=1" onClick={() => setOpen(false)}>에이전트 만들기</Link></div>}
+        {selected ? <AgentChat key={selected.id} ref={chatRef} agent={selected} active={open} onSettingsDirtyChange={setSettingsDirty} /> : <div className="agent-chat-welcome"><h2>함께 일할 에이전트</h2><p>목적과 지침을 정하면 여기서 바로 대화할 수 있어요.</p><Link className="auth-submit" href="/agents?new=1" onClick={() => setOpen(false)}>에이전트 만들기</Link></div>}
       </aside>
     </div>
   </>;

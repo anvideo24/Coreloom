@@ -28,6 +28,7 @@
 
   /* 강조 */
   --accent: #e24a1b;
+  --accent-text: #b63510;
   --accent-hover: #c43d14;
   --accent-subtle: color-mix(in srgb, var(--accent), transparent 90%);
   --accent-ink: #ffffff;
@@ -120,7 +121,7 @@ body {
 }
 
 .auth-eyebrow {
-  color: var(--accent);
+  color: var(--accent-text);
   font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -2738,6 +2739,45 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
   .agent-panel-layer[data-mode="dock"] .agent-panel-backdrop { display: none; }
   .agent-panel-layer[data-mode="dock"]:not(.is-open) { display: none; }
   html[data-agent-dock-nav="rail"] .private-app-shell:has(.agent-panel-layer.is-open[data-mode="dock"]) { grid-template-columns: var(--private-toggle-rail) minmax(0, 1fr) clamp(25rem, 28vw, 32rem); }
+}
+
+.agent-unsaved-settings-guard {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-card);
+  color: var(--ink);
+  margin: auto;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: var(--space-6);
+  width: min(30rem, calc(100vw - 2rem));
+  word-break: keep-all;
+  overflow-wrap: anywhere;
+}
+.agent-unsaved-settings-guard::backdrop { background: rgb(28 25 22 / 40%); }
+.agent-unsaved-settings-guard h2 { font-size: 1.375rem; line-height: 1.35; margin: 0 0 var(--space-3); }
+.agent-unsaved-settings-guard p { color: var(--ink-secondary); font-size: 1rem; margin: 0 0 var(--space-6); }
+.agent-unsaved-settings-guard-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.agent-unsaved-settings-guard-actions button {
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  cursor: pointer;
+  flex: 1 1 7rem;
+  font: inherit;
+  font-size: 0.875rem;
+  min-height: var(--chat-touch-size);
+  padding: var(--space-3);
+  white-space: nowrap;
+}
+.agent-unsaved-settings-guard-actions button:first-child { background: var(--accent-text); border-color: var(--accent-text); color: var(--surface); }
+.agent-unsaved-settings-guard-actions button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.agent-unsaved-settings-guard-actions button:disabled { cursor: wait; opacity: 0.65; }
+.agent-unsaved-settings-guard [role="alert"] { color: var(--danger); }
+@media (max-width: 479px) {
+  .agent-unsaved-settings-guard-actions { flex-direction: column; }
+  .agent-unsaved-settings-guard-actions button { flex-basis: auto; width: 100%; }
 }
 
 /* Work surfaces are fluid; prose keeps a readable line length in its own components. */
