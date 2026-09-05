@@ -12,7 +12,7 @@ export default async function TasksPage() {
   const session = await founderSession();
   if (session.state === "signed-out") redirect("/sign-in");
   if (session.state === "denied") redirect("/dashboard");
-  const { projects, agents, tasks, schedule } = await listFounderTasks(session.founder.id);
+  const { projects, ventures, agents, tasks, schedule } = await listFounderTasks(session.founder.id);
 
   return (
     <main className="operations-shell">
@@ -20,6 +20,7 @@ export default async function TasksPage() {
         <TasksPageClient
           agents={agents}
           projects={projects}
+          ventures={ventures}
           schedule={schedule.map((group) => ({
             dueDate: group.dueDate,
             tasks: group.tasks.map((task) => ({

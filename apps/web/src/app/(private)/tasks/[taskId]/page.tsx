@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 
 import { assignTaskAgentAction, completeTaskAction } from "@/app/(private)/tasks/actions";
 import { founderSession } from "@/lib/auth/session";
-import { taskStatusLabels } from "@/lib/domain/tasks";
+import { taskLinkLabel, taskStatusLabels } from "@/lib/domain/tasks";
 import { getFounderTaskDetail } from "@/lib/tasks/repository";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +22,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ tas
         <div>
           <p className="auth-eyebrow">CORELOOM / TASK</p>
           <h1>{task.title}</h1>
-          <p>{task.clientName} · {task.projectName} · {taskStatusLabels[task.status]} · 기한 {task.dueDate}{task.assignedAgentName ? ` · ${task.assignedAgentName}` : ""}</p>
+          <p>{taskLinkLabel(task)} · {taskStatusLabels[task.status]} · 기한 {task.dueDate}{task.assignedAgentName ? ` · ${task.assignedAgentName}` : ""}</p>
         </div>
         <div className="quote-header-links">
           <Link className="text-link" href="/clients-projects">프로젝트</Link>

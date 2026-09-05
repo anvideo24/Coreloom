@@ -141,8 +141,10 @@ export async function getFounderDashboard(authUserId: string, now = new Date()) 
       title: item.title,
       dueDate: item.dueDate,
       status: item.status,
+      kind: item.kind,
       clientName: item.clientName,
       projectName: item.projectName,
+      ventureName: item.ventureName,
       projectId: item.projectId,
     })),
     recentDecisions: recentDecisions.map((item) => ({
