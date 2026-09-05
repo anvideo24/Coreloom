@@ -2560,6 +2560,9 @@ section.empty-state,
 
 /* ── 관리자 매뉴얼 ──────────────────────────── */
 .manual-meta { color: var(--muted); font-size: 0.8125rem; line-height: 1.6; margin: var(--space-5) 0 0; }
+.manual-meta-disclosure { color: var(--muted); margin-top: var(--space-5); }
+.manual-meta-disclosure summary { cursor: pointer; font-size: 0.8125rem; font-weight: 700; min-height: 3rem; padding-top: 0.75rem; }
+.manual-meta-disclosure .manual-meta { margin-top: 0; }
 .manual-back { margin-bottom: var(--space-4); }
 .manual-back a { align-items: center; color: var(--muted); display: inline-flex; font-size: 0.875rem; font-weight: 600; min-height: 1.75rem; text-decoration: none; transition: color 120ms ease; }
 .manual-back a::before { content: "←"; margin-right: 0.5rem; }
@@ -2581,16 +2584,43 @@ a.manual-card:focus-visible { outline: 2.5px solid color-mix(in srgb, var(--acce
 .manual-card-note { color: var(--warning) !important; font-weight: 600; }
 .manual-card-missing { background: var(--surface-raised); border-style: dashed; box-shadow: none; }
 .manual-document { background: var(--surface); border-radius: var(--radius-card); box-shadow: var(--shadow-card); display: grid; gap: var(--space-5); margin-top: var(--space-6); padding: var(--space-7) var(--space-6); }
+.manual-document-layout { display: grid; gap: var(--space-6); grid-template-columns: minmax(11rem, 15rem) minmax(0, 42rem); margin-top: var(--space-6); }
+.manual-document-layout-no-toc { grid-template-columns: minmax(0, 1fr); }
+.manual-document-layout > * { min-width: 0; }
+.manual-toc { align-self: start; background: var(--surface-raised); border: 1px solid var(--line); border-radius: var(--radius-control); padding: var(--space-4); position: sticky; top: var(--space-5); }
+.manual-toc-mobile { display: none; }
+.manual-toc p { font-size: 0.875rem; font-weight: 700; margin: 0 0 var(--space-2); }
+.manual-toc summary { font-size: 0.875rem; font-weight: 700; min-height: 3rem; padding-top: 0.75rem; }
+.manual-toc nav { margin-top: var(--space-2); }
+.manual-toc ol { display: grid; gap: 0.25rem; margin: 0; padding-left: 1.25rem; }
+.manual-toc a { align-items: center; color: var(--ink-secondary); display: flex; font-size: 0.875rem; line-height: 1.5; min-height: 3rem; word-break: keep-all; overflow-wrap: anywhere; }
+.manual-toc a:hover, .manual-toc a:focus-visible { color: var(--accent-text); }
 .manual-document h2, .manual-document h3, .manual-document h4 { font-weight: 700; letter-spacing: -0.02em; margin: 0; }
 .manual-document p, .manual-document li, .manual-document blockquote { color: var(--ink); line-height: 1.75; margin: 0; }
+.manual-document { word-break: keep-all; overflow-wrap: anywhere; }
+.manual-document > * { min-width: 0; }
+.manual-document :is(h2, h3, h4) { scroll-margin-top: var(--space-5); }
+.manual-document h2 { font-size: 1.5rem; line-height: 1.35; }
+.manual-document h3 { font-size: 1.25rem; line-height: 1.4; }
+.manual-document h4 { font-size: 1.0625rem; line-height: 1.45; }
+.manual-document p, .manual-document li, .manual-document blockquote { font-size: 1rem; }
 .manual-document ul, .manual-document ol { margin: 0; padding-left: 1.25rem; }
 .manual-document a { color: var(--accent); font-weight: 600; }
 .manual-document pre, .manual-document code { font-family: var(--font-geist-mono), ui-monospace, monospace; }
 .manual-document pre { background: var(--canvas); border-radius: var(--radius-control); overflow: auto; padding: var(--space-5); }
 .manual-document blockquote { border-left: 3px solid var(--line); color: var(--muted); padding-left: var(--space-5); }
 .manual-document table { border-collapse: collapse; font-size: 0.875rem; width: 100%; }
+.manual-table-region { max-width: 100%; overflow-x: auto; }
+.manual-table-region:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.manual-table-region table { min-width: 36rem; }
 .manual-document th, .manual-document td { border: 1px solid var(--line); padding: 0.5rem 0.75rem; text-align: left; }
 .manual-document th { background: var(--canvas); font-weight: 700; }
+
+@media (max-width: 55.98rem) {
+  .manual-document-layout { grid-template-columns: minmax(0, 1fr); }
+  .manual-toc-desktop { display: none; }
+  .manual-toc-mobile { display: block; position: static; }
+}
 
 /* ── 나가는 길 ─────────────────────────────── */
 /* 좌측 메뉴 맨 아래. 자주 쓰는 것이 아니라 눈에 먼저 들어오면 안 되고, 없으면 못 나간다. */
