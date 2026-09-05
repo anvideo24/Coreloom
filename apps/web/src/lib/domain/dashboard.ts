@@ -30,6 +30,8 @@ export type DashboardInboxItem = DashboardLink & {
   kindLabel: string;
   when: string;
   overdue: boolean;
+  /** 이 항목이 속한 프로젝트. 견적·계약·청구·업무·제안만 갖는다. 설립·비용 항목은 없다(F05-03). */
+  projectId?: string | null;
 };
 
 export type DashboardVitals = {
@@ -37,7 +39,12 @@ export type DashboardVitals = {
   todayTasks: number;
   overdueDeposits: number;
   unclassified: number;
-  cashRhythm: "normal" | "watch";
+  /**
+   * "empty"는 판단할 청구·업무 기록이 아예 없다는 뜻이다. "normal"(정상)과 다르다 —
+   * 기록이 없는 것을 정상으로 표시하면 대표가 실제로는 아직 아무 것도 등록하지 않은 상태를
+   * "문제 없음"으로 오인할 수 있다(F05-04).
+   */
+  cashRhythm: "empty" | "normal" | "watch";
 };
 
 export type DashboardCashWeek = {
@@ -197,6 +204,7 @@ export function buildFounderDashboard(input: {
     body: string;
     clientName: string;
     projectName: string;
+    projectId?: string | null;
   }>;
   projects: Array<{
     id: string;
@@ -226,6 +234,7 @@ export function buildFounderDashboard(input: {
     status: string;
     clientName: string;
     projectName: string;
+    projectId?: string | null;
   }>;
   recentDecisions: Array<{
     id: string;
@@ -253,6 +262,7 @@ export function buildFounderDashboard(input: {
       title: item.title,
       detail: `${item.clientName} · v${item.versionNumber} · 메일 미발송`,
       amount: item.totalAmount,
+      projectId: item.projectId ?? null,
     })),
     limit,
   );
@@ -262,6 +272,7 @@ export function buildFounderDashboard(input: {
       title: item.title,
       detail: `${item.clientName} · ${item.status === "original_recorded" ? "날인 원본 보관" : "초안"}`,
       amount: item.totalAmount,
+      projectId: item.projectId ?? null,
     })),
     limit,
   );
@@ -274,6 +285,7 @@ export function buildFounderDashboard(input: {
         title: item.contractTitle || item.kindLabel,
         detail: `${item.clientName} · ${item.kindLabel} · ${item.dueDate <= today ? `입금 예정 ${item.dueDate}` : `청구일 ${item.billingDate}`}`,
         amount: item.amount,
+        projectId: item.projectId ?? null,
       })),
     limit,
   );
@@ -282,6 +294,7 @@ export function buildFounderDashboard(input: {
       href: `/proposals/${item.id}`,
       title: shorten(item.body),
       detail: `${item.clientName} · ${item.projectName} · ${item.kindLabel} · 공식 결정 아님`,
+      projectId: item.projectId ?? null,
     })),
     limit,
   );
@@ -340,6 +353,7 @@ export function buildFounderDashboard(input: {
       kindLabel: inboxKindLabels.deposit,
       when: item.dueDate,
       overdue: true,
+      projectId: item.projectId ?? null,
     })),
     ...billingsToCheck
       .filter((item) => !overdueDeposits.some((row) => `/billings/${row.id}` === item.href))
@@ -399,6 +413,7 @@ export function buildFounderDashboard(input: {
         kindLabel: inboxKindLabels.task,
         when: item.dueDate,
         overdue: item.dueDate < today,
+        projectId: item.projectId ?? null,
       })),
     ...input.setupItems
       .filter((item) => (item.status === "complete" || item.status === "in_progress") && !item.evidenceReference)
@@ -427,19 +442,23 @@ export function buildFounderDashboard(input: {
       })),
   ].sort((left, right) => compareInbox(left, right, today));
 
+  // "입금 예정"·"지급 예정" 합계다. status가 이미 확인(입금/지급 완료)된 항목까지 날짜만 보고
+  // 더하면 이미 끝난 돈이 "예정"으로 다시 잡힌다(F05-02) — 그래서 scheduled 상태만 더한다.
   const cashWeeks = monthWeekBuckets(today).map((week) => ({
     label: week.label,
     inflow: input.billings
-      .filter((item) => item.dueDate >= week.start && item.dueDate <= week.end)
+      .filter((item) => item.status === "scheduled" && item.dueDate >= week.start && item.dueDate <= week.end)
       .reduce((sum, item) => sum + item.amount, 0),
     outflow: input.expenses
-      .filter((item) => item.settlementDate >= week.start && item.settlementDate <= week.end)
+      .filter((item) => item.status === "scheduled" && item.settlementDate >= week.start && item.settlementDate <= week.end)
       .reduce((sum, item) => sum + item.amount, 0),
   }));
 
   const projectCards: DashboardProjectCard[] = take(
     input.projects.filter((item) => item.status !== "complete").map((item) => {
-      const next = inbox.find((row) => row.detail.includes(item.clientName) || row.title === item.name);
+      // clientName 문자열 일치가 아니라 projectId로만 맞춘다. 동명 고객사·같은 고객사의
+      // 다른 프로젝트가 있으면 이름 매칭은 엉뚱한 프로젝트의 다음 행동을 끌어온다(F05-03).
+      const next = inbox.find((row) => row.projectId === item.id);
       return {
         href: `/clients-projects/${item.id}`,
         title: item.name,
@@ -479,7 +498,12 @@ export function buildFounderDashboard(input: {
       todayTasks: todayTasks.length,
       overdueDeposits: overdueDeposits.length,
       unclassified: input.revenue.unclassifiedCount + expenses.unclassifiedCount,
-      cashRhythm: overdueDeposits.length > 0 || overdueTasks.length > 0 ? "watch" : "normal",
+      cashRhythm:
+        overdueDeposits.length > 0 || overdueTasks.length > 0
+          ? "watch"
+          : input.billings.length > 0 || input.tasks.length > 0
+            ? "normal"
+            : "empty",
     },
     cashWeeks,
     projectCards,

@@ -12,6 +12,7 @@ const proposalSelect = {
   kind: aiProposals.kind,
   body: aiProposals.body,
   status: aiProposals.status,
+  projectId: aiProposals.projectId,
   decisionReason: aiProposals.decisionReason,
   decidedAt: aiProposals.decidedAt,
   createdAt: aiProposals.createdAt,
