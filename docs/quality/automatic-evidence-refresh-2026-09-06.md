@@ -1,6 +1,6 @@
 # 자동 증거 재검토 — 원래 목표 11개
 
-확인: 2026-09-06 15:38 KST · 코드 `20ce5826ef66e0701b59308ce497cb76d693a5ad` · 계획 버전 1.
+확인: 2026-09-06 15:38 KST · 코드 `e58cf93046cd5ded1059ba312cac3723860df9ad` · 계획 버전 1.
 
 **10개 통과 갱신 · 1개 실패 확인.** 이전 결과를 삭제하지 않고 결과 JSON에 11개를 덧붙였다. 제품 코드와 목표는 변경하지 않았다. 이 결과는 자동 검사 범위이며 PC/Fold 실사용·실제 저장·로그인·모델 실행을 대신하지 않는다.
 
@@ -53,7 +53,7 @@ const plan = v.parseVerificationPlan([
 const base = {
   checkId: 'F09-01', outcome: 'pass', value: '가림 0건',
   evidence: { kind: 'automated', ref: 'synthetic-evidence', checkedAt: '2026-09-06' },
-  codeCommit: '20ce5826ef66e0701b59308ce497cb76d693a5ad',
+  codeCommit: 'e58cf93046cd5ded1059ba312cac3723860df9ad',
   planVersion: 1, environment: 'PC desktop only',
 };
 const cases = [
