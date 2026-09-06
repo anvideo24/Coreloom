@@ -44,6 +44,26 @@ describe("admin manual catalog", () => {
 });
 
 describe("admin manual rendering", () => {
+  it("parses explicitly tagged historical notes without losing their markdown blocks", () => {
+    const blocks = parseManualMarkdown([
+      "## 현재 상태",
+      "현재 검증 결과와 제한은 항상 보인다.",
+      ":::history",
+      "과거 구현 메모다.",
+      "- 옛 검사 기록",
+      ":::",
+    ].join("\n"));
+
+    expect(blocks).toHaveLength(3);
+    expect(blocks[2]).toEqual({
+      type: "historical",
+      blocks: [
+        { type: "paragraph", inlines: [{ type: "text", text: "과거 구현 메모다." }] },
+        { type: "list", ordered: false, items: [[{ type: "text", text: "옛 검사 기록" }]] },
+      ],
+    });
+  });
+
   it("keeps headings, lists, and safe links from the markdown source", () => {
     const blocks = parseManualMarkdown([
       "# 운영 매뉴얼",
@@ -128,6 +148,9 @@ describe("admin manual source files", () => {
     const source = readAdminManualProgress();
     expect(source.markdown).toContain("시스템 구성 진행 현황");
     expect(source.markdown).toContain("완료");
+    expect(source.markdown).toContain(":::history");
+    expect(source.markdown).toContain("승인함·상세 통합 상태 — PR #117");
+    expect(source.markdown).toContain("실제 화면·4K·Fold·대표 판단 시험은 추후 일괄 진행");
   });
 
   it("reads the product rules from the repository root, not from manual/", () => {

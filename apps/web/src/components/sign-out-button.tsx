@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { authClient } from "@/lib/auth/client";
+import { APPROVAL_NAVIGATION_KEY_PREFIX } from "@/lib/domain/approval-navigation";
 import { FORM_DRAFT_KEY_PREFIX } from "@/lib/domain/form-draft";
 
 /**
@@ -20,7 +21,7 @@ function clearBrowserDrafts() {
     const keys: string[] = [];
     for (let index = 0; index < storage.length; index += 1) {
       const key = storage.key(index);
-      if (key?.startsWith(FORM_DRAFT_KEY_PREFIX)) keys.push(key);
+      if (key?.startsWith(FORM_DRAFT_KEY_PREFIX) || key?.startsWith(`${APPROVAL_NAVIGATION_KEY_PREFIX}:`)) keys.push(key);
     }
     for (const key of keys) storage.removeItem(key);
   } catch {

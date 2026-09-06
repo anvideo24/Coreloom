@@ -19,6 +19,8 @@ export default async function TasksPage() {
       <Suspense fallback={<p className="empty-state">업무를 불러오는 중…</p>}>
         <TasksPageClient
           agents={agents}
+          draftScopeId={session.founder.id}
+          key={session.founder.id}
           projects={projects}
           ventures={ventures}
           schedule={schedule.map((group) => ({

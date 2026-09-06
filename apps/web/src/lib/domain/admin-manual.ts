@@ -137,7 +137,9 @@ export type ManualBlock =
   | { type: "list"; ordered: boolean; items: ManualInline[][] }
   | { type: "code"; text: string }
   | { type: "quote"; inlines: ManualInline[] }
-  | { type: "table"; headers: string[]; rows: string[][] };
+  | { type: "table"; headers: string[]; rows: string[][] }
+  /** `:::history`로 명시한 과거 구현 메모. 현재 상태·경고와 섞이지 않게 접는다. */
+  | { type: "historical"; blocks: ManualBlock[] };
 
 export function isSafeManualSlug(slug: string) {
   return slug.trim() === slug && slug.length > 0 && slug.length <= 80 && !/[./\\]/.test(slug);
@@ -238,6 +240,17 @@ export function parseManualMarkdown(markdown: string): ManualBlock[] {
       continue;
     }
 
+    if (line.trim() === ":::history") {
+      const start = index + 1;
+      let end = start;
+      while (end < lines.length && lines[end].trim() !== ":::") end += 1;
+      if (end < lines.length) {
+        blocks.push({ type: "historical", blocks: parseManualMarkdown(lines.slice(start, end).join("\n")) });
+        index = end + 1;
+        continue;
+      }
+    }
+
     if (line.startsWith("| ") && line.includes(" | ")) {
       const parseRow = (raw: string) => raw.split("|").map((cell) => cell.trim()).filter(Boolean);
       const headers = parseRow(line);
@@ -299,7 +312,7 @@ export function parseManualMarkdown(markdown: string): ManualBlock[] {
 
     const paragraph: string[] = [line];
     index += 1;
-    while (index < lines.length && lines[index].trim() && !headingLevel(lines[index]) && !listItem(lines[index]) && !lines[index].startsWith("```") && !lines[index].startsWith("> ")) {
+    while (index < lines.length && lines[index].trim() && lines[index].trim() !== ":::history" && lines[index].trim() !== ":::" && !headingLevel(lines[index]) && !listItem(lines[index]) && !lines[index].startsWith("```") && !lines[index].startsWith("> ")) {
       paragraph.push(lines[index]);
       index += 1;
     }
