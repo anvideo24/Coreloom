@@ -14,6 +14,21 @@ export function requireChatModel(id: string) {
 export type ChatMessage = { id: string; role: string; body: string; model: string; status: string; attachments?: string[] };
 export type ChatThread = { id: string; title: string; model: string };
 
+export type AgentMessageStatus = "complete" | "failed" | "stopped" | "unknown";
+
+export function chatFailureStatus(signal: AbortSignal): "failed" | "stopped" {
+  return signal.aborted && signal.reason === "user-stop" ? "stopped" : "failed";
+}
+
+/** 서버가 저장한 대화 상태만 업무 변경 여부와 분리해 보여 준다. */
+export function agentMessageStatusLabel(message: Pick<ChatMessage, "role" | "status" | "body">): { label: string; tone: AgentMessageStatus } | null {
+  if (message.role !== "assistant") return null;
+  if (message.status === "complete") return { label: "AI 답변 · 업무 기록 변경 없음", tone: "complete" };
+  if (message.status === "stopped") return { label: "AI 응답 중지됨 · 업무 기록 변경 없음", tone: "stopped" };
+  if (message.status === "failed") return { label: "AI 응답 실패 · 업무 기록 변경 없음", tone: "failed" };
+  return { label: "AI 응답 상태를 확인하지 못함 · 업무 기록 변경 없음", tone: "unknown" };
+}
+
 export function chatPrompt(agent: {
   name: string; purpose: string; instructions: string | null; workStyle: string | null;
   answerStyle: string | null; procedure: string | null; accessScope: string; allowedWork: unknown;
