@@ -130,6 +130,12 @@ function fillQuoteForm() {
   });
   fireEvent.change(screen.getByLabelText("고객 문서 수량"), { target: { value: "7" } });
   fireEvent.change(screen.getByLabelText("단가"), { target: { value: "1234500" } });
+  fireEvent.change(screen.getByPlaceholderText("고객 견적서에만 보이는 설명"), {
+    target: { value: "UX-SYNTHETIC-PDF-DESCRIPTION" },
+  });
+  fireEvent.change(screen.getByPlaceholderText("견적 조건이나 전달 메모"), {
+    target: { value: "UX-SYNTHETIC-NOTE" },
+  });
 }
 
 async function expectQuoteFormFilled() {
@@ -145,6 +151,12 @@ async function expectQuoteFormFilled() {
   await waitFor(() => {
     expect((screen.getByPlaceholderText("작업 패키지 1") as HTMLInputElement).value).toBe(
       "UX-SYNTHETIC-작업명",
+    );
+    expect((screen.getByPlaceholderText("고객 견적서에만 보이는 설명") as HTMLTextAreaElement).value).toBe(
+      "UX-SYNTHETIC-PDF-DESCRIPTION",
+    );
+    expect((screen.getByPlaceholderText("견적 조건이나 전달 메모") as HTMLTextAreaElement).value).toBe(
+      "UX-SYNTHETIC-NOTE",
     );
   });
   expect((screen.getByLabelText("고객 문서 수량") as HTMLInputElement).value).toBe("7");
@@ -221,6 +233,19 @@ describe("F02-01 PC 8조합 — 견적 폼", () => {
     fillQuoteForm();
     unmount();
     cleanup();
+    renderQuoteForm(vi.fn());
+    await expectQuoteFormFilled();
+  });
+
+  it("연속 재마운트: 첫 복원이 저장된 초안을 부분값으로 덮어쓰지 않는다", async () => {
+    const first = renderQuoteForm(vi.fn());
+    fillQuoteForm();
+    first.unmount();
+
+    const second = renderQuoteForm(vi.fn());
+    await expectQuoteFormFilled();
+    second.unmount();
+
     renderQuoteForm(vi.fn());
     await expectQuoteFormFilled();
   });

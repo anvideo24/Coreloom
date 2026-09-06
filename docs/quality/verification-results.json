@@ -765,6 +765,25 @@
       "planVersion": 1,
       "environment": "개발 데이터베이스에 직접 넣어 보고 거부되는지 확인(읽기+되돌린 쓰기). 넣은 값은 전부 지웠고 남은 줄 0건",
       "note": "넣은 값을 지운 뒤 남은 줄이 0건임을 세어 확인했다. 기존 견적에 새 버전을 더하는 경로와 수정 동작은 계획서 F02 범위 밖이라 안 막는다."
+    },
+    {
+      "checkId": "F01-02",
+      "outcome": "fail",
+      "value": "실제 Chrome에서 인라인 고객사 저장 후 견적으로 돌아왔으나 새 고객사가 자동 선택되지 않고 작성 중인 견적 제목도 손실됐다. 외부 화면 왕복은 0회지만 연결·보존 조건은 실패했다. 잘못된 고객사로 견적을 저장하지 않도록 중단했다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:07:20Z" },
+      "codeCommit": "b3d05875790a555c484e96dc9be4d8ccf2fdac12",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 로그인된 실제 UI · 가상 고객사"
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "fail",
+      "value": "실제 Chrome에서 견적→인라인 고객사→닫기→재열기 후 고객용 설명·메모가 비었다. 인라인 고객사 상호도 닫았다 다시 열면 비었다. PC 견적 닫기·재열기 한 조합에서 손실을 재현했다. 전체 16조합은 측정하지 않았다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:07:20Z" },
+      "codeCommit": "b3d05875790a555c484e96dc9be4d8ccf2fdac12",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 로그인된 실제 UI · 가상 견적 입력",
+      "measured": { "covered": 1, "total": 16 }
     }
   ]
 }

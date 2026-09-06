@@ -16,6 +16,7 @@ type DraftAwareFormProps = {
   formId: string;
   action: (formData: FormData) => void | Promise<void>;
   className?: string;
+  draftIgnoreFields?: string[];
   children: React.ReactNode;
 };
 
@@ -29,6 +30,7 @@ type DraftFormContextValue = {
 };
 
 const DraftFormContext = createContext<DraftFormContextValue | null>(null);
+const NO_DRAFT_IGNORES: string[] = [];
 
 /** `DraftAwareForm` 밖에서 쓰면 null — 호출부가 조용히 아무것도 렌더하지 않게 한다. */
 export function useDraftFormContext() {
@@ -94,9 +96,10 @@ function applyFieldToElement(element: Element | RadioNodeList, value: string) {
 }
 
 /** 작성 패널 폼 초안을 sessionStorage에 보존한다. 본문은 로그하지 않는다. */
-export function DraftAwareForm({ scopeId, formId, action, className, children }: DraftAwareFormProps) {
+export function DraftAwareForm({ scopeId, formId, action, className, draftIgnoreFields = NO_DRAFT_IGNORES, children }: DraftAwareFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const restoredRef = useRef(false);
+  const restoringRef = useRef(false);
   // 이번에 열린 창 하나에서 쓸 제출 식별자(F02-03). 성공한 제출 뒤에만 새 값으로 바꾼다 —
   // 실패한 시도는 같은 식별자를 유지해, 나중에 서버 쪽 판정이 연결됐을 때 "혹시 서버는 실은
   // 처리했는데 응답만 실패로 왔다"인 경우에도 재시도가 중복을 만들지 않게 대비해 둔다.
@@ -129,14 +132,27 @@ export function DraftAwareForm({ scopeId, formId, action, className, children }:
     let observer: MutationObserver | null = null;
 
     function attemptRestore() {
+      restoringRef.current = true;
       for (const name of Array.from(pending)) {
+        if (draftIgnoreFields.includes(name)) {
+          pending.delete(name);
+          continue;
+        }
         // 화면에 보이는 칸을 먼저 찾는다. 제출값을 나르는 hidden과 이름이 겹치지 않게
         // 복원 전용 표식을 쓴다 — 같은 name을 두 번 달면 FormData에 값이 두 개 들어가고,
         // 나중에 누가 Object.fromEntries로 읽는 순간 조용히 다른 값이 저장된다.
+        const markedElement = form!.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
+          `[data-draft-field="${CSS.escape(name)}"]`,
+        );
+        const namedElement = form!.elements.namedItem(name);
+        // A hidden submission mirror may be mounted before its visible editor
+        // (for example the note textarea in the internal tab). Leave that field
+        // pending until the marked editor appears.
         const element =
-          form!.querySelector<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>(
-            `[data-draft-field="${CSS.escape(name)}"]`,
-          ) ?? form!.elements.namedItem(name);
+          markedElement ??
+          (namedElement instanceof HTMLInputElement && namedElement.type === "hidden"
+            ? null
+            : namedElement);
         if (!element) continue;
         try {
           applyFieldToElement(element, fields![name]);
@@ -145,6 +161,7 @@ export function DraftAwareForm({ scopeId, formId, action, className, children }:
         }
         pending.delete(name);
       }
+      restoringRef.current = false;
       if (pending.size === 0) observer?.disconnect();
     }
 
@@ -156,16 +173,34 @@ export function DraftAwareForm({ scopeId, formId, action, className, children }:
       observer.observe(form, { childList: true, subtree: true });
     }
     return () => observer?.disconnect();
-  }, [scopeId, formId]);
+  }, [scopeId, formId, draftIgnoreFields]);
 
   function persist() {
+    if (restoringRef.current) return;
     const form = formRef.current;
     if (!form) return;
     try {
+      const fields = formDataToDraftFields(new FormData(form));
+      // Some editors intentionally omit `name` so their visible control does not
+      // duplicate a submission-only hidden field. Include those controls in the
+      // draft snapshot by their explicit restore marker instead.
+      for (const element of Array.from(form.querySelectorAll<HTMLElement>("[data-draft-field]"))) {
+        const name = element.getAttribute("data-draft-field");
+        if (!name) continue;
+        if (element instanceof HTMLInputElement && (element.type === "checkbox" || element.type === "radio")) {
+          fields[name] = element.checked ? element.value : "";
+        } else if (
+          element instanceof HTMLInputElement ||
+          element instanceof HTMLTextAreaElement ||
+          element instanceof HTMLSelectElement
+        ) {
+          fields[name] = element.value;
+        }
+      }
       const written = writeFormDraft(browserDraftStorage(), {
         scopeId,
         formId,
-        fields: formDataToDraftFields(new FormData(form)),
+        fields,
       });
       // 다 지우면 writeFormDraft가 스스로 저장소를 비우고 null을 돌려준다 — 그 순간 곧바로
       // 버리기 버튼도 사라져야 "늘 떠 있어 시끄러운" 상태를 피한다.

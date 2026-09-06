@@ -726,6 +726,7 @@ export function QuoteCostingComposer({
                           <label>
                             고객용 설명 (PDF)
                             <textarea
+                              data-draft-field={`package-${index}-customerDescription`}
                               onChange={(event) =>
                                 updatePackage(index, { customerDescription: event.target.value })
                               }
@@ -758,6 +759,7 @@ export function QuoteCostingComposer({
               <label className="quote-document-note quote-costing-note">
                 메모 (선택)
                 <textarea
+                  data-draft-field="note"
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="견적 조건이나 전달 메모"
                   value={note}

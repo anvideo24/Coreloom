@@ -37,6 +37,7 @@ type Version = {
 };
 
 type PanelMode = "quote" | "new-client";
+const QUOTE_REDIRECT_DRAFT_IGNORE = ["clientId"];
 
 export function QuotesPageClient({
   clients,
@@ -96,6 +97,8 @@ export function QuotesPageClient({
   }, [clients.length, pathname, router]);
 
   const clientName = clients.find((client) => client.id === clientId)?.name ?? "";
+  const redirectedClientId = searchParams.get("clientId");
+  const ignoreRedirectedClientDraft = redirectedClientId && clients.some((client) => client.id === redirectedClientId);
   const panelTitle = panelMode === "new-client" ? "견적 안 고객사 등록" : "새 견적";
   const filteredVersions = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase();
@@ -179,6 +182,7 @@ export function QuotesPageClient({
             action={createClientFromQuoteAction}
             className="quote-form"
             formId="quote-inline-client-create"
+            key="quote-inline-client-create"
             scopeId={draftScopeId}
           >
             <p className="form-help quote-form-full">
@@ -199,7 +203,9 @@ export function QuotesPageClient({
           <DraftAwareForm
             action={saveQuoteVersionAction}
             className="quote-form quote-form-costing"
+            draftIgnoreFields={ignoreRedirectedClientDraft ? QUOTE_REDIRECT_DRAFT_IGNORE : undefined}
             formId="quote-create"
+            key="quote-create"
             scopeId={draftScopeId}
           >
             <div className="quote-form-meta quote-form-meta-compact">
