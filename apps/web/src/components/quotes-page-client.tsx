@@ -38,6 +38,20 @@ type Version = {
 
 type PanelMode = "quote" | "new-client";
 const QUOTE_REDIRECT_DRAFT_IGNORE = ["clientId"];
+const QUOTE_SUBMISSION_FIELDS = [
+  "quoteId",
+  "clientId",
+  "projectId",
+  "clientContactId",
+  "title",
+  "note",
+  "packagesJson",
+  "vatMode",
+  "targetMarginPercent",
+  "operatingCostPercent",
+  "issuedOn",
+  "validUntil",
+] as const;
 
 export function QuotesPageClient({
   clients,
@@ -206,6 +220,7 @@ export function QuotesPageClient({
             draftIgnoreFields={ignoreRedirectedClientDraft ? QUOTE_REDIRECT_DRAFT_IGNORE : undefined}
             formId="quote-create"
             key="quote-create"
+            persistentSubmissionFields={QUOTE_SUBMISSION_FIELDS}
             scopeId={draftScopeId}
           >
             <div className="quote-form-meta quote-form-meta-compact">

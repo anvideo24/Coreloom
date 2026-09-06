@@ -63,8 +63,8 @@ export function parseFormDraft(raw: string | null | undefined, expected: { scope
 
 /**
  * 제출 식별자(F02-03)는 사람이 쓴 내용이 아니라 이번 제출 시도 하나를 가리키는 표다.
- * 초안에 같이 저장했다가 나중에 되살리면, 이미 처리됐을 수도 있는 옛 식별자가 새 제출에
- * 다시 실려 나가 오히려 혼란을 만든다. 애초에 이 이름은 초안 필드로 받지 않는다.
+ * 일반 입력 필드로 복원하면 새 제출에 옛 식별자가 섞인다. 그래서 이 이름은 필드에서
+ * 제외하고, 신규 견적의 미확정 요청만 별도 form-submission-attempt 메타데이터로 보존한다.
  */
 const NON_DRAFT_FIELD_NAMES = new Set(["submissionId"]);
 
