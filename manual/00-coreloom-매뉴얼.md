@@ -6,6 +6,8 @@ Coreloom은 강의·앱·온라인 서비스를 함께 운영하는 1인 창업�
 
 ## 개선 계획과 작업 인계
 
+고객사에서 견적을 작성하는 실제 PC 흐름을 검증해 설명·메모·인라인 상호 손실 및 새 고객사 미선택을 보완했다. 인라인 고객사와 견적 초안은 분리해서 복원하고, 고객사 저장 뒤에는 방금 만든 고객사를 선택해 이어 쓴다. [측정·재검증 기록](checks/quote-draft-flow-2026-09-06.md)에서 이번 한 사례와 사람·실제 Fold 미측정을 구분한다. 작업 가지에서 확인한 변경이며 main 병합은 별도다.
+
 공통 셸·AI 패널은 PR #104, 후속 미저장 설정 경고·글자 대비는 PR #105로 main에 병합됐다. PC 측정과 남은 항목은 [셸·AI 패널 확인 기록](checks/shell-agent-responsive-2026-09-05.md)에서 확인한다. 실제 Fold 키보드·실제 브라우저 200% 확대 검증은 아직이다.
 
 기능별 목표·검증 기준은 [개선 계획·체크리스트](../docs/superpowers/plans/2026-09-05-measurable-improvements.md), 개선 전 관찰은 [기준 측정 기록](../docs/quality/baseline-2026-09-05.md)에서 확인한다. 실제 검증 결과는 [결과 파일](../docs/quality/verification-results.json)에 덧붙여 쌓는다. F07 조회 화면(`/admin/manual/progress`, 기능별 상세는 `/admin/manual/progress/[기능ID]`)은 2026-09-05 `main`에 병합됐다(PR #89). 대표 로그인 화면 확인과 사람 측정(F07-01·05·06)은 아직이다. 3단계(F05·F02)는 PR #92, 4단계(F01·F03)는 PR #93으로 `main`에 들어갔다. F01-03·F03-01·02 사람 측정은 아직이다. 다음 코드 묶음은 5단계 F04이며 [Claude 인계](handoffs/2026-09-05-claude-stage5-ai-status.md)를 본다. 제품 기능과 공용 규칙의 정본은 기존 위치를 유지한다.

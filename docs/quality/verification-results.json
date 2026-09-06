@@ -765,6 +765,62 @@
       "planVersion": 1,
       "environment": "개발 데이터베이스에 직접 넣어 보고 거부되는지 확인(읽기+되돌린 쓰기). 넣은 값은 전부 지웠고 남은 줄 0건",
       "note": "넣은 값을 지운 뒤 남은 줄이 0건임을 세어 확인했다. 기존 견적에 새 버전을 더하는 경로와 수정 동작은 계획서 F02 범위 밖이라 안 막는다."
+    },
+    {
+      "checkId": "F01-02",
+      "outcome": "fail",
+      "value": "실제 Chrome에서 인라인 고객사 저장 후 견적으로 돌아왔으나 새 고객사가 자동 선택되지 않고 작성 중인 견적 제목도 손실됐다. 외부 화면 왕복은 0회지만 연결·보존 조건은 실패했다. 잘못된 고객사로 견적을 저장하지 않도록 중단했다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:07:20Z" },
+      "codeCommit": "b3d05875790a555c484e96dc9be4d8ccf2fdac12",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 로그인된 실제 UI · 가상 고객사"
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "fail",
+      "value": "실제 Chrome에서 견적→인라인 고객사→닫기→재열기 후 고객용 설명·메모가 비었다. 인라인 고객사 상호도 닫았다 다시 열면 비었다. PC 견적 닫기·재열기 한 조합에서 손실을 재현했다. 전체 16조합은 측정하지 않았다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:07:20Z" },
+      "codeCommit": "b3d05875790a555c484e96dc9be4d8ccf2fdac12",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 로그인된 실제 UI · 가상 견적 입력",
+      "measured": { "covered": 1, "total": 16 }
+    },
+    {
+      "checkId": "F01-01",
+      "outcome": "pass",
+      "value": "가상 고객사 1건과 한 품목 견적을 실제 Chrome에서 등록·저장했다. 직접 입력 6칸·58자, 고객명 재입력 0회. 담당자·프로젝트는 없는 최소 사례다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:20:00Z" },
+      "codeCommit": "593174416eefd058bedbbce32e9c090e9c5fbc40",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 고객사·견적"
+    },
+    {
+      "checkId": "F01-02",
+      "outcome": "pass",
+      "value": "견적 작성 중 인라인 고객사를 저장하고 돌아왔을 때 새 고객사가 자동 선택되고 제목·작업명·단가·설명·메모 5/5개가 유지됐다. 고객사 등록을 위한 외부 화면 왕복 0회, 내부 폼 전환 2회. PC 한 사례 검증이다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:20:00Z" },
+      "codeCommit": "593174416eefd058bedbbce32e9c090e9c5fbc40",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 고객사·견적"
+    },
+    {
+      "checkId": "F01-04",
+      "outcome": "pass",
+      "value": "한 품목 가상 견적 저장 후 상세를 새로고침해 고객사·제목·품목·설명·메모·합계 6/6개가 일치함을 확인했다. 저장 성공 후 새 견적에 이전 검증 입력이 되살아난 항목 0개.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:20:00Z" },
+      "codeCommit": "593174416eefd058bedbbce32e9c090e9c5fbc40",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 견적 저장·서버 재조회"
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "unverified",
+      "value": "PC 견적의 닫기·재열기, 새로고침, 다른 페이지 복귀 3조합에서 각각 입력 5/5개 보존. 인라인 고객사 상호도 닫기·재열기에 보존. 전체 16조합 중 3조합만 실제 브라우저에서 확인했으므로 전체 통과 아님. 실제 휴대폰·동적 다품목·나머지 조합은 미검증.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:20:00Z" },
+      "codeCommit": "593174416eefd058bedbbce32e9c090e9c5fbc40",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 입력",
+      "measured": { "covered": 3, "total": 16 }
     }
   ]
 }
