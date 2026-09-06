@@ -1,8 +1,22 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { chatPrompt, requireChatModel } from "@/lib/domain/agent-chat";
+import { agentMessageStatusLabel, chatFailureStatus, chatPrompt, requireChatModel } from "@/lib/domain/agent-chat";
 import { subscriptionEnvironment } from "@/lib/agents/subscription";
 
 describe("subscription chat boundary", () => {
+  it("labels completed, failed, stopped, and unknown assistant records without treating body text as a work update", () => {
+    expect(agentMessageStatusLabel({ role: "user", status: "complete", body: "반영했습니다" })).toBeNull();
+    expect(agentMessageStatusLabel({ role: "assistant", status: "complete", body: "반영했습니다" })).toEqual({ label: "AI 답변 · 업무 기록 변경 없음", tone: "complete" });
+    expect(agentMessageStatusLabel({ role: "assistant", status: "stopped", body: "반영했습니다" })).toEqual({ label: "AI 응답 중지됨 · 업무 기록 변경 없음", tone: "stopped" });
+    expect(agentMessageStatusLabel({ role: "assistant", status: "failed", body: "반영했습니다" })).toEqual({ label: "AI 응답 실패 · 업무 기록 변경 없음", tone: "failed" });
+    expect(agentMessageStatusLabel({ role: "assistant", status: "unknown", body: "반영했습니다" })).toEqual({ label: "AI 응답 상태를 확인하지 못함 · 업무 기록 변경 없음", tone: "unknown" });
+  });
+  it("marks only the explicit user-stop abort as stopped", () => {
+    const userStop = new AbortController(); userStop.abort("user-stop");
+    const interrupted = new AbortController(); interrupted.abort();
+    expect(chatFailureStatus(userStop.signal)).toBe("stopped");
+    expect(chatFailureStatus(interrupted.signal)).toBe("failed");
+    expect(chatFailureStatus(new AbortController().signal)).toBe("failed");
+  });
   it("rejects arbitrary model names and Cursor until connected", () => {
     expect(() => requireChatModel("--dangerously-skip-permissions")).toThrow();
     expect(() => requireChatModel("cursor_agent")).toThrow();

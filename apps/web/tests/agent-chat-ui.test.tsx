@@ -114,6 +114,28 @@ describe("agent conversation interactions", () => {
     expect((screen.getByLabelText("메시지") as HTMLTextAreaElement).value).toBe("작성 중인 글");
     expect((screen.getByLabelText("대화 모델") as HTMLSelectElement).value).toBe("gpt-5.4-mini");
   });
+  it("keeps server message status separate from body wording after reopening a conversation", async () => {
+    const originalFetch = vi.mocked(fetch).getMockImplementation()!;
+    vi.mocked(fetch).mockImplementation(async (url, init) => {
+      if (String(url).includes("status=")) return Response.json({ gpt_codex_subscription: true, claude_subscription: true });
+      if (init?.method === "POST") return originalFetch(url, init);
+      return Response.json({ threads: [{ id: "thread-test", title: "지난 대화", model: "gpt-5.4-mini" }], messages: [
+        { id: "complete", role: "assistant", body: "반영했습니다", model: "gpt-5.4-mini", status: "complete" },
+        { id: "failed", role: "assistant", body: "반영했습니다", model: "gpt-5.4-mini", status: "failed" },
+        { id: "stopped", role: "assistant", body: "반영했습니다", model: "gpt-5.4-mini", status: "stopped" },
+        { id: "unknown", role: "assistant", body: "반영했습니다", model: "gpt-5.4-mini", status: "unknown" },
+      ], threadId: "thread-test" });
+    });
+    sessionStorage.setItem(`coreloom-chat:${agent.id}`, JSON.stringify({ threadId: "thread-test" }));
+    const first = render(<AgentChat agent={agent} />);
+    await screen.findByText("AI 답변 · 업무 기록 변경 없음");
+    expect(screen.getByText("AI 응답 실패 · 업무 기록 변경 없음")).toBeTruthy();
+    expect(screen.getByText("AI 응답 중지됨 · 업무 기록 변경 없음")).toBeTruthy();
+    expect(screen.getByText("AI 응답 상태를 확인하지 못함 · 업무 기록 변경 없음")).toBeTruthy();
+    first.unmount();
+    render(<AgentChat agent={agent} />);
+    expect(await screen.findByText("AI 응답 중지됨 · 업무 기록 변경 없음")).toBeTruthy();
+  });
   it("saves selected read permissions separately from instructions", async () => {
     render(<AgentChat agent={agent} />);
     await screen.findByText("무엇을 함께 할까요?");

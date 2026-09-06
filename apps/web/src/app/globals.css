@@ -1046,6 +1046,8 @@ html[data-create-panel-open="true"] .pwa-install-layer {
 .agent-chat-message.is-user { width: fit-content; max-width: 88%; margin-left: auto; margin-right: 0; background: var(--surface-raised); padding: var(--space-3) var(--space-4); border-radius: var(--radius-card); }
 .agent-chat-message-label { display: block; color: var(--muted); font-size: .75rem; margin-bottom: var(--space-2); }
 .agent-chat-message.is-user .agent-chat-message-label { position: absolute; width: 1px; height: 1px; overflow: hidden; }
+.agent-chat-message-status { color: var(--muted); font-size: .75rem; line-height: 1.45; margin: var(--space-2) 0 0; overflow-wrap: anywhere; }
+.agent-chat-message-status.is-failed, .agent-chat-message-status.is-stopped { color: var(--danger); }
 .agent-chat-copy { font-size: .75rem; margin-top: var(--space-2); }
 .agent-chat-composer { flex-shrink: 0; width: 100%; max-width: var(--chat-content-width); margin: 0 auto; padding: var(--space-3) var(--space-4); }
 .agent-chat-input-shell { background: var(--surface-raised); border: 1px solid var(--line-strong); border-radius: var(--radius-card); padding: var(--space-3); }

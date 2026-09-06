@@ -1,9 +1,9 @@
 import "server-only";
-import { and, asc, desc, eq, isNull, lt, or } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, lt, or } from "drizzle-orm";
 import { createDatabase } from "@/lib/db/client";
 import { agentChatMessages, agentChatThreads, aiAgents, auditEvents } from "@/lib/db/schema";
 import { ensureFounderWorkspace } from "@/lib/workspace/founder-workspace";
-import { chatPrompt, requireChatModel } from "@/lib/domain/agent-chat";
+import { chatFailureStatus, chatPrompt, requireChatModel } from "@/lib/domain/agent-chat";
 import { agentPanelContextTitle } from "@/lib/domain/agent-panel";
 import { generateSubscriptionReply } from "./subscription";
 import { accessPolicy, runReadConversation } from "@/lib/domain/agent-access";
@@ -74,9 +74,11 @@ export async function sendAgentChat(actor: string, input: { agentId: string; thr
     await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: actor, eventType: "ai_agent.chat_completed", payload: { agentId: agent.id, threadId, model: model.id } });
     return message;
   } catch (error) {
-    const body = signal.aborted ? "사용자가 응답을 중지했습니다." : "응답을 완료하지 못했습니다. 구독 연결·사용 한도를 확인한 뒤 다시 보내 주세요.";
-    await db.insert(agentChatMessages).values({ threadId, role: "assistant", body, model: model.id, status: "failed", clientRequestId: input.requestId }).onConflictDoNothing();
-    await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: actor, eventType: "ai_agent.chat_failed", payload: { agentId: agent.id, threadId, requestId: input.requestId, reason: signal.aborted ? "user_stop" : "generation_failed" } });
+    const failureStatus = chatFailureStatus(signal);
+    const stopped = failureStatus === "stopped";
+    const body = stopped ? "사용자가 응답을 중지했습니다." : "응답을 완료하지 못했습니다. 구독 연결·사용 한도를 확인한 뒤 다시 보내 주세요.";
+    await db.insert(agentChatMessages).values({ threadId, role: "assistant", body, model: model.id, status: failureStatus, clientRequestId: input.requestId }).onConflictDoUpdate({ target: [agentChatMessages.clientRequestId, agentChatMessages.role], set: { body, model: model.id, status: failureStatus }, setWhere: inArray(agentChatMessages.status, ["failed", "stopped"]) });
+    await db.insert(auditEvents).values({ workspaceId: workspace.id, actorUserId: actor, eventType: "ai_agent.chat_failed", payload: { agentId: agent.id, threadId, requestId: input.requestId, reason: stopped ? "user_stop" : "generation_failed" } });
     throw error;
   } finally {
     await db.update(agentChatThreads).set({ busyUntil: null, updatedAt: new Date() }).where(eq(agentChatThreads.id, threadId));

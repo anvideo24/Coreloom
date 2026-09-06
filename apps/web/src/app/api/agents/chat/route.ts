@@ -3,7 +3,7 @@ import { founderSession } from "@/lib/auth/session";
 import { readAgentChats, readAgentRequest, sendAgentChat } from "@/lib/agents/chat-repository";
 import { beginChatRun, chatRunActive, finishChatRun, stopChatRun } from "@/lib/agents/chat-runs";
 import { randomUUID } from "node:crypto";
-import { chatModels } from "@/lib/domain/agent-chat";
+import { chatFailureStatus, chatModels } from "@/lib/domain/agent-chat";
 import { subscriptionStatus } from "@/lib/agents/subscription";
 
 export const runtime = "nodejs";
@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       try {
         const message = await sendAgentChat(session.founder.id, { ...parsed.data, requestId }, abort.signal, (id) => emit({ type: "thread", id }));
         emit({ type: "message", message });
-      } catch { emit({ type: "error", error: abort.signal.aborted ? "사용자가 응답을 중지했습니다." : "응답을 완료하지 못했습니다. 구독 연결·사용 한도를 확인하고 다시 보내 주세요." }); }
+      } catch { emit({ type: "error", error: chatFailureStatus(abort.signal) === "stopped" ? "사용자가 응답을 중지했습니다." : "응답을 완료하지 못했습니다. 구독 연결·사용 한도를 확인하고 다시 보내 주세요." }); }
       finally { clearInterval(heartbeat); finishChatRun(requestId); request.signal.removeEventListener("abort", disconnect); try { controller.close(); } catch { /* The browser may already have closed its stream. */ } }
     },
     cancel() { connected = false; },
