@@ -883,6 +883,27 @@
       "planVersion": 1,
       "environment": "Vitest/jsdom · 실제 폼+시험용 action · 전체 72파일 485개 시험·타입 검사 통과",
       "note": "QR-13~19 자동 시험. 실패로 폼이 오류 경계로 바뀌는 RED와 비제어 입력 초기화 RED를 확인한 뒤 수정했다. 실제 서버·DB·브라우저·Fold는 미검증이며 추후 일괄 진행한다. 외부 CI·main 병합은 별도다."
+    },
+    {
+      "checkId": "F03-01",
+      "outcome": "unverified",
+      "value": "승인함에 검색·종류 필터와 표시/전체 건수, 대상 중심 목록 및 상세 검토 안내를 추가했다. 자동 시험에서 여섯 종류 각각 필터·건수·선택 상태, 검색과 결합·초기화, 빈 결과 구분, 날짜 4종 의미와 0원/미표시 금액, 상세 링크 6개 원순서와 직접 결정 버튼 부재를 확인했다. 대표의 5회 탐색 시간·오선택은 아직 측정하지 않아 목표 통과 아님.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/approval-inbox-2026-09-06.md", "checkedAt": "2026-09-06T03:28:20Z" },
+      "codeCommit": "859f459b519c90f94d0ebbb50c76a20c89956063",
+      "planVersion": 1,
+      "environment": "Vitest/jsdom · 실제 승인함 컴포넌트·가상 6종 목록 · 전체 73파일 488개 시험·타입 검사 통과",
+      "note": "AP-01~06 자동 확인. AP-07~09 실제 화면·대표 탐색·판단 시험은 요청대로 추후 일괄 진행. 정적 검토 안내는 증빙 검증 결과가 아니다. DB·권한·승인/반려 실행·서버 변경 없음. 외부 CI·main 병합은 별도."
+    },
+    {
+      "checkId": "F03-03",
+      "outcome": "unverified",
+      "value": "승인 상세 공통 확인 영역의 대상·금액·참고·확정 후 결과 4개 라벨 순서, 0원/금액 없음, 비검증 안내, 가상 경로·HTML 모양 문자열의 안전한 텍스트 표시를 자동 검증했다. 여섯 종류 상세 연결·기존 승인 조건은 코드로 대조했다. 고정 5사례의 실제 확정 직전 화면 20개 값은 이번에 대조하지 않았으므로 전체 통과 아님.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/approval-detail-2026-09-06.md", "checkedAt": "2026-09-06T03:49:42Z" },
+      "codeCommit": "084003da44040684f997131b7f030f1929e3fb51",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest/jsdom 실제 공통 컴포넌트 · 전체 73파일 487개 시험·타입·변경 TSX ESLint 통과",
+      "measured": { "covered": 0, "total": 5 },
+      "note": "AD-01~06 자동 시험/코드 대조와 AD-07~09 실기기/사람 미검증을 분리한다. 실제 페이지 서버 데이터·승인 제출·DB·브라우저·4K·Fold 시험은 하지 않았으며 추후 일괄 진행한다. 이전 결과는 보존하고 새 UI의 전체 통과는 유보한다. 외부 CI·main 병합은 별도다."
     }
   ]
 }

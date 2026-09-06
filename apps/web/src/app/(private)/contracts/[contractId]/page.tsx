@@ -57,6 +57,7 @@ export default async function ContractDetailPage({ params }: { params: Promise<{
           </p>
         </div>
         <div className="quote-header-links">
+          <Link className="text-link" href="/approvals">승인함</Link>
           {latest.status === "executed" ? (
             <Link className="text-link" href="/billings">
               분할 청구
