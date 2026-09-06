@@ -221,6 +221,7 @@ export function QuotesPageClient({
             formId="quote-create"
             key="quote-create"
             persistentSubmissionFields={QUOTE_SUBMISSION_FIELDS}
+            submissionRecoveryHref="/quotes"
             scopeId={draftScopeId}
           >
             <div className="quote-form-meta quote-form-meta-compact">

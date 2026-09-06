@@ -873,6 +873,16 @@
       "planVersion": 1,
       "environment": "Vitest/jsdom · 실제 폼+시험용 저장/응답 대역 · 전체 72파일 481개 시험·타입 검사 통과",
       "note": "QR-05~12 자동 시험. 같은 탭의 신규 견적에 한정한다. 실제 DB 장애·브라우저·Fold·기존 견적 버전은 이번 검증에 포함하지 않았고, 외부 CI·main 병합은 별도다. 실제 기기 시험은 추후 일괄 진행."
+    },
+    {
+      "checkId": "F02-03",
+      "outcome": "unverified",
+      "value": "신규 견적 저장 오류 후 같은 작성창의 제어·비제어 입력, 초안·요청 정보를 유지하고 명시적 재시도에서 UUID·제출 필드 일치를 확인했다. 전송 전 차단과 저장 결과 불확실을 나눠 안내하며 재열기 안내·목록 링크·내용 변경 차단·전송 중 버튼 비활성과 연타 1회·초안 버리기 차단·성공 리다이렉트 전달을 자동 검증했다. 실제 오류 화면과 DB 중복 결과까지 확인한 것은 아니므로 전체 통과 아님.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T03:08:00Z" },
+      "codeCommit": "47c132d616dcd5e4eccd90e2a1b074347b12eacd",
+      "planVersion": 1,
+      "environment": "Vitest/jsdom · 실제 폼+시험용 action · 전체 72파일 485개 시험·타입 검사 통과",
+      "note": "QR-13~19 자동 시험. 실패로 폼이 오류 경계로 바뀌는 RED와 비제어 입력 초기화 RED를 확인한 뒤 수정했다. 실제 서버·DB·브라우저·Fold는 미검증이며 추후 일괄 진행한다. 외부 CI·main 병합은 별도다."
     }
   ]
 }
