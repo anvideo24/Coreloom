@@ -5,7 +5,7 @@
  *  - 계획: `docs/superpowers/plans/2026-09-05-measurable-improvements.md` (F01–F07, 검사 28개)
  *  - 결과: `docs/quality/verification-results.json` (덧붙이기만 한다. 지우지 않는다)
  *
- * 계획서의 「현재 판정」 칸은 **계획 v1 당시의 판정**이다. 현재 상태로 쓰지 않는다.
+ * 계획서의 「현재 판정」 칸은 **계획 작성·개정 당시의 판정**이다. 현재 상태로 쓰지 않는다.
  * 현재 상태는 결과 파일에서만 온다. 그래야 상태 사본이 두 벌이 안 된다.
  *
  * 이 파일은 순수하다. 파일·git·네트워크를 만지지 않는다. 그건 `@/lib/admin-manual/verification`이 한다.
@@ -46,6 +46,8 @@ export type PlanCheck = {
    * 드러나는 자리였다. 셀 수 있는 것은 코드가 센다.
    */
   requiredCount: number | null;
+  /** 계획의 「필수 검증 환경」 목록. 빈 목록은 조건 미정이며 통과할 수 없다. */
+  requiredEnvironments: string[];
 };
 
 export type PlanFeature = {
@@ -96,6 +98,8 @@ export type CheckResult = {
   planVersion: number;
   /** 기기·브라우저·뷰포트 또는 「도메인 함수 직접 실행」 */
   environment: string;
+  /** 실제 증거가 포괄한 환경명. 옛 기록은 생략 가능하지만 통과로 세지 않는다. */
+  environments?: string[];
   /**
    * 목표가 셀 수 있는 수를 요구할 때, **몇 개를 실제로 쟀나**. `total`은 목표의 수와 같아야 한다.
    * 덜 쟀으면 그 사실이 화면에 그대로 남고 통과로 세지 않는다.
@@ -252,6 +256,7 @@ const checkResultSchema = z
     codeCommit: z.string().regex(COMMIT_HASH_PATTERN, "codeCommit은 40자 hex여야 합니다."),
     planVersion: z.number().int(),
     environment: z.string(),
+    environments: z.array(z.string().trim().min(1)).optional(),
     measured: z
       .object({ covered: z.number().int().min(0), total: z.number().int().min(1) })
       .strict()
@@ -299,7 +304,8 @@ const verificationResultsFileSchema = z
  * 계획서 마크다운 → 구조. 규칙:
  *  - `계획 버전: N`, `작성일: YYYY-MM-DD`를 머리에서 읽는다.
  *  - `## F0N · 이름` 제목부터 다음 `## `까지가 한 기능이다. FEATURE_ID_PATTERN에 안 맞는 절은 기능이 아니다.
- *  - 그 절 안의 표에서 ID 칸이 CHECK_ID_PATTERN에 맞는 행이 검사다. 열 순서는 `완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정`.
+ *  - 그 절 안의 표에서 ID 칸이 CHECK_ID_PATTERN에 맞는 행이 검사다. 앞 열 순서는 `완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정`.
+ *  - 「필수 검증 환경」 열은 쉼표로 구분한 정확한 환경명이다. 없는 과거 계획도 읽지만 통과 판정은 막는다.
  *  - 검사 ID가 겹치면 throw. 기능 ID가 겹쳐도 throw.
  *  - 기능 절의 블록은 `parseManualMarkdown`으로 만든다(제목 포함).
  */
@@ -348,6 +354,7 @@ export function parseVerificationPlan(markdown: string): VerificationPlan {
 
     for (const block of blocks) {
       if (block.type === "table") {
+        const environmentIndex = block.headers.findIndex((header) => header.trim() === "필수 검증 환경");
         for (const row of block.rows) {
           const idIndex = row.findIndex((cell) => CHECK_ID_PATTERN.test(cell.trim()));
           if (idIndex === -1) continue;
@@ -363,6 +370,7 @@ export function parseVerificationPlan(markdown: string): VerificationPlan {
             method,
             planVerdict: (row[idIndex + 3] ?? "").trim(),
             requiredCount: extractRequiredCount(target, method),
+            requiredEnvironments: environmentIndex < 0 ? [] : (row[environmentIndex] ?? "").split(",").map((value) => value.trim()).filter(Boolean),
           });
         }
         continue;
@@ -419,6 +427,7 @@ export function parseVerificationResults(json: string): VerificationResultsFile 
  *  3. latest.outcome이 `pass`여도 다음 하나라도 걸리면 통과가 아니다(`unverified` + reason):
  *     - planVersion !== plan.version → 「다른 계획 버전」
  *     - evidence.ref·environment·codeCommit·value 중 빈 것 → 「증거 없음」/「환경 없음」 등
+ *     - 필수 검증 환경이 없거나 environments가 이를 모두 포함하지 않음 → 미검증. 자유서술 environment로 추정하지 않음
  *     - check.requiredCount가 있는데 measured가 없음 → 「잰 개수 없음(목표 N개)」
  *     - measured.total !== requiredCount → 「목표 개수와 다름」
  *     - measured.covered < measured.total → 「범위 미달 covered/total」
@@ -481,6 +490,12 @@ export function buildVerificationStatus(input: BuildVerificationStatusInput): Fe
         if (latest.planVersion !== plan.version) problems.push("다른 계획 버전");
         if (!latest.evidence.ref.trim()) problems.push("증거 없음");
         if (!latest.environment.trim()) problems.push("환경 없음");
+        if (check.requiredEnvironments.length === 0) {
+          problems.push("계획의 필수 검증 환경 없음");
+        } else {
+          const missing = check.requiredEnvironments.filter((environment) => !latest.environments?.includes(environment));
+          if (missing.length > 0) problems.push(`검증 환경 미달: ${missing.join(" · ")}`);
+        }
         if (!latest.codeCommit.trim()) problems.push("커밋 없음");
         if (!latest.value.trim()) problems.push("실측값 없음");
         // 스스로 「아직 안 쟀다」고 적어 두고 통과 딱지를 붙인 줄이 실제로 들어왔다(2026-09-05).

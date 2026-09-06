@@ -26,7 +26,7 @@ describe("parseVerificationPlan — 실제 계획서", () => {
   const plan = parseVerificationPlan(readPlanMarkdown());
 
   it("계획 버전과 작성일을 읽는다", () => {
-    expect(plan.version).toBe(1);
+    expect(plan.version).toBe(2);
     expect(plan.date).toBe("2026-09-05");
   });
 
@@ -122,10 +122,10 @@ describe("buildVerificationStatus — F07-03 음성 사례(가상 데이터)", (
     "",
     "후속 구현 대상: apps/web/src/lib/domain/synthetic.ts.",
     "",
-    "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 |",
-    "|---|---|---|---|---|",
-    "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 |",
-    "| ☐ | F09-02 | 두 번째 가상 검사 | 가상 방법 | 미검증 |",
+    "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 | 필수 검증 환경 |",
+    "|---|---|---|---|---|---|",
+    "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 | 자동 시험 |",
+    "| ☐ | F09-02 | 두 번째 가상 검사 | 가상 방법 | 미검증 | 자동 시험 |",
   ].join("\n");
 
   function syntheticResultsFile(overrides: {
@@ -147,6 +147,7 @@ describe("buildVerificationStatus — F07-03 음성 사례(가상 데이터)", (
           codeCommit: "a".repeat(40),
           planVersion: overrides.planVersion ?? 1,
           environment: overrides.environment ?? "도메인 함수 직접 실행",
+          environments: ["자동 시험"],
           note: overrides.note,
         },
       ],
@@ -208,9 +209,9 @@ describe("buildVerificationStatus — F07-04 흐름(가상 데이터)", () => {
     "",
     "후속 구현 대상: apps/web/src/lib/domain/synthetic.ts.",
     "",
-    "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 |",
-    "|---|---|---|---|---|",
-    "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 |",
+    "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 | 필수 검증 환경 |",
+    "|---|---|---|---|---|---|",
+    "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 | 자동 시험 |",
   ].join("\n");
   const plan = parseVerificationPlan(SYNTHETIC_PLAN_MARKDOWN);
 
@@ -225,6 +226,7 @@ describe("buildVerificationStatus — F07-04 흐름(가상 데이터)", () => {
       codeCommit: commitA,
       planVersion: 1,
       environment: "도메인 함수 직접 실행",
+      environments: ["자동 시험"],
     };
 
     const fileAfterFirstPass: VerificationResultsFile = {
@@ -268,9 +270,9 @@ describe("buildVerificationStatus — complete 판정(가상 데이터)", () => 
     "",
     "후속 구현 대상: apps/web/src/lib/domain/synthetic.ts.",
     "",
-    "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 |",
-    "|---|---|---|---|---|",
-    "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 |",
+    "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 | 필수 검증 환경 |",
+    "|---|---|---|---|---|---|",
+    "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 | 자동 시험 |",
   ].join("\n");
   const plan = parseVerificationPlan(SYNTHETIC_PLAN_MARKDOWN);
 
@@ -287,6 +289,7 @@ describe("buildVerificationStatus — complete 판정(가상 데이터)", () => 
           codeCommit: "a".repeat(40),
           planVersion: 1,
           environment: "도메인 함수 직접 실행",
+          environments: ["자동 시험"],
         },
       ],
     };
@@ -305,10 +308,10 @@ describe("parseVerificationPlan — 중복 검사 ID", () => {
       "",
       "목표: 가상 목표.",
       "",
-      "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 |",
-      "|---|---|---|---|---|",
-      "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 |",
-      "| ☐ | F09-01 | 중복된 가상 검사 | 가상 방법 | 미검증 |",
+      "| 완료 | ID | 목표·통과 기준 | 검증 방법 | 현재 판정 | 필수 검증 환경 |",
+      "|---|---|---|---|---|---|",
+      "| ☐ | F09-01 | 첫 번째 가상 검사 | 가상 방법 | 미검증 | 자동 시험 |",
+      "| ☐ | F09-01 | 중복된 가상 검사 | 가상 방법 | 미검증 | 자동 시험 |",
     ].join("\n");
     expect(() => parseVerificationPlan(duplicateIdMarkdown)).toThrow();
   });
