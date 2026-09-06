@@ -21,7 +21,7 @@ import { parseSubmissionId } from "@/lib/domain/submission-id";
 import styles from "./draft-aware-form.module.css";
 
 type SubmissionRecoveryNotice = {
-  kind: "not-sent" | "uncertain" | "changed";
+  kind: "not-sent" | "uncertain" | "changed" | "manual-check";
   title: string;
   description: string;
 };
@@ -41,6 +41,16 @@ const SUBMISSION_CHANGED_NOTICE: SubmissionRecoveryNotice = {
   title: "저장 내용을 확인해 주세요",
   description: "이전 요청과 내용이 달라 다시 보내지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요.",
 };
+const SUBMISSION_MANUAL_CHECK_NOTICE: SubmissionRecoveryNotice = {
+  kind: "manual-check",
+  title: "저장 결과를 확인해 주세요",
+  description: "저장 결과를 확인하지 못했습니다. 목록에서 저장 여부를 먼저 확인해 주세요. 입력한 내용은 이 화면에 남아 있습니다.",
+};
+
+type RejectedSubmissionRecovery = {
+  href: string;
+  listLabel: string;
+};
 
 type DraftAwareFormProps = {
   scopeId: string;
@@ -50,6 +60,7 @@ type DraftAwareFormProps = {
   draftIgnoreFields?: string[];
   persistentSubmissionFields?: readonly string[];
   submissionRecoveryHref?: string;
+  rejectedSubmissionRecovery?: RejectedSubmissionRecovery;
   children: React.ReactNode;
 };
 
@@ -59,6 +70,8 @@ type DraftAwareFormProps = {
  */
 type DraftFormContextValue = {
   hasDraft: boolean;
+  submissionInFlight: boolean;
+  submissionBlocked: boolean;
   discardDraft: () => void;
 };
 
@@ -137,6 +150,7 @@ export function DraftAwareForm({
   draftIgnoreFields = NO_DRAFT_IGNORES,
   persistentSubmissionFields,
   submissionRecoveryHref,
+  rejectedSubmissionRecovery,
   children,
 }: DraftAwareFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -152,7 +166,7 @@ export function DraftAwareForm({
   const recoveryNoticeRef = useRef<HTMLDivElement>(null);
   const [submissionRecoveryNotice, setSubmissionRecoveryNotice] = useState<SubmissionRecoveryNotice | null>(null);
   const [submissionInFlight, setSubmissionInFlight] = useState(false);
-  const [, startSubmissionTransition] = useTransition();
+  const [submissionTransitionPending, startSubmissionTransition] = useTransition();
   // 초안이 실제로 남아 있을 때만 버리기 버튼을 보여주기 위한 상태(F02-02).
   const [hasDraft, setHasDraft] = useState(false);
   // 버리기를 누르면 이 값을 올려 children을 통째로 새로 mount한다 — 제어/비제어 입력,
@@ -309,6 +323,15 @@ export function DraftAwareForm({
   }
 
   async function preparePersistentSubmission(event: FormEvent<HTMLFormElement>) {
+    if (rejectedSubmissionRecovery) {
+      event.preventDefault();
+      if (submissionRecoveryNotice?.kind === "manual-check" || submissionActionBusyRef.current) return;
+      setSubmissionRecoveryNotice(null);
+      startSubmissionTransition(async () => {
+        await runFormAction(new FormData(event.currentTarget));
+      });
+      return;
+    }
     if (!persistentSubmissionFields) return;
     if (submissionActionBusyRef.current) {
       event.preventDefault();
@@ -333,7 +356,7 @@ export function DraftAwareForm({
       submissionPreflightRef.current = null;
       submissionActionBusyRef.current = true;
       setSubmissionInFlight(true);
-      startSubmissionTransition(() => runFormAction(formData));
+      startSubmissionTransition(() => runFormAction(formData, true));
       return;
     }
     if (preflight) {
@@ -383,7 +406,13 @@ export function DraftAwareForm({
     }
   }
 
-  async function runFormAction(formData: FormData) {
+  async function runFormAction(formData: FormData, alreadyLocked = false) {
+    const tracksSubmission = Boolean(persistentSubmissionFields || rejectedSubmissionRecovery);
+    if (tracksSubmission && submissionActionBusyRef.current && !alreadyLocked) return;
+    if (tracksSubmission && !alreadyLocked) {
+      submissionActionBusyRef.current = true;
+      setSubmissionInFlight(true);
+    }
     submissionPreflightRef.current = null;
     formData.set("submissionId", submissionIdRef.current);
     try {
@@ -418,9 +447,13 @@ export function DraftAwareForm({
         setSubmissionRecoveryNotice(SUBMISSION_UNCERTAIN_NOTICE);
         return;
       }
+      if (rejectedSubmissionRecovery) {
+        setSubmissionRecoveryNotice(SUBMISSION_MANUAL_CHECK_NOTICE);
+        return;
+      }
       throw error;
     } finally {
-      if (persistentSubmissionFields) {
+      if (tracksSubmission) {
         submissionActionBusyRef.current = false;
         setSubmissionInFlight(false);
       }
@@ -428,10 +461,17 @@ export function DraftAwareForm({
   }
 
   return (
-    <DraftFormContext.Provider value={{ hasDraft: hasDraft && !submissionInFlight, discardDraft }}>
+    <DraftFormContext.Provider
+      value={{
+        hasDraft: hasDraft && !submissionInFlight,
+        submissionInFlight: submissionInFlight || submissionTransitionPending,
+        submissionBlocked: submissionRecoveryNotice?.kind === "manual-check",
+        discardDraft,
+      }}
+    >
       <form
         action={runFormAction}
-        aria-busy={submissionInFlight}
+        aria-busy={submissionInFlight || submissionTransitionPending}
         className={className}
         onChange={persist}
         onInput={persist}
@@ -449,11 +489,13 @@ export function DraftAwareForm({
             <h2>{submissionRecoveryNotice.title}</h2>
             <p>{submissionRecoveryNotice.description}</p>
             <div className={styles.actions}>
-              {submissionRecoveryNotice.kind !== "changed" ? (
+              {submissionRecoveryNotice.kind === "not-sent" || submissionRecoveryNotice.kind === "uncertain" ? (
                 <button className={styles.primaryAction} type="submit">다시 시도</button>
               ) : null}
-              {submissionRecoveryHref ? (
-                <a className={styles.secondaryAction} href={submissionRecoveryHref}>견적 목록 확인</a>
+              {submissionRecoveryHref || rejectedSubmissionRecovery ? (
+                <a className={styles.secondaryAction} href={rejectedSubmissionRecovery?.href ?? submissionRecoveryHref}>
+                  {rejectedSubmissionRecovery?.listLabel ?? "견적 목록 확인"}
+                </a>
               ) : null}
             </div>
           </div>

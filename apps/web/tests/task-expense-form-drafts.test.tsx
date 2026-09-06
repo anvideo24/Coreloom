@@ -298,6 +298,63 @@ describe("업무·비용 작성 초안", () => {
   });
 
   it.each([
+    ["업무", "새 업무", renderTasks, fillTask, expectTaskRestored, createTaskAction],
+    ["비용", "비용 등록", renderExpenses, fillExpense, expectExpenseRestored, createExpenseEntryAction],
+  ] as const)("%s 저장 거부는 입력을 같은 패널에 남기고 목록 확인만 안내한다", async (_name, title, renderForm, fill, expectRestored, action) => {
+    action.mockRejectedValueOnce(new Error("UX-SYNTHETIC-PRIVATE-SAVE-ERROR"));
+    renderForm();
+    await openPanel(title);
+    fill();
+
+    fireEvent.click(screen.getByRole("button", { name: /저장$/ }));
+
+    const notice = await screen.findByRole("alert");
+    expect(notice.textContent).toContain("저장 결과를 확인해 주세요");
+    expect(notice.textContent).not.toContain("UX-SYNTHETIC-PRIVATE-SAVE-ERROR");
+    expect(screen.getByRole("link", { name: /목록 확인/ }).getAttribute("href")).toBe(_name === "업무" ? "/tasks" : "/expenses");
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+    expect((screen.getByRole("button", { name: /저장$/ }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.submit(notice.closest("form")!);
+    expect(action).toHaveBeenCalledTimes(1);
+    expectRestored();
+  });
+
+  it.each([
+    ["업무", "새 업무", renderTasks, fillTask, createTaskAction],
+    ["비용", "비용 등록", renderExpenses, fillExpense, createExpenseEntryAction],
+  ] as const)("%s 저장 중에는 같은 패널에서 두 번째 요청을 보내지 않는다", async (_name, title, renderForm, fill, action) => {
+    let settle: (() => void) | undefined;
+    action.mockImplementationOnce(() => new Promise<void>((resolve) => { settle = resolve; }));
+    renderForm();
+    await openPanel(title);
+    fill();
+
+    const save = screen.getByRole("button", { name: /저장$/ });
+    fireEvent.click(save);
+    fireEvent.submit(save.closest("form")!);
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(screen.getByRole("button", { name: "저장 중…" }).closest("form")?.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByRole("button", { name: "저장 중…" })).toBeTruthy();
+    expect((screen.getByRole("button", { name: "저장 중…" }) as HTMLButtonElement).disabled).toBe(true);
+    settle?.();
+  });
+
+  it.each([
+    ["업무", "새 업무", "task-create", taskClient, fillTask, createTaskAction, TASK_SCOPE],
+    ["비용", "비용 등록", "expense-create", expenseClient, fillExpense, createExpenseEntryAction, EXPENSE_SCOPE],
+  ] as const)("%s 저장 redirect는 복구 안내로 삼키지 않고 초안을 지운다", async (_name, title, formId, client, fill, action, scopeId) => {
+    action.mockRejectedValueOnce(Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;push;/synthetic;303;" }));
+    render(<RouteSegmentErrorBoundary>{client(scopeId)}</RouteSegmentErrorBoundary>);
+    await openPanel(title);
+    fill();
+
+    fireEvent.click(screen.getByRole("button", { name: /저장$/ }));
+
+    await waitFor(() => expect(sessionStorage.getItem(formDraftStorageKey(scopeId, formId))).toBeNull());
+    expect(screen.queryByRole("heading", { name: "저장 결과를 확인해 주세요" })).toBeNull();
+  });
+
+  it.each([
     ["업무", "새 업무", "task-create", taskClient, renderTasks, fillTask, expectTaskInitial, TASK_SCOPE],
     ["비용", "비용 등록", "expense-create", expenseClient, renderExpenses, fillExpense, expectExpenseInitial, EXPENSE_SCOPE],
   ] as const)("%s은 같은 컴포넌트가 다른 대표 scope로 바뀌어도 이전 입력을 보이지 않는다", async (_name, title, formId, client, renderForm, fill, expectInitial, scopeId) => {

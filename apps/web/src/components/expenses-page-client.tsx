@@ -122,7 +122,13 @@ export function ExpensesPageClient({
       </section>
 
       <CreatePanel onClose={close} open={open} showHeader size="wide" title="비용 등록">
-        <DraftAwareForm action={createExpenseEntryAction} className="quote-form" formId="expense-create" scopeId={draftScopeId}>
+        <DraftAwareForm
+          action={createExpenseEntryAction}
+          className="quote-form"
+          formId="expense-create"
+          rejectedSubmissionRecovery={{ href: "/expenses", listLabel: "비용 목록 확인" }}
+          scopeId={draftScopeId}
+        >
           <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
             프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 사업은 매출 원장에서 먼저 등록합니다.
@@ -196,7 +202,7 @@ export function ExpensesPageClient({
             <input name="note" />
           </label>
           <div className="quote-form-full">
-            <DraftSubmitButton className="auth-submit">비용 저장</DraftSubmitButton>
+            <DraftSubmitButton className="auth-submit" pendingLabel="저장 중…">비용 저장</DraftSubmitButton>
             <DraftDiscardButton />
           </div>
         </DraftAwareForm>

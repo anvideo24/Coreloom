@@ -6,6 +6,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createRevenueEntryAction, createVentureAction } from "@/app/(private)/revenue/actions";
 import { CreateMenuButton } from "@/components/create-menu-button";
 import { CreatePanel } from "@/components/create-panel";
+import { DraftAwareForm } from "@/components/draft-aware-form";
+import { DraftDiscardButton } from "@/components/draft-discard-button";
+import { DraftSubmitButton } from "@/components/draft-submit-button";
 import { formatLedgerAccountLabel } from "@/lib/domain/ledger-accounts";
 import {
   revenueEntryStatusLabels,
@@ -44,12 +47,14 @@ export function RevenuePageClient({
   accounts,
   rows,
   summary,
+  draftScopeId,
 }: {
   ventures: Venture[];
   projects: Project[];
   accounts: Account[];
   rows: RevenueRow[];
   summary: Summary;
+  draftScopeId: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -142,8 +147,8 @@ export function RevenuePageClient({
         )}
       </section>
 
-      <CreatePanel onClose={close} open={mode === "entry"} size="wide" title="매출 등록">
-        <form action={createRevenueEntryAction} className="quote-form">
+      <CreatePanel onClose={close} open={mode === "entry"} showHeader size="wide" title="매출 등록">
+        <DraftAwareForm action={createRevenueEntryAction} className="quote-form" formId="revenue-create" scopeId={draftScopeId}>
           <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
             프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 계정과목은 계정과목 마스터의 수익
@@ -200,14 +205,15 @@ export function RevenuePageClient({
             메모 (선택)
             <input name="note" />
           </label>
-          <button className="auth-submit" type="submit">
-            매출 저장
-          </button>
-        </form>
+          <div className="quote-form-full">
+            <DraftSubmitButton className="auth-submit">매출 저장</DraftSubmitButton>
+            <DraftDiscardButton />
+          </div>
+        </DraftAwareForm>
       </CreatePanel>
 
-      <CreatePanel onClose={close} open={mode === "venture"} size="wide" title="사업 등록">
-        <form action={createVentureAction} className="quote-form">
+      <CreatePanel onClose={close} open={mode === "venture"} showHeader size="wide" title="사업 등록">
+        <DraftAwareForm action={createVentureAction} className="quote-form" formId="venture-create" scopeId={draftScopeId}>
           <p className="setup-code quote-form-full">앱·구독 사업</p>
           <label className="quote-form-full">
             사업명
@@ -223,10 +229,11 @@ export function RevenuePageClient({
               ))}
             </select>
           </label>
-          <button className="auth-submit" type="submit">
-            사업 저장
-          </button>
-        </form>
+          <div className="quote-form-full">
+            <DraftSubmitButton className="auth-submit">사업 저장</DraftSubmitButton>
+            <DraftDiscardButton />
+          </div>
+        </DraftAwareForm>
       </CreatePanel>
     </>
   );
