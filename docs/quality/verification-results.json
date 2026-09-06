@@ -821,6 +821,17 @@
       "planVersion": 1,
       "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 입력",
       "measured": { "covered": 3, "total": 16 }
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "fail",
+      "value": "PC 다품목 견적에서 3품목 입력 후 닫기·재열기에 첫 품목만 남았다. 중간 품목 삭제 후 새로고침에서도 남아야 할 2품목 중 첫 품목만 남았다. 앞선 한 품목 시험으로 확인되지 않은 품목 목록 복원 실패다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:35:13Z" },
+      "codeCommit": "1e2adc120c71c6dfbf8c09cba6fed4884c352fc7",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 초안 · DB 저장 없음",
+      "measured": { "covered": 2, "total": 16 },
+      "note": "QD-01·02 실패를 별도 기록한다. 수정 후 결과는 새 항목으로 남기며 이 실패 이력은 지우지 않는다."
     }
   ]
 }

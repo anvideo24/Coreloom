@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from "react";
 
 import { QuoteInvoiceDocument } from "@/components/quote-invoice-document";
 import {
@@ -162,6 +162,42 @@ function roleSelectValue(role: string) {
   return "__custom__";
 }
 
+function quotePackagesFromDraft(value: string): QuotePackage[] | null {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    if (!Array.isArray(parsed) || parsed.length === 0) return null;
+    const packages: QuotePackage[] = [];
+    for (const raw of parsed) {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
+      const item = raw as Record<string, unknown>;
+      if (
+        typeof item.title !== "string" ||
+        typeof item.customerDescription !== "string" ||
+        typeof item.role !== "string" ||
+        typeof item.amountLocked !== "boolean"
+      ) {
+        return null;
+      }
+      const numericFields = [
+        "amount",
+        "quantity",
+        "monthlyRate",
+        "months",
+        "headcount",
+        "utilizationPercent",
+        "costAmount",
+      ] as const;
+      if (numericFields.some((field) => typeof item[field] !== "number" || !Number.isFinite(item[field]))) {
+        return null;
+      }
+      packages.push(item as QuotePackage);
+    }
+    return packages;
+  } catch {
+    return null;
+  }
+}
+
 function formatVersionDate(value: string | Date | null | undefined) {
   if (!value) return "";
   const date = value instanceof Date ? value : new Date(value);
@@ -235,6 +271,42 @@ export function QuoteCostingComposer({
       }),
     [packages, targetMarginPercent, operatingCostPercent, vatMode],
   );
+  const packagesDraftJson = JSON.stringify(livePackages);
+  const packagesDraftInputRef = useRef<HTMLInputElement>(null);
+  const lastNotifiedPackagesDraftRef = useRef(packagesDraftJson);
+
+  useEffect(() => {
+    if (lastNotifiedPackagesDraftRef.current === packagesDraftJson) return;
+    lastNotifiedPackagesDraftRef.current = packagesDraftJson;
+    packagesDraftInputRef.current?.dispatchEvent(new Event("input", { bubbles: true }));
+  }, [packagesDraftJson]);
+
+  const restorePackagesDraft = (event: FormEvent<HTMLInputElement>) => {
+    const restored = quotePackagesFromDraft(event.currentTarget.value);
+    if (!restored) {
+      event.currentTarget.value = packagesDraftJson;
+      return;
+    }
+    // This collection is authoritative over old per-index draft keys. Also mark
+    // it as already notified so the async hydration render does not snapshot
+    // other still-hidden fields before DraftAwareForm finishes restoring them.
+    lastNotifiedPackagesDraftRef.current = event.currentTarget.value;
+    setPackages(restored);
+  };
+
+  const restorePercentDraft = (
+    event: FormEvent<HTMLInputElement>,
+    current: number,
+    max: number,
+    restore: (value: number) => void,
+  ) => {
+    const restored = Number(event.currentTarget.value);
+    if (!Number.isFinite(restored) || restored < 0 || restored > max) {
+      event.currentTarget.value = String(current);
+      return;
+    }
+    restore(restored);
+  };
 
   const preview = useMemo(() => {
     try {
@@ -407,9 +479,29 @@ export function QuoteCostingComposer({
 
   return (
     <div className={`quote-costing ${tab === "customer" ? "is-customer" : "is-internal"}`}>
-      <input name="packagesJson" type="hidden" value={JSON.stringify(livePackages)} />
-      <input name="targetMarginPercent" type="hidden" value={targetMarginPercent} />
-      <input name="operatingCostPercent" type="hidden" value={operatingCostPercent} />
+      <input
+        data-draft-field="packagesJson"
+        data-draft-supersedes-prefix="package-"
+        name="packagesJson"
+        onInput={restorePackagesDraft}
+        ref={packagesDraftInputRef}
+        type="hidden"
+        value={packagesDraftJson}
+      />
+      <input
+        data-draft-field="targetMarginPercent"
+        name="targetMarginPercent"
+        onInput={(event) => restorePercentDraft(event, targetMarginPercent, 90, setTargetMarginPercent)}
+        type="hidden"
+        value={targetMarginPercent}
+      />
+      <input
+        data-draft-field="operatingCostPercent"
+        name="operatingCostPercent"
+        onInput={(event) => restorePercentDraft(event, operatingCostPercent, 50, setOperatingCostPercent)}
+        type="hidden"
+        value={operatingCostPercent}
+      />
       <input name="title" type="hidden" value={resolvedTitle} />
       <input name="issuedOn" type="hidden" value={issuedOn} />
       <input name="validUntil" type="hidden" value={validUntil} />

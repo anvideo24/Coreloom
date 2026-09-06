@@ -73,7 +73,11 @@ export function sanitizeDraftFields(fields: Record<string, string>) {
   for (const [key, value] of Object.entries(fields)) {
     if (!key || key.startsWith("$ACTION") || NON_DRAFT_FIELD_NAMES.has(key)) continue;
     if (typeof value !== "string") continue;
-    if (value.length > 8000) continue;
+    // A quote package collection contains several individually bounded fields in
+    // one JSON submission value. Six 1,000-character descriptions plus titles
+    // and costing metadata legitimately exceed the ordinary single-field cap.
+    const maxLength = key === "packagesJson" ? 64_000 : 8_000;
+    if (value.length > maxLength) continue;
     next[key] = value;
   }
   return next;
