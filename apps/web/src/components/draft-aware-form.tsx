@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, Fragment, useContext, useEffect, useRef, useState, type FormEvent } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState, useTransition, type FormEvent } from "react";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import {
@@ -18,6 +18,29 @@ import {
 } from "@/lib/domain/form-submission-attempt";
 import { createSubmissionId } from "@/lib/domain/submission-dedupe";
 import { parseSubmissionId } from "@/lib/domain/submission-id";
+import styles from "./draft-aware-form.module.css";
+
+type SubmissionRecoveryNotice = {
+  kind: "not-sent" | "uncertain" | "changed";
+  title: string;
+  description: string;
+};
+
+const SUBMISSION_NOT_SENT_NOTICE: SubmissionRecoveryNotice = {
+  kind: "not-sent",
+  title: "저장 요청을 보내지 못했습니다",
+  description: "중복 저장을 막는 정보를 준비하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+};
+const SUBMISSION_UNCERTAIN_NOTICE: SubmissionRecoveryNotice = {
+  kind: "uncertain",
+  title: "저장 여부를 확인해 주세요",
+  description: "저장 결과를 확인하지 못했습니다. 같은 내용으로 다시 시도하거나 견적 목록에서 저장 여부를 확인해 주세요.",
+};
+const SUBMISSION_CHANGED_NOTICE: SubmissionRecoveryNotice = {
+  kind: "changed",
+  title: "저장 내용을 확인해 주세요",
+  description: "이전 요청과 내용이 달라 다시 보내지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요.",
+};
 
 type DraftAwareFormProps = {
   scopeId: string;
@@ -26,6 +49,7 @@ type DraftAwareFormProps = {
   className?: string;
   draftIgnoreFields?: string[];
   persistentSubmissionFields?: readonly string[];
+  submissionRecoveryHref?: string;
   children: React.ReactNode;
 };
 
@@ -112,6 +136,7 @@ export function DraftAwareForm({
   className,
   draftIgnoreFields = NO_DRAFT_IGNORES,
   persistentSubmissionFields,
+  submissionRecoveryHref,
   children,
 }: DraftAwareFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -123,7 +148,11 @@ export function DraftAwareForm({
   const submissionPreflightRef = useRef<{ payloadSnapshot: string } | null>(null);
   const submissionPreflightBusyRef = useRef(false);
   const submissionPreflightGenerationRef = useRef(0);
-  const [submissionGuardError, setSubmissionGuardError] = useState<string | null>(null);
+  const submissionActionBusyRef = useRef(false);
+  const recoveryNoticeRef = useRef<HTMLDivElement>(null);
+  const [submissionRecoveryNotice, setSubmissionRecoveryNotice] = useState<SubmissionRecoveryNotice | null>(null);
+  const [submissionInFlight, setSubmissionInFlight] = useState(false);
+  const [, startSubmissionTransition] = useTransition();
   // 초안이 실제로 남아 있을 때만 버리기 버튼을 보여주기 위한 상태(F02-02).
   const [hasDraft, setHasDraft] = useState(false);
   // 버리기를 누르면 이 값을 올려 children을 통째로 새로 mount한다 — 제어/비제어 입력,
@@ -150,6 +179,7 @@ export function DraftAwareForm({
         // 손상됐거나 읽을 수 없는 식별자도 전송은 아래 사전검사에서 막는다.
       }
     }
+    if (hasSubmissionAttempt) setSubmissionRecoveryNotice(SUBMISSION_UNCERTAIN_NOTICE);
     if (!fields || Object.keys(fields).length === 0) {
       setHasDraft(hasSubmissionAttempt);
       return;
@@ -219,6 +249,13 @@ export function DraftAwareForm({
     [],
   );
 
+  useEffect(() => {
+    if (!submissionRecoveryNotice) return;
+    const notice = recoveryNoticeRef.current;
+    notice?.focus();
+    notice?.scrollIntoView?.({ block: "nearest" });
+  }, [submissionRecoveryNotice]);
+
   function persist() {
     if (restoringRef.current) return;
     const form = formRef.current;
@@ -255,10 +292,12 @@ export function DraftAwareForm({
   }
 
   function discardDraft() {
+    if (submissionActionBusyRef.current) return;
     submissionPreflightGenerationRef.current += 1;
     submissionPreflightRef.current = null;
     submissionPreflightBusyRef.current = false;
-    setSubmissionGuardError(null);
+    submissionActionBusyRef.current = false;
+    setSubmissionRecoveryNotice(null);
     try {
       clearFormDraft(browserDraftStorage(), scopeId, formId);
       if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
@@ -271,6 +310,10 @@ export function DraftAwareForm({
 
   async function preparePersistentSubmission(event: FormEvent<HTMLFormElement>) {
     if (!persistentSubmissionFields) return;
+    if (submissionActionBusyRef.current) {
+      event.preventDefault();
+      return;
+    }
     const form = event.currentTarget;
     const submitter = (event.nativeEvent as SubmitEvent).submitter;
     const formData = new FormData(form);
@@ -280,15 +323,17 @@ export function DraftAwareForm({
       payloadSnapshot = snapshotSubmissionFields(formData, persistentSubmissionFields);
     } catch {
       event.preventDefault();
-      setSubmissionGuardError(
-        "중복 방지 정보를 저장하지 못해 견적을 보내지 않았습니다. 브라우저 저장소를 허용한 뒤 다시 시도해 주세요.",
-      );
+      setSubmissionRecoveryNotice(SUBMISSION_NOT_SENT_NOTICE);
       return;
     }
 
     const preflight = submissionPreflightRef.current;
     if (preflight?.payloadSnapshot === payloadSnapshot) {
+      event.preventDefault();
       submissionPreflightRef.current = null;
+      submissionActionBusyRef.current = true;
+      setSubmissionInFlight(true);
+      startSubmissionTransition(() => runFormAction(formData));
       return;
     }
     if (preflight) {
@@ -299,6 +344,7 @@ export function DraftAwareForm({
       return;
     }
     event.preventDefault();
+    setSubmissionRecoveryNotice(null);
     submissionPreflightBusyRef.current = true;
     const preflightGeneration = ++submissionPreflightGenerationRef.current;
 
@@ -308,9 +354,7 @@ export function DraftAwareForm({
       const storage = browserDraftStorage();
       const pending = readFormSubmissionAttempt(storage, scopeId, formId);
       if (pending && pending.payloadDigest !== payloadDigest) {
-        setSubmissionGuardError(
-          "이전 저장 결과가 확인되지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요. 같은 내용으로 재시도할 수 있습니다. 다른 견적을 새로 작성하려면 초안을 버려 주세요.",
-        );
+        setSubmissionRecoveryNotice(SUBMISSION_CHANGED_NOTICE);
         return;
       }
 
@@ -328,12 +372,10 @@ export function DraftAwareForm({
       setHasDraft(true);
       submissionIdRef.current = submissionId;
       submissionPreflightRef.current = { payloadSnapshot };
-      setSubmissionGuardError(null);
-      form.requestSubmit(submitter instanceof HTMLElement ? submitter : undefined);
+      setSubmissionRecoveryNotice(null);
+      form.requestSubmit(submitter instanceof HTMLElement && submitter.isConnected ? submitter : undefined);
     } catch {
-      setSubmissionGuardError(
-        "중복 방지 정보를 저장하지 못해 견적을 보내지 않았습니다. 브라우저 저장소를 허용한 뒤 다시 시도해 주세요.",
-      );
+      setSubmissionRecoveryNotice(SUBMISSION_NOT_SENT_NOTICE);
     } finally {
       if (preflightGeneration === submissionPreflightGenerationRef.current) {
         submissionPreflightBusyRef.current = false;
@@ -341,47 +383,81 @@ export function DraftAwareForm({
     }
   }
 
+  async function runFormAction(formData: FormData) {
+    submissionPreflightRef.current = null;
+    formData.set("submissionId", submissionIdRef.current);
+    try {
+      await action(formData);
+      // 성공했다. 다음 제출은 다른 시도이니 식별자를 새로 바꾼다.
+      submissionIdRef.current = createSubmissionId();
+      setSubmissionRecoveryNotice(null);
+      try {
+        clearFormDraft(browserDraftStorage(), scopeId, formId);
+        if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
+        setHasDraft(false);
+      } catch {
+        /* ignore */
+      }
+    } catch (error) {
+      if (isRedirectError(error)) {
+        // 이 앱의 저장 액션은 성공하면 redirect()로 끝난다 — 이것도 성공이다.
+        submissionIdRef.current = createSubmissionId();
+        setSubmissionRecoveryNotice(null);
+        try {
+          clearFormDraft(browserDraftStorage(), scopeId, formId);
+          if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
+          setHasDraft(false);
+        } catch {
+          /* ignore */
+        }
+        throw error;
+      }
+      if (persistentSubmissionFields) {
+        // opt-in 신규 견적은 form action의 정상 반환 경로를 쓰지 않는다. React 19 자동 reset 없이
+        // 같은 화면에서 입력과 요청 식별자를 유지한 채 명시적으로 재시도할 수 있게 한다.
+        setSubmissionRecoveryNotice(SUBMISSION_UNCERTAIN_NOTICE);
+        return;
+      }
+      throw error;
+    } finally {
+      if (persistentSubmissionFields) {
+        submissionActionBusyRef.current = false;
+        setSubmissionInFlight(false);
+      }
+    }
+  }
+
   return (
-    <DraftFormContext.Provider value={{ hasDraft, discardDraft }}>
+    <DraftFormContext.Provider value={{ hasDraft: hasDraft && !submissionInFlight, discardDraft }}>
       <form
-        action={async (formData) => {
-          submissionPreflightRef.current = null;
-          formData.set("submissionId", submissionIdRef.current);
-          try {
-            await action(formData);
-            // 성공했다. 다음 제출은 다른 시도이니 식별자를 새로 바꾼다.
-            submissionIdRef.current = createSubmissionId();
-            try {
-              clearFormDraft(browserDraftStorage(), scopeId, formId);
-              if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
-              setHasDraft(false);
-            } catch {
-              /* ignore */
-            }
-          } catch (error) {
-            if (isRedirectError(error)) {
-              // 이 앱의 저장 액션은 성공하면 redirect()로 끝난다 — 이것도 성공이다.
-              submissionIdRef.current = createSubmissionId();
-              try {
-                clearFormDraft(browserDraftStorage(), scopeId, formId);
-                if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
-                setHasDraft(false);
-              } catch {
-                /* ignore */
-              }
-            }
-            // 일반 실패는 식별자와 요청 정보를 남겨, 응답만 유실된 저장도 같은 식별자로
-            // 재시도할 수 있게 한다. 신규 견적 서버는 기존 저장 결과를 반환한다.
-            throw error;
-          }
-        }}
+        action={runFormAction}
+        aria-busy={submissionInFlight}
         className={className}
         onChange={persist}
         onInput={persist}
         onSubmit={(event) => void preparePersistentSubmission(event)}
         ref={formRef}
       >
-        {submissionGuardError ? <p role="alert">{submissionGuardError}</p> : null}
+        {submissionRecoveryNotice ? (
+          <div
+            aria-atomic="true"
+            className={styles.notice}
+            ref={recoveryNoticeRef}
+            role="alert"
+            tabIndex={-1}
+          >
+            <h2>{submissionRecoveryNotice.title}</h2>
+            <p>{submissionRecoveryNotice.description}</p>
+            <div className={styles.actions}>
+              {submissionRecoveryNotice.kind !== "changed" ? (
+                <button className={styles.primaryAction} type="submit">다시 시도</button>
+              ) : null}
+              {submissionRecoveryHref ? (
+                <a className={styles.secondaryAction} href={submissionRecoveryHref}>견적 목록 확인</a>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
         <Fragment key={fieldsResetKey}>{children}</Fragment>
       </form>
     </DraftFormContext.Provider>

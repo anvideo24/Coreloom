@@ -24,6 +24,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 
 import { DraftAwareForm } from "@/components/draft-aware-form";
 import { DraftDiscardButton } from "@/components/draft-discard-button";
+import { DraftSubmitButton } from "@/components/draft-submit-button";
 import { ClientCompanyFields } from "@/components/client-company-fields";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
 import { QuoteCostingComposer } from "@/components/quote-costing-composer";
@@ -121,12 +122,13 @@ function renderQuoteFormElement(
       action={action}
       formId="quote-create"
       persistentSubmissionFields={QUOTE_SUBMISSION_FIELDS}
+      submissionRecoveryHref="/quotes"
       scopeId={scopeId}
     >
       <QuoteClientProjectFields clients={QUOTE_CLIENTS} projects={QUOTE_PROJECTS} />
       <QuoteCostingComposer clientName="가상 고객사 A" initialTab={initialTab} versionNumber={1} />
       {includeDiscard ? <DraftDiscardButton /> : null}
-      <button type="submit">견적 저장</button>
+      <DraftSubmitButton>견적 저장</DraftSubmitButton>
     </DraftAwareForm>
   );
 }
@@ -589,6 +591,56 @@ describe("F02-01 PC 8조합 — 견적 폼", () => {
 });
 
 describe("신규 견적의 응답 유실 재시도 식별자", () => {
+  it("action 응답 유실은 같은 폼의 입력과 시도를 남기고 명시적 재시도로 성공한다", async () => {
+    const action = vi.fn()
+      .mockRejectedValueOnce(new Error("UX-SYNTHETIC-RESPONSE-LOSS"))
+      .mockResolvedValueOnce(undefined);
+    render(<RouteSegmentErrorBoundary>{renderQuoteFormElement(action)}</RouteSegmentErrorBoundary>);
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "같은 화면 보존 제목" } });
+    fireEvent.change(screen.getByRole("combobox", { name: "프로젝트 (선택)" }), {
+      target: { value: "UX-SYNTHETIC-PROJECT-A" },
+    });
+    fireEvent.click(screen.getByText("견적 저장"));
+
+    const notice = await screen.findByRole("alert");
+    expect(within(notice).getByRole("heading", { name: "저장 여부를 확인해 주세요" })).toBeTruthy();
+    expect(document.activeElement).toBe(notice);
+    expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("같은 화면 보존 제목");
+    expect((screen.getByRole("combobox", { name: "프로젝트 (선택)" }) as HTMLSelectElement).value).toBe(
+      "UX-SYNTHETIC-PROJECT-A",
+    );
+    expect(screen.getByRole("link", { name: "견적 목록 확인" }).getAttribute("href")).toBe("/quotes");
+    expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).not.toBeNull();
+    expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).not.toBeNull();
+    const failedPayload = Object.fromEntries((action.mock.calls[0][0] as FormData).entries());
+
+    fireEvent.click(within(notice).getByRole("button", { name: "다시 시도" }));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(2));
+    const retryPayload = Object.fromEntries((action.mock.calls[1][0] as FormData).entries());
+    expect(retryPayload.submissionId).toBe(failedPayload.submissionId);
+    for (const field of QUOTE_SUBMISSION_FIELDS) expect(retryPayload[field], field).toEqual(failedPayload[field]);
+    await waitFor(() => {
+      expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).toBeNull();
+      expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).toBeNull();
+    });
+  });
+
+  it("미확정 시도가 있으면 재열기 직후 확인·재시도 안내를 보여준다", async () => {
+    const failedAction = vi.fn().mockRejectedValue(new Error("UX-SYNTHETIC-RESPONSE-LOSS"));
+    const first = render(<RouteSegmentErrorBoundary>{renderQuoteFormElement(failedAction)}</RouteSegmentErrorBoundary>);
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "재열기 안내 제목" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+    await screen.findByRole("heading", { name: "저장 여부를 확인해 주세요" });
+    first.unmount();
+
+    renderQuoteForm(vi.fn());
+    const reopenedNotice = await screen.findByRole("alert");
+    expect(within(reopenedNotice).getByRole("heading", { name: "저장 여부를 확인해 주세요" })).toBeTruthy();
+    expect(within(reopenedNotice).getByRole("button", { name: "다시 시도" })).toBeTruthy();
+    expect(within(reopenedNotice).getByRole("link", { name: "견적 목록 확인" }).getAttribute("href")).toBe("/quotes");
+    expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("재열기 안내 제목");
+  });
+
   it("확인되지 않은 저장 뒤 payload를 바꾸면 action 전에 막고 입력을 유지한다", async () => {
     const failedAction = vi.fn().mockRejectedValue(new Error("UX-SYNTHETIC-RESPONSE-LOSS"));
     const first = render(
@@ -608,9 +660,11 @@ describe("신규 견적의 응답 유실 재시도 식별자", () => {
     fireEvent.click(screen.getByText("견적 저장"));
 
     await screen.findByText(
-      "이전 저장 결과가 확인되지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요. 같은 내용으로 재시도할 수 있습니다. 다른 견적을 새로 작성하려면 초안을 버려 주세요.",
+      "이전 요청과 내용이 달라 다시 보내지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요.",
     );
     expect(retryAction).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "다시 시도" })).toBeNull();
+    expect(screen.getByRole("link", { name: "견적 목록 확인" }).getAttribute("href")).toBe("/quotes");
     expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("바뀐 제목");
   });
 
@@ -623,12 +677,54 @@ describe("신규 견적의 응답 유실 재시도 식별자", () => {
     fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "보존할 제목" } });
     fireEvent.click(screen.getByText("견적 저장"));
 
-    await screen.findByText(
-      "중복 방지 정보를 저장하지 못해 견적을 보내지 않았습니다. 브라우저 저장소를 허용한 뒤 다시 시도해 주세요.",
-    );
+    const notice = await screen.findByRole("alert");
+    expect(within(notice).getByRole("heading", { name: "저장 요청을 보내지 못했습니다" })).toBeTruthy();
+    expect(within(notice).getByRole("button", { name: "다시 시도" })).toBeTruthy();
+    expect(within(notice).getByRole("link", { name: "견적 목록 확인" }).getAttribute("href")).toBe("/quotes");
     expect(action).not.toHaveBeenCalled();
     expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("보존할 제목");
     storageFailure.mockRestore();
+  });
+
+  it("action 진행 중 연타와 초안 버리기를 막고 완료 뒤에만 시도를 정리한다", async () => {
+    let finishAction!: () => void;
+    const actionGate = new Promise<void>((resolve) => {
+      finishAction = resolve;
+    });
+    const action = vi.fn(() => actionGate);
+    render(renderQuoteFormElement(action, undefined, SCOPE, true));
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "진행 중 보존 제목" } });
+    expect(screen.getByText("이 초안 버리기")).toBeTruthy();
+    const saveButton = screen.getByRole("button", { name: "견적 저장" });
+    fireEvent.click(saveButton);
+    fireEvent.click(saveButton);
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect((saveButton as HTMLButtonElement).disabled).toBe(true);
+    expect(screen.queryByText("이 초안 버리기")).toBeNull();
+    expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).not.toBeNull();
+
+    fireEvent.click(saveButton);
+    expect(action).toHaveBeenCalledTimes(1);
+    await act(async () => finishAction());
+    await waitFor(() => {
+      expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).toBeNull();
+      expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).toBeNull();
+    });
+  });
+
+  it("성공 redirect는 복구 안내로 삼키지 않고 시도와 초안을 정리한 뒤 다시 던진다", async () => {
+    const redirectError = Object.assign(new Error("NEXT_REDIRECT"), {
+      digest: "NEXT_REDIRECT;push;/quotes;303;",
+    });
+    const action = vi.fn().mockRejectedValue(redirectError);
+    render(<RouteSegmentErrorBoundary>{renderQuoteFormElement(action)}</RouteSegmentErrorBoundary>);
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "redirect 제목" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+
+    await screen.findByText("UX-SYNTHETIC-SAVE-FAILURE-SCREEN");
+    expect(screen.queryByRole("heading", { name: "저장 여부를 확인해 주세요" })).toBeNull();
+    expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).toBeNull();
+    expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).toBeNull();
   });
 
   it("다른 scope의 신규 견적은 확인되지 않은 시도의 식별자를 공유하지 않는다", async () => {
@@ -654,6 +750,9 @@ describe("신규 견적의 응답 유실 재시도 식별자", () => {
     renderQuoteForm(action);
     fireEvent.click(screen.getByText("견적 저장"));
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "견적 저장" }).closest("form")?.getAttribute("aria-busy")).toBe("false");
+    });
     fireEvent.click(screen.getByText("견적 저장"));
     await waitFor(() => expect(action).toHaveBeenCalledTimes(2));
 
