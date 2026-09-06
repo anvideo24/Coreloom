@@ -821,6 +821,28 @@
       "planVersion": 1,
       "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 입력",
       "measured": { "covered": 3, "total": 16 }
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "fail",
+      "value": "PC 다품목 견적에서 3품목 입력 후 닫기·재열기에 첫 품목만 남았다. 중간 품목 삭제 후 새로고침에서도 남아야 할 2품목 중 첫 품목만 남았다. 앞선 한 품목 시험으로 확인되지 않은 품목 목록 복원 실패다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:35:13Z" },
+      "codeCommit": "1e2adc120c71c6dfbf8c09cba6fed4884c352fc7",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 초안 · DB 저장 없음",
+      "measured": { "covered": 2, "total": 16 },
+      "note": "QD-01·02 실패를 별도 기록한다. 수정 후 결과는 새 항목으로 남기며 이 실패 이력은 지우지 않는다."
+    },
+    {
+      "checkId": "F02-01",
+      "outcome": "unverified",
+      "value": "다품목 후속 QD-01~06은 PC 실제 UI 5항목·자동 시험 1항목 통과. 3품목 재열기, 중간·첫 삭제 유지, 빈 품목 추가 직후 재열기, 마진·운영비·수동 금액을 포함한 19개 표시값의 재열기 및 연속 새로고침 일치, 버리기 후 잔존 0개를 확인했다. PC 견적 닫기·새로고침 두 조합의 하위 사례이며 전체 16조합 통과는 아니다.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T00:47:18Z" },
+      "codeCommit": "5e429d087c8db6643914756ba1f33c637b7335e5",
+      "planVersion": 1,
+      "environment": "개발 Windows PC · Chrome 2560×1215 · 실제 UI 가상 초안 · Vitest 473개 통과 · 타입 검사 통과",
+      "measured": { "covered": 2, "total": 16 },
+      "note": "실제 Fold·전체 저장 실패/다른 폼 조합은 미검증. 이번 DB 저장·외부 발송·마이그레이션 없음. 검증은 작업 가지에서 수행했으며 main 반영은 별도다."
     }
   ]
 }

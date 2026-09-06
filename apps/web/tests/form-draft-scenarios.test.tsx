@@ -19,12 +19,13 @@
  */
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import { DraftAwareForm } from "@/components/draft-aware-form";
 import { ClientCompanyFields } from "@/components/client-company-fields";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
 import { QuoteCostingComposer } from "@/components/quote-costing-composer";
+import { formDraftStorageKey, serializeFormDraft } from "@/lib/domain/form-draft";
 
 /**
  * 실제 Coreloom 앱은 Next.js App Router 안에서 돌아가고, `<form action>`이 던진(리다이렉트가
@@ -99,18 +100,62 @@ const QUOTE_PROJECTS = [
   { id: "UX-SYNTHETIC-PROJECT-A", name: "가상 프로젝트 A", clientCompanyId: "UX-SYNTHETIC-CLIENT-A" },
 ];
 
-function renderQuoteFormElement(action: (formData: FormData) => void | Promise<void>) {
+function renderQuoteFormElement(
+  action: (formData: FormData) => void | Promise<void>,
+  initialTab?: "customer" | "internal",
+) {
   return (
     <DraftAwareForm action={action} formId="quote-create" scopeId={SCOPE}>
       <QuoteClientProjectFields clients={QUOTE_CLIENTS} projects={QUOTE_PROJECTS} />
-      <QuoteCostingComposer clientName="가상 고객사 A" versionNumber={1} />
+      <QuoteCostingComposer clientName="가상 고객사 A" initialTab={initialTab} versionNumber={1} />
       <button type="submit">견적 저장</button>
     </DraftAwareForm>
   );
 }
 
-function renderQuoteForm(action: (formData: FormData) => void | Promise<void>) {
-  return render(renderQuoteFormElement(action));
+function renderQuoteForm(
+  action: (formData: FormData) => void | Promise<void>,
+  initialTab?: "customer" | "internal",
+) {
+  return render(renderQuoteFormElement(action, initialTab));
+}
+
+function quotePackageArticles(container: HTMLElement) {
+  return Array.from(container.querySelectorAll<HTMLElement>(".quote-package"));
+}
+
+function fillPackage(
+  article: HTMLElement,
+  values: {
+    title: string;
+    role: string;
+    monthlyRate: string;
+    months: string;
+    headcount: string;
+    utilizationPercent: string;
+    quantity: string;
+    amount: string;
+    customerDescription: string;
+  },
+) {
+  fireEvent.change(within(article).getByLabelText("작업명"), { target: { value: values.title } });
+  fireEvent.change(within(article).getByLabelText("역할 / 등급"), { target: { value: values.role } });
+  fireEvent.change(within(article).getByLabelText("단가"), { target: { value: values.monthlyRate } });
+  fireEvent.change(within(article).getByLabelText("개월"), { target: { value: values.months } });
+  fireEvent.change(within(article).getByLabelText("인원"), { target: { value: values.headcount } });
+  fireEvent.change(within(article).getByLabelText("가동률"), {
+    target: { value: values.utilizationPercent },
+  });
+  fireEvent.change(within(article).getByLabelText("고객 문서 수량"), { target: { value: values.quantity } });
+  fireEvent.change(within(article).getByLabelText("공급가"), { target: { value: values.amount } });
+  fireEvent.change(within(article).getByPlaceholderText("고객 견적서에만 보이는 설명"), {
+    target: { value: values.customerDescription },
+  });
+}
+
+function packagesFromSubmissionMirror(container: HTMLElement) {
+  const input = container.querySelector<HTMLInputElement>('input[name="packagesJson"]');
+  return JSON.parse(input?.value ?? "[]") as Array<Record<string, unknown>>;
 }
 
 function fillQuoteForm() {
@@ -250,6 +295,179 @@ describe("F02-01 PC 8조합 — 견적 폼", () => {
     await expectQuoteFormFilled();
   });
 
+  it("동적 패키지의 전체 값과 순서를 복원하고 중간·첫 삭제 및 빈 추가를 즉시 보존한다", async () => {
+    const first = renderQuoteForm(vi.fn());
+    fireEvent.click(screen.getByRole("tab", { name: "내부 원가 · 편집" }));
+
+    fillPackage(quotePackageArticles(first.container)[0], {
+      title: "A",
+      role: "PM",
+      monthlyRate: "100000",
+      months: "2",
+      headcount: "3",
+      utilizationPercent: "40",
+      quantity: "2",
+      amount: "765432",
+      customerDescription: "A 설명",
+    });
+    fireEvent.click(screen.getByText("패키지 추가"));
+    fillPackage(quotePackageArticles(first.container)[1], {
+      title: "B",
+      role: "기획",
+      monthlyRate: "200000",
+      months: "4",
+      headcount: "1.5",
+      utilizationPercent: "55",
+      quantity: "3",
+      amount: "876543",
+      customerDescription: "B 설명",
+    });
+    fireEvent.click(screen.getByText("패키지 추가"));
+    fillPackage(quotePackageArticles(first.container)[2], {
+      title: "C",
+      role: "리드 개발",
+      monthlyRate: "300000",
+      months: "6",
+      headcount: "2",
+      utilizationPercent: "70",
+      quantity: "4",
+      amount: "987654",
+      customerDescription: "C 설명",
+    });
+    // 추가 직후 다른 입력 없이 닫아도 빈 패키지 자체가 초안에 남아야 한다.
+    fireEvent.click(screen.getByText("패키지 추가"));
+    first.unmount();
+
+    const second = renderQuoteForm(vi.fn());
+    await waitFor(() => expect(packagesFromSubmissionMirror(second.container)).toHaveLength(4));
+    expect(packagesFromSubmissionMirror(second.container)).toMatchObject([
+      {
+        title: "A",
+        role: "PM",
+        monthlyRate: 100000,
+        months: 2,
+        headcount: 3,
+        utilizationPercent: 40,
+        quantity: 2,
+        amount: 765432,
+        amountLocked: true,
+        customerDescription: "A 설명",
+      },
+      {
+        title: "B",
+        role: "기획",
+        monthlyRate: 200000,
+        months: 4,
+        headcount: 1.5,
+        utilizationPercent: 55,
+        quantity: 3,
+        amount: 876543,
+        amountLocked: true,
+        customerDescription: "B 설명",
+      },
+      {
+        title: "C",
+        role: "리드 개발",
+        monthlyRate: 300000,
+        months: 6,
+        headcount: 2,
+        utilizationPercent: 70,
+        quantity: 4,
+        amount: 987654,
+        amountLocked: true,
+        customerDescription: "C 설명",
+      },
+      { title: "", customerDescription: "", quantity: 1, amountLocked: false },
+    ]);
+
+    fireEvent.click(screen.getByRole("tab", { name: "내부 원가 · 편집" }));
+    const secondPackages = quotePackageArticles(second.container);
+    fireEvent.click(secondPackages[1].querySelector<HTMLButtonElement>(".quote-package-toggle")!);
+    fireEvent.click(within(secondPackages[1]).getByText("패키지 삭제"));
+    second.unmount();
+
+    const third = renderQuoteForm(vi.fn());
+    await waitFor(() => expect(packagesFromSubmissionMirror(third.container).map((pkg) => pkg.title)).toEqual(["A", "C", ""]));
+    fireEvent.click(screen.getByRole("tab", { name: "내부 원가 · 편집" }));
+    fireEvent.click(within(quotePackageArticles(third.container)[0]).getByText("패키지 삭제"));
+    third.unmount();
+
+    const fourth = renderQuoteForm(vi.fn());
+    await waitFor(() => expect(packagesFromSubmissionMirror(fourth.container).map((pkg) => pkg.title)).toEqual(["C", ""]));
+    expect(packagesFromSubmissionMirror(fourth.container)[0]).toMatchObject({
+      title: "C",
+      monthlyRate: 300000,
+      months: 6,
+      headcount: 2,
+      utilizationPercent: 70,
+      quantity: 4,
+      amount: 987654,
+      amountLocked: true,
+      customerDescription: "C 설명",
+    });
+  });
+
+  it("내부 편집 탭의 연속 복원에서도 수동 금액 잠금과 비기본 마진·운영비를 유지한다", async () => {
+    const first = renderQuoteForm(vi.fn(), "internal");
+    fireEvent.change(screen.getByLabelText("목표 마진"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("운영비"), { target: { value: "1" } });
+    fireEvent.change(screen.getByLabelText("단가"), { target: { value: "100000" } });
+    fireEvent.change(screen.getByLabelText("공급가"), { target: { value: "777777" } });
+    fireEvent.click(screen.getByText("패키지 추가"));
+    first.unmount();
+
+    const second = renderQuoteForm(vi.fn(), "internal");
+    await waitFor(() => {
+      expect((screen.getByLabelText("목표 마진") as HTMLInputElement).value).toBe("1");
+      expect((screen.getByLabelText("운영비") as HTMLInputElement).value).toBe("1");
+      expect(packagesFromSubmissionMirror(second.container)[0]).toMatchObject({
+        monthlyRate: 100000,
+        amount: 777777,
+        amountLocked: true,
+      });
+      expect(packagesFromSubmissionMirror(second.container)[1]).toMatchObject({
+        title: "",
+        amount: 6121212,
+        amountLocked: false,
+      });
+    });
+    second.unmount();
+
+    const third = renderQuoteForm(vi.fn(), "internal");
+    await waitFor(() => {
+      expect((screen.getByLabelText("목표 마진") as HTMLInputElement).value).toBe("1");
+      expect((screen.getByLabelText("운영비") as HTMLInputElement).value).toBe("1");
+      expect(packagesFromSubmissionMirror(third.container)[0]).toMatchObject({
+        monthlyRate: 100000,
+        amount: 777777,
+        amountLocked: true,
+      });
+      expect(packagesFromSubmissionMirror(third.container)[1]).toMatchObject({
+        title: "",
+        amount: 6121212,
+        amountLocked: false,
+      });
+    });
+  });
+
+  it("손상된 패키지 컬렉션 초안은 기본 패키지 제출값을 오염시키지 않는다", async () => {
+    sessionStorage.setItem(
+      formDraftStorageKey(SCOPE, "quote-create"),
+      serializeFormDraft({
+        scopeId: SCOPE,
+        formId: "quote-create",
+        fields: { packagesJson: "{not-valid-json" },
+      }),
+    );
+
+    const view = renderQuoteForm(vi.fn(), "internal");
+    await waitFor(() => {
+      const packages = packagesFromSubmissionMirror(view.container);
+      expect(packages).toHaveLength(1);
+      expect(packages[0]).toMatchObject({ title: "", quantity: 1, amountLocked: false });
+    });
+  });
+
   it("다른 화면 이동→복귀: 다른 formId를 열었다 원래 폼으로 돌아와도 값이 남는다", async () => {
     const { unmount: unmountQuote } = renderQuoteForm(vi.fn());
     fillQuoteForm();
@@ -307,7 +525,16 @@ describe("제출 이름과 복원 표식은 겹치지 않는다 (F02-01 회귀 �
     const leaked = Array.from(container.querySelectorAll<HTMLElement>("[data-draft-field]"))
       .filter((element) => element.hasAttribute("name"))
       .map((element) => element.getAttribute("data-draft-field")!);
-    // vatMode만 예외다. 바깥에서 값을 넘겨받는 자리에서는 이 칸이 그대로 제출을 맡는다.
-    expect(leaked.filter((name) => name !== "vatMode")).toEqual([]);
+    // vatMode와 packagesJson은 예외다. 전자는 바깥 제어 여부에 따라, 후자는 컬렉션 전체를
+    // 복원해야 해서 그 한 요소가 제출과 복원을 함께 맡는다. 같은 이름의 두 요소를 만들지는 않는다.
+    expect(
+      leaked.filter(
+        (name) =>
+          name !== "vatMode" &&
+          name !== "packagesJson" &&
+          name !== "targetMarginPercent" &&
+          name !== "operatingCostPercent",
+      ),
+    ).toEqual([]);
   });
 });

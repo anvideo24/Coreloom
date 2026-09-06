@@ -134,6 +134,7 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
     function attemptRestore() {
       restoringRef.current = true;
       for (const name of Array.from(pending)) {
+        if (!pending.has(name)) continue;
         if (draftIgnoreFields.includes(name)) {
           pending.delete(name);
           continue;
@@ -160,6 +161,14 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
           /* 필드 하나 복원 실패가 나머지 복원을 막지 않는다 */
         }
         pending.delete(name);
+        if (element instanceof Element) {
+          const supersededPrefix = element.getAttribute("data-draft-supersedes-prefix");
+          if (supersededPrefix) {
+            for (const pendingName of Array.from(pending)) {
+              if (pendingName.startsWith(supersededPrefix)) pending.delete(pendingName);
+            }
+          }
+        }
       }
       restoringRef.current = false;
       if (pending.size === 0) observer?.disconnect();
