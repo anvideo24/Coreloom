@@ -36,6 +36,7 @@ export default async function ExpenseEntryDetailPage({ params }: { params: Promi
           <p>{row.sourceLabel} · {row.counterparty} · {expenseEntryStatusLabels[row.status]} · {entry.currency}</p>
         </div>
         <div className="quote-header-links">
+          <Link className="text-link" href="/approvals">승인함</Link>
           <Link className="text-link" href="/revenue">매출 원장</Link>
           <Link className="text-link" href="/expenses">비용 원장</Link>
         </div>

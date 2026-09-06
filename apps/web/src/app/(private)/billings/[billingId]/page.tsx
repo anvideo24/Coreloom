@@ -37,6 +37,7 @@ export default async function BillingDetailPage({ params }: { params: Promise<{ 
           <p>{billing.clientName} · {detail.contractTitle} · {billingStatusLabels[billing.status]} · {billing.currency}</p>
         </div>
         <div className="quote-header-links">
+          <Link className="text-link" href="/approvals">승인함</Link>
           <Link className="text-link" href={`/billings/${billing.id}/print`}>청구서 PDF</Link>
           <Link className="text-link" href={`/billings/${billing.id}/email`}>메일 발송</Link>
           {billing.seriesId ? <Link className="text-link" href={`/billings/series/${billing.seriesId}`}>반복 청구 일정</Link> : null}
