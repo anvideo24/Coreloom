@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, Fragment, useContext, useEffect, useRef, useState } from "react";
+import { createContext, Fragment, useContext, useEffect, useRef, useState, type FormEvent } from "react";
 import { isRedirectError } from "next/dist/client/components/redirect-error";
 
 import {
@@ -9,7 +9,15 @@ import {
   readFormDraft,
   writeFormDraft,
 } from "@/lib/domain/form-draft";
+import {
+  clearFormSubmissionAttempt,
+  digestSubmissionSnapshot,
+  readFormSubmissionAttempt,
+  snapshotSubmissionFields,
+  writeFormSubmissionAttempt,
+} from "@/lib/domain/form-submission-attempt";
 import { createSubmissionId } from "@/lib/domain/submission-dedupe";
+import { parseSubmissionId } from "@/lib/domain/submission-id";
 
 type DraftAwareFormProps = {
   scopeId: string;
@@ -17,6 +25,7 @@ type DraftAwareFormProps = {
   action: (formData: FormData) => void | Promise<void>;
   className?: string;
   draftIgnoreFields?: string[];
+  persistentSubmissionFields?: readonly string[];
   children: React.ReactNode;
 };
 
@@ -96,14 +105,25 @@ function applyFieldToElement(element: Element | RadioNodeList, value: string) {
 }
 
 /** 작성 패널 폼 초안을 sessionStorage에 보존한다. 본문은 로그하지 않는다. */
-export function DraftAwareForm({ scopeId, formId, action, className, draftIgnoreFields = NO_DRAFT_IGNORES, children }: DraftAwareFormProps) {
+export function DraftAwareForm({
+  scopeId,
+  formId,
+  action,
+  className,
+  draftIgnoreFields = NO_DRAFT_IGNORES,
+  persistentSubmissionFields,
+  children,
+}: DraftAwareFormProps) {
   const formRef = useRef<HTMLFormElement>(null);
   const restoredRef = useRef(false);
   const restoringRef = useRef(false);
-  // 이번에 열린 창 하나에서 쓸 제출 식별자(F02-03). 성공한 제출 뒤에만 새 값으로 바꾼다 —
-  // 실패한 시도는 같은 식별자를 유지해, 나중에 서버 쪽 판정이 연결됐을 때 "혹시 서버는 실은
-  // 처리했는데 응답만 실패로 왔다"인 경우에도 재시도가 중복을 만들지 않게 대비해 둔다.
+  // 일반 폼은 열린 창 안에서 식별자를 재사용한다. persistentSubmissionFields를 지정한 신규 견적은
+  // 아래 사전검사에서 UUID와 payload 해시를 먼저 저장해, 재열기 뒤 같은 저장 시도도 이어 간다.
   const submissionIdRef = useRef(createSubmissionId());
+  const submissionPreflightRef = useRef<{ payloadSnapshot: string } | null>(null);
+  const submissionPreflightBusyRef = useRef(false);
+  const submissionPreflightGenerationRef = useRef(0);
+  const [submissionGuardError, setSubmissionGuardError] = useState<string | null>(null);
   // 초안이 실제로 남아 있을 때만 버리기 버튼을 보여주기 위한 상태(F02-02).
   const [hasDraft, setHasDraft] = useState(false);
   // 버리기를 누르면 이 값을 올려 children을 통째로 새로 mount한다 — 제어/비제어 입력,
@@ -117,13 +137,21 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
     restoredRef.current = true;
 
     let fields: Record<string, string> | null = null;
+    let hasSubmissionAttempt = false;
     try {
       fields = readFormDraft(browserDraftStorage(), scopeId, formId)?.fields ?? null;
     } catch {
       /* sessionStorage 접근 불가는 초안 없음과 같다. */
     }
+    if (persistentSubmissionFields) {
+      try {
+        hasSubmissionAttempt = !!readFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
+      } catch {
+        // 손상됐거나 읽을 수 없는 식별자도 전송은 아래 사전검사에서 막는다.
+      }
+    }
     if (!fields || Object.keys(fields).length === 0) {
-      setHasDraft(false);
+      setHasDraft(hasSubmissionAttempt);
       return;
     }
     setHasDraft(true);
@@ -182,7 +210,14 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
       observer.observe(form, { childList: true, subtree: true });
     }
     return () => observer?.disconnect();
-  }, [scopeId, formId, draftIgnoreFields]);
+  }, [scopeId, formId, draftIgnoreFields, persistentSubmissionFields]);
+
+  useEffect(
+    () => () => {
+      submissionPreflightGenerationRef.current += 1;
+    },
+    [],
+  );
 
   function persist() {
     if (restoringRef.current) return;
@@ -220,8 +255,13 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
   }
 
   function discardDraft() {
+    submissionPreflightGenerationRef.current += 1;
+    submissionPreflightRef.current = null;
+    submissionPreflightBusyRef.current = false;
+    setSubmissionGuardError(null);
     try {
       clearFormDraft(browserDraftStorage(), scopeId, formId);
+      if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
     } catch {
       /* 비공개 모드 등 — 지울 저장소가 없으면 지운 것과 같다. */
     }
@@ -229,10 +269,83 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
     setFieldsResetKey((key) => key + 1);
   }
 
+  async function preparePersistentSubmission(event: FormEvent<HTMLFormElement>) {
+    if (!persistentSubmissionFields) return;
+    const form = event.currentTarget;
+    const submitter = (event.nativeEvent as SubmitEvent).submitter;
+    const formData = new FormData(form);
+    let payloadSnapshot: string;
+
+    try {
+      payloadSnapshot = snapshotSubmissionFields(formData, persistentSubmissionFields);
+    } catch {
+      event.preventDefault();
+      setSubmissionGuardError(
+        "중복 방지 정보를 저장하지 못해 견적을 보내지 않았습니다. 브라우저 저장소를 허용한 뒤 다시 시도해 주세요.",
+      );
+      return;
+    }
+
+    const preflight = submissionPreflightRef.current;
+    if (preflight?.payloadSnapshot === payloadSnapshot) {
+      submissionPreflightRef.current = null;
+      return;
+    }
+    if (preflight) {
+      submissionPreflightRef.current = null;
+    }
+    if (submissionPreflightBusyRef.current) {
+      event.preventDefault();
+      return;
+    }
+    event.preventDefault();
+    submissionPreflightBusyRef.current = true;
+    const preflightGeneration = ++submissionPreflightGenerationRef.current;
+
+    try {
+      const payloadDigest = await digestSubmissionSnapshot(payloadSnapshot);
+      if (preflightGeneration !== submissionPreflightGenerationRef.current || !form.isConnected) return;
+      const storage = browserDraftStorage();
+      const pending = readFormSubmissionAttempt(storage, scopeId, formId);
+      if (pending && pending.payloadDigest !== payloadDigest) {
+        setSubmissionGuardError(
+          "이전 저장 결과가 확인되지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요. 같은 내용으로 재시도할 수 있습니다. 다른 견적을 새로 작성하려면 초안을 버려 주세요.",
+        );
+        return;
+      }
+
+      const submissionId = pending?.submissionId ?? parseSubmissionId(createSubmissionId());
+      if (!submissionId) throw new Error("Secure submission id is unavailable");
+      if (!pending) {
+        writeFormSubmissionAttempt(storage, {
+          version: 1,
+          scopeId,
+          formId,
+          submissionId,
+          payloadDigest,
+        });
+      }
+      setHasDraft(true);
+      submissionIdRef.current = submissionId;
+      submissionPreflightRef.current = { payloadSnapshot };
+      setSubmissionGuardError(null);
+      form.requestSubmit(submitter instanceof HTMLElement ? submitter : undefined);
+    } catch {
+      setSubmissionGuardError(
+        "중복 방지 정보를 저장하지 못해 견적을 보내지 않았습니다. 브라우저 저장소를 허용한 뒤 다시 시도해 주세요.",
+      );
+    } finally {
+      if (preflightGeneration === submissionPreflightGenerationRef.current) {
+        submissionPreflightBusyRef.current = false;
+      }
+    }
+  }
+
   return (
     <DraftFormContext.Provider value={{ hasDraft, discardDraft }}>
       <form
         action={async (formData) => {
+          submissionPreflightRef.current = null;
           formData.set("submissionId", submissionIdRef.current);
           try {
             await action(formData);
@@ -240,6 +353,7 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
             submissionIdRef.current = createSubmissionId();
             try {
               clearFormDraft(browserDraftStorage(), scopeId, formId);
+              if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
               setHasDraft(false);
             } catch {
               /* ignore */
@@ -250,22 +364,24 @@ export function DraftAwareForm({ scopeId, formId, action, className, draftIgnore
               submissionIdRef.current = createSubmissionId();
               try {
                 clearFormDraft(browserDraftStorage(), scopeId, formId);
+                if (persistentSubmissionFields) clearFormSubmissionAttempt(browserDraftStorage(), scopeId, formId);
                 setHasDraft(false);
               } catch {
                 /* ignore */
               }
             }
-            // 리다이렉트가 아닌 실패는 식별자를 그대로 둔다. 서버 쪽 판정이 나중에 연결되면,
-            // 같은 시도를 다시 보낼 때 그 식별자로 "이미 처리했나"를 물을 수 있어야 하기
-            // 때문이다(예: 응답만 유실되고 실제로는 처리된 경우).
+            // 일반 실패는 식별자와 요청 정보를 남겨, 응답만 유실된 저장도 같은 식별자로
+            // 재시도할 수 있게 한다. 신규 견적 서버는 기존 저장 결과를 반환한다.
             throw error;
           }
         }}
         className={className}
         onChange={persist}
         onInput={persist}
+        onSubmit={(event) => void preparePersistentSubmission(event)}
         ref={formRef}
       >
+        {submissionGuardError ? <p role="alert">{submissionGuardError}</p> : null}
         <Fragment key={fieldsResetKey}>{children}</Fragment>
       </form>
     </DraftFormContext.Provider>

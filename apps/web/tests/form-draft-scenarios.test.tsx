@@ -18,14 +18,17 @@
  * - 저장 실패→복구: action이 reject하는 시험 안에서만 실패를 주입한다. 서버는 건드리지 않는다.
  */
 import React from "react";
+import { webcrypto } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 import { DraftAwareForm } from "@/components/draft-aware-form";
+import { DraftDiscardButton } from "@/components/draft-discard-button";
 import { ClientCompanyFields } from "@/components/client-company-fields";
 import { QuoteClientProjectFields } from "@/components/quote-client-project-fields";
 import { QuoteCostingComposer } from "@/components/quote-costing-composer";
 import { formDraftStorageKey, serializeFormDraft } from "@/lib/domain/form-draft";
+import { formSubmissionAttemptStorageKey } from "@/lib/domain/form-submission-attempt";
 
 /**
  * 실제 Coreloom 앱은 Next.js App Router 안에서 돌아가고, `<form action>`이 던진(리다이렉트가
@@ -50,14 +53,21 @@ class RouteSegmentErrorBoundary extends React.Component<
 }
 
 beforeEach(() => {
+  Object.defineProperty(globalThis.crypto, "subtle", { configurable: true, value: webcrypto.subtle });
   sessionStorage.clear();
 });
 
 afterEach(() => {
   cleanup();
+  vi.restoreAllMocks();
 });
 
 const SCOPE = "UX-SYNTHETIC-SCOPE-1";
+const QUOTE_SUBMISSION_FIELDS = [
+  "quoteId", "clientId", "projectId", "clientContactId", "title", "note",
+  "packagesJson", "vatMode", "targetMarginPercent", "operatingCostPercent",
+  "issuedOn", "validUntil",
+] as const;
 
 // ---- 고객사 폼 헬퍼 -----------------------------------------------------
 
@@ -103,14 +113,26 @@ const QUOTE_PROJECTS = [
 function renderQuoteFormElement(
   action: (formData: FormData) => void | Promise<void>,
   initialTab?: "customer" | "internal",
+  scopeId = SCOPE,
+  includeDiscard = false,
 ) {
   return (
-    <DraftAwareForm action={action} formId="quote-create" scopeId={SCOPE}>
+    <DraftAwareForm
+      action={action}
+      formId="quote-create"
+      persistentSubmissionFields={QUOTE_SUBMISSION_FIELDS}
+      scopeId={scopeId}
+    >
       <QuoteClientProjectFields clients={QUOTE_CLIENTS} projects={QUOTE_PROJECTS} />
       <QuoteCostingComposer clientName="가상 고객사 A" initialTab={initialTab} versionNumber={1} />
+      {includeDiscard ? <DraftDiscardButton /> : null}
       <button type="submit">견적 저장</button>
     </DraftAwareForm>
   );
+}
+
+function submissionIdFrom(action: ReturnType<typeof vi.fn>, callIndex = 0) {
+  return String((action.mock.calls[callIndex][0] as FormData).get("submissionId"));
 }
 
 function renderQuoteForm(
@@ -240,6 +262,70 @@ describe("F02-01 PC 8조합 — 고객사 폼", () => {
 
     renderClientForm(vi.fn());
     expectClientFormFilled();
+  });
+
+  it("다품목 저장 실패 후 재열기·재제출에서 전체 제출값이 같고 성공하면 초안을 지운다", async () => {
+    const savedSubmissionIds = new Set<string>();
+    let fakeSaveCount = 0;
+    const fakeSave = (data: FormData) => {
+      const submissionId = String(data.get("submissionId"));
+      if (!savedSubmissionIds.has(submissionId)) {
+        savedSubmissionIds.add(submissionId);
+        fakeSaveCount += 1;
+      }
+    };
+    const failingAction = vi.fn<(data: FormData) => Promise<void>>(async (data) => {
+      fakeSave(data);
+      throw new Error("UX-SYNTHETIC-RESPONSE-LOSS");
+    });
+    const first = render(
+      <RouteSegmentErrorBoundary>{renderQuoteFormElement(failingAction)}</RouteSegmentErrorBoundary>,
+    );
+    fillQuoteForm();
+    fireEvent.click(screen.getByText("패키지 추가"));
+    fillPackage(quotePackageArticles(first.container)[1], {
+      title: "UX-SYNTHETIC-SECOND",
+      role: "PM",
+      monthlyRate: "200000",
+      months: "2",
+      headcount: "1.5",
+      utilizationPercent: "70",
+      quantity: "3",
+      amount: "876543",
+      customerDescription: "UX-SYNTHETIC-SECOND-DESCRIPTION",
+    });
+    fireEvent.change(screen.getByLabelText("목표 마진"), { target: { value: "45" } });
+    fireEvent.change(screen.getByLabelText("운영비"), { target: { value: "25" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+    await screen.findByRole("alert");
+    expect(failingAction).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).not.toBeNull();
+    const failedPayload = Object.fromEntries(failingAction.mock.calls[0][0].entries());
+    first.unmount();
+
+    const successfulRetry = vi.fn<(data: FormData) => Promise<void>>(async (data) => fakeSave(data));
+    const restored = renderQuoteForm(successfulRetry, "internal");
+    await waitFor(() => {
+      expect(quotePackageArticles(restored.container)).toHaveLength(2);
+      expect((screen.getByLabelText("목표 마진") as HTMLInputElement).value).toBe("45");
+      expect((screen.getByLabelText("운영비") as HTMLInputElement).value).toBe("25");
+    });
+    fireEvent.click(screen.getByRole("tab", { name: "고객용 · 미리보기" }));
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(successfulRetry).toHaveBeenCalledTimes(1));
+    const retryPayload = Object.fromEntries(successfulRetry.mock.calls[0][0].entries());
+    // Compare every field consumed by saveQuoteVersionAction, including the whole
+    // collection and the identity that lets the server return the first save
+    // instead of creating a duplicate after an ambiguous response loss.
+    const submittedFields = [
+      "quoteId", "clientId", "projectId", "clientContactId", "title", "note",
+      "packagesJson", "vatMode", "targetMarginPercent", "operatingCostPercent",
+      "issuedOn", "validUntil",
+    ];
+    for (const field of submittedFields) expect(retryPayload[field], field).toEqual(failedPayload[field]);
+    expect(retryPayload.submissionId).toBe(failedPayload.submissionId);
+    expect(fakeSaveCount).toBe(1);
+    await waitFor(() => expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).toBeNull());
   });
 
   it("저장 실패→복구: action이 실패해도 초안이 남고 재열기에 복원된다", async () => {
@@ -499,6 +585,165 @@ describe("F02-01 PC 8조합 — 견적 폼", () => {
     unmount();
     renderQuoteForm(vi.fn());
     await expectQuoteFormFilled();
+  });
+});
+
+describe("신규 견적의 응답 유실 재시도 식별자", () => {
+  it("확인되지 않은 저장 뒤 payload를 바꾸면 action 전에 막고 입력을 유지한다", async () => {
+    const failedAction = vi.fn().mockRejectedValue(new Error("UX-SYNTHETIC-RESPONSE-LOSS"));
+    const first = render(
+      <RouteSegmentErrorBoundary>{renderQuoteFormElement(failedAction)}</RouteSegmentErrorBoundary>,
+    );
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "응답 유실 전 제목" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+    await screen.findByRole("alert");
+    first.unmount();
+
+    const retryAction = vi.fn();
+    renderQuoteForm(retryAction);
+    await waitFor(() => {
+      expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("응답 유실 전 제목");
+    });
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "바뀐 제목" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+
+    await screen.findByText(
+      "이전 저장 결과가 확인되지 않았습니다. 견적 목록에서 저장 여부를 먼저 확인해 주세요. 같은 내용으로 재시도할 수 있습니다. 다른 견적을 새로 작성하려면 초안을 버려 주세요.",
+    );
+    expect(retryAction).not.toHaveBeenCalled();
+    expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("바뀐 제목");
+  });
+
+  it("sessionStorage에 식별자를 확정하지 못하면 action 전에 막고 입력을 유지한다", async () => {
+    const action = vi.fn();
+    renderQuoteForm(action);
+    const storageFailure = vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "보존할 제목" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+
+    await screen.findByText(
+      "중복 방지 정보를 저장하지 못해 견적을 보내지 않았습니다. 브라우저 저장소를 허용한 뒤 다시 시도해 주세요.",
+    );
+    expect(action).not.toHaveBeenCalled();
+    expect((screen.getByLabelText("견적 주제") as HTMLInputElement).value).toBe("보존할 제목");
+    storageFailure.mockRestore();
+  });
+
+  it("다른 scope의 신규 견적은 확인되지 않은 시도의 식별자를 공유하지 않는다", async () => {
+    const failedAction = vi.fn().mockRejectedValue(new Error("UX-SYNTHETIC-RESPONSE-LOSS"));
+    const first = render(
+      <RouteSegmentErrorBoundary>{renderQuoteFormElement(failedAction)}</RouteSegmentErrorBoundary>,
+    );
+    fireEvent.click(screen.getByText("견적 저장"));
+    await screen.findByRole("alert");
+    const firstId = submissionIdFrom(failedAction);
+    first.unmount();
+
+    const otherScopeAction = vi.fn();
+    render(renderQuoteFormElement(otherScopeAction, undefined, "UX-SYNTHETIC-SCOPE-2"));
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(otherScopeAction).toHaveBeenCalledTimes(1));
+
+    expect(submissionIdFrom(otherScopeAction)).not.toBe(firstId);
+  });
+
+  it("성공한 저장 다음 제출에는 새 UUID를 쓴다", async () => {
+    const action = vi.fn();
+    renderQuoteForm(action);
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(2));
+
+    const firstId = submissionIdFrom(action, 0);
+    const secondId = submissionIdFrom(action, 1);
+    expect(firstId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    expect(secondId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    expect(secondId).not.toBe(firstId);
+  });
+
+  it("초안을 버린 뒤에는 확인되지 않은 시도를 지우고 새 UUID를 쓴다", async () => {
+    const failedAction = vi.fn().mockRejectedValue(new Error("UX-SYNTHETIC-RESPONSE-LOSS"));
+    const first = render(
+      <RouteSegmentErrorBoundary>{renderQuoteFormElement(failedAction)}</RouteSegmentErrorBoundary>,
+    );
+    fireEvent.click(screen.getByText("견적 저장"));
+    await screen.findByRole("alert");
+    const failedId = submissionIdFrom(failedAction);
+    first.unmount();
+
+    const afterDiscardAction = vi.fn();
+    render(renderQuoteFormElement(afterDiscardAction, undefined, SCOPE, true));
+    fireEvent.click(await screen.findByText("이 초안 버리기"));
+    fireEvent.click(screen.getByText("정말 버릴까요"));
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(afterDiscardAction).toHaveBeenCalledTimes(1));
+
+    expect(submissionIdFrom(afterDiscardAction)).not.toBe(failedId);
+  });
+
+  it("해시 대기 중 초안을 버리면 늦게 식별자를 쓰거나 제출하지 않는다", async () => {
+    const originalDigest = globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle);
+    let releaseDigest!: () => void;
+    const digestGate = new Promise<void>((resolve) => {
+      releaseDigest = resolve;
+    });
+    let delayedDigest!: Promise<ArrayBuffer>;
+    const digestSpy = vi.spyOn(globalThis.crypto.subtle, "digest").mockImplementationOnce((algorithm, data) => {
+      delayedDigest = digestGate.then(() => originalDigest(algorithm, data));
+      return delayedDigest;
+    });
+    const action = vi.fn();
+    render(renderQuoteFormElement(action, undefined, SCOPE, true));
+    fireEvent.change(screen.getByLabelText("견적 주제"), { target: { value: "해시 중 버릴 제목" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(digestSpy).toHaveBeenCalledTimes(1));
+    fireEvent.click(screen.getByText("이 초안 버리기"));
+    fireEvent.click(screen.getByText("정말 버릴까요"));
+
+    await act(async () => {
+      releaseDigest();
+      await delayedDigest;
+    });
+    expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).toBeNull();
+    expect(action).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(action).toHaveBeenCalledTimes(1));
+    expect(submissionIdFrom(action)).toMatch(/^[0-9a-f-]{36}$/i);
+  });
+
+  it("해시 대기 중 폼을 닫으면 늦게 식별자를 쓰거나 제출하지 않는다", async () => {
+    const originalDigest = globalThis.crypto.subtle.digest.bind(globalThis.crypto.subtle);
+    let releaseDigest!: () => void;
+    const digestGate = new Promise<void>((resolve) => {
+      releaseDigest = resolve;
+    });
+    let delayedDigest!: Promise<ArrayBuffer>;
+    const digestSpy = vi.spyOn(globalThis.crypto.subtle, "digest").mockImplementationOnce((algorithm, data) => {
+      delayedDigest = digestGate.then(() => originalDigest(algorithm, data));
+      return delayedDigest;
+    });
+    const staleAction = vi.fn();
+    const first = renderQuoteForm(staleAction);
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(digestSpy).toHaveBeenCalledTimes(1));
+    first.unmount();
+
+    await act(async () => {
+      releaseDigest();
+      await delayedDigest;
+    });
+    expect(sessionStorage.getItem(formSubmissionAttemptStorageKey(SCOPE, "quote-create"))).toBeNull();
+    expect(staleAction).not.toHaveBeenCalled();
+
+    const newAction = vi.fn();
+    renderQuoteForm(newAction);
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(newAction).toHaveBeenCalledTimes(1));
+    expect(submissionIdFrom(newAction)).toMatch(/^[0-9a-f-]{36}$/i);
   });
 });
 
