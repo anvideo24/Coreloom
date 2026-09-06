@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 
 import { confirmAiProposalAction, rejectAiProposalAction } from "@/app/(private)/proposals/actions";
+import { ApprovalReviewCard } from "@/components/approval-review-card";
 import { founderSession } from "@/lib/auth/session";
+import { buildApprovalReviewSummary } from "@/lib/domain/approvals";
 import { aiProposalKindLabels, aiProposalStatusLabels, isOfficialDecision } from "@/lib/domain/ai-proposals";
 import { rechoEvidenceKindLabels } from "@/lib/domain/recho-evidence";
 import { getFounderAiProposalDetail } from "@/lib/ai-proposals/repository";
@@ -16,6 +18,11 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
   const { proposalId } = await params;
   const proposal = await getFounderAiProposalDetail(session.founder.id, proposalId);
   if (!proposal) notFound();
+  const review = buildApprovalReviewSummary({
+    subject: `${aiProposalKindLabels[proposal.kind]} · ${proposal.clientName} · ${proposal.projectName} · ${proposal.body}`,
+    evidence: `${rechoEvidenceKindLabels[proposal.evidenceKind]} · ${proposal.occurredOn} ${proposal.occurredTime} · ${proposal.evidenceTitle} · 원문 식별자 ${proposal.originalIdentifier}`,
+    outcomeLabel: "제안 확정 — 공식 결정으로 기록, 자동 실행 없음",
+  });
 
   return (
     <main className="operations-shell">
@@ -26,6 +33,7 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
           <p>{proposal.clientName} · {proposal.projectName} · {aiProposalStatusLabels[proposal.status]} · {isOfficialDecision(proposal.status) ? "공식 결정" : "공식 결정 아님"}</p>
         </div>
         <div className="quote-header-links">
+          <Link className="text-link" href="/approvals">승인함</Link>
           <Link className="text-link" href={`/timeline/${proposal.evidenceId}`}>근거 원문</Link>
           <Link className="text-link" href="/proposals">제안 목록</Link>
         </div>
@@ -50,6 +58,7 @@ export default async function ProposalDetailPage({ params }: { params: Promise<{
           <section className="quote-editor-card">
             <p className="setup-code">확정</p>
             <p className="form-help">원문과 시간 맥락을 확인한 뒤에만 공식 결정으로 남깁니다. 확정된 제안은 덮어쓰지 않습니다.</p>
+            <ApprovalReviewCard summary={review} />
             <form action={confirmAiProposalAction} className="quote-form">
               <input name="proposalId" type="hidden" value={proposal.id} />
               <label className="quote-email-approval quote-form-full">

@@ -8,8 +8,10 @@ import {
   recordAgentWorkAction,
   rejectAgentWorkAction,
 } from "@/app/(private)/agents/actions";
+import { ApprovalReviewCard } from "@/components/approval-review-card";
 import { getFounderAgentDetail } from "@/lib/agents/repository";
 import { founderSession } from "@/lib/auth/session";
+import { buildApprovalReviewSummary } from "@/lib/domain/approvals";
 import {
   aiAgentCapabilityKinds,
   aiAgentCapabilityLabels,
@@ -39,6 +41,7 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ ag
           <p>{aiAgentStatusLabels[agent.status]} · {agent.scopeLabel}</p>
         </div>
         <div className="quote-header-links">
+          <Link className="text-link" href="/approvals">승인함</Link>
           <Link className="text-link" href="/tasks">업무</Link>
           <Link className="text-link" href="/agents">에이전트 목록</Link>
         </div>
@@ -120,36 +123,42 @@ export default async function AgentDetailPage({ params }: { params: Promise<{ ag
         </div>
         {agent.work.pending.length === 0 ? (
           <p className="empty-state">대기 중인 이력이 없습니다.</p>
-        ) : agent.work.pending.map((work) => (
-          <article className="quote-editor-card" key={work.id}>
-            <p className="setup-code">{aiAgentWorkLogStatusLabels[work.status]}{work.taskTitle ? ` · ${work.taskTitle}` : ""}</p>
-            <p>요청 {work.requestNote}</p>
-            <p className="form-help">입력 {work.inputNote}</p>
-            {work.resultNote ? <p className="form-help">결과 {work.resultNote}</p> : <p className="form-help">결과가 아직 없습니다. 승인 전에 결과를 적습니다.</p>}
-            <form action={approveAgentWorkAction} className="quote-form">
-              <input name="agentId" type="hidden" value={agent.id} />
-              <input name="workLogId" type="hidden" value={work.id} />
-              {work.resultNote ? null : (
-                <label className="quote-form-full">결과<textarea name="resultNote" required /></label>
-              )}
-              <label className="quote-email-approval quote-form-full">
-                <input name="approved" required type="checkbox" value="true" />
-                결과를 확인했고, 대표로서 이 이력을 승인합니다. 승인된 기록은 덮어쓰지 않습니다.
-              </label>
-              <button className="auth-submit" type="submit">이력 승인</button>
-            </form>
-            <form action={rejectAgentWorkAction} className="quote-form">
-              <input name="agentId" type="hidden" value={agent.id} />
-              <input name="workLogId" type="hidden" value={work.id} />
-              <label className="quote-form-full">반려 사유<textarea name="reason" required /></label>
-              <label className="quote-email-approval quote-form-full">
-                <input name="approved" required type="checkbox" value="true" />
-                대표로서 이 이력을 반려합니다. 결과는 없어도 됩니다.
-              </label>
-              <button className="auth-submit" type="submit">이력 반려</button>
-            </form>
-          </article>
-        ))}
+        ) : agent.work.pending.map((work) => {
+          const review = buildApprovalReviewSummary({
+            subject: work.requestNote,
+            evidence: work.inputNote ? `입력 자료: ${work.inputNote}` : null,
+            outcomeLabel: "작업 이력 승인 — 기록 고정, 자동 실행 없음",
+          });
+          return (
+            <article className="quote-editor-card" key={work.id}>
+              <p className="setup-code">{aiAgentWorkLogStatusLabels[work.status]}{work.taskTitle ? ` · ${work.taskTitle}` : ""}</p>
+              <ApprovalReviewCard summary={review} />
+              {work.resultNote ? <p className="form-help">결과 {work.resultNote}</p> : <p className="form-help">결과가 아직 없습니다. 승인 전에 결과를 적습니다.</p>}
+              <form action={approveAgentWorkAction} className="quote-form">
+                <input name="agentId" type="hidden" value={agent.id} />
+                <input name="workLogId" type="hidden" value={work.id} />
+                {work.resultNote ? null : (
+                  <label className="quote-form-full">결과<textarea name="resultNote" required /></label>
+                )}
+                <label className="quote-email-approval quote-form-full">
+                  <input name="approved" required type="checkbox" value="true" />
+                  결과를 확인했고, 대표로서 이 이력을 승인합니다. 승인된 기록은 덮어쓰지 않습니다.
+                </label>
+                <button className="auth-submit" type="submit">이력 승인</button>
+              </form>
+              <form action={rejectAgentWorkAction} className="quote-form">
+                <input name="agentId" type="hidden" value={agent.id} />
+                <input name="workLogId" type="hidden" value={work.id} />
+                <label className="quote-form-full">반려 사유<textarea name="reason" required /></label>
+                <label className="quote-email-approval quote-form-full">
+                  <input name="approved" required type="checkbox" value="true" />
+                  대표로서 이 이력을 반려합니다. 결과는 없어도 됩니다.
+                </label>
+                <button className="auth-submit" type="submit">이력 반려</button>
+              </form>
+            </article>
+          );
+        })}
       </section>
       <section className="quote-list" aria-label="결정된 작업">
         <div className="list-heading">
