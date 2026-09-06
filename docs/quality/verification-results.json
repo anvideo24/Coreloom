@@ -863,6 +863,16 @@
       "planVersion": 1,
       "environment": "Vitest/jsdom 요청 식별자 비교 + 서버 중복 판정 코드 검토 · 실제 DB 장애 주입 없음",
       "note": "실제 중복 문서가 생성됐다고 주장하지 않는다. 재열기에서 요청 식별자가 달라지는 위험을 후속 수정 승인 대상으로 남긴다."
+    },
+    {
+      "checkId": "F02-03",
+      "outcome": "unverified",
+      "value": "새 견적 요청 보존 보완 후 모의 저장 완료·응답 유실→재열기→미리보기 전환→재시도에서 동일 UUID·동일 서버 제출값, 가짜 저장 1건을 확인했다. 내용 변경·저장소 차단은 action 0회와 입력 유지, 사용자 스코프 분리, 성공·버리기 후 새 UUID, 전송 준비 중 버리기·닫기의 늦은 제출 0회를 자동 검증했다. 실제 DB 결과 건수 대조는 아직이므로 전체 통과 아님.",
+      "evidence": { "kind": "automated", "ref": "manual/checks/quote-draft-flow-2026-09-06.md", "checkedAt": "2026-09-06T01:37:31Z" },
+      "codeCommit": "6f63026c46d4e67b43e18aac2ceac5cec95a4980",
+      "planVersion": 1,
+      "environment": "Vitest/jsdom · 실제 폼+시험용 저장/응답 대역 · 전체 72파일 481개 시험·타입 검사 통과",
+      "note": "QR-05~12 자동 시험. 같은 탭의 신규 견적에 한정한다. 실제 DB 장애·브라우저·Fold·기존 견적 버전은 이번 검증에 포함하지 않았고, 외부 CI·main 병합은 별도다. 실제 기기 시험은 추후 일괄 진행."
     }
   ]
 }
