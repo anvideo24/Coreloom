@@ -1118,6 +1118,21 @@
       "planVersion": 2,
       "environment": "문서·기준 승인 반영만 · 실제 시험 없음",
       "note": "사용자의 기준 확정·문서 반영 승인 기록이다. 성공 시험이나 실제 저장·확정 실행 승인이 아니다."
+    },
+    {
+      "checkId": "F07-03",
+      "outcome": "pass",
+      "value": "근거 없는 통과 집계 0건. 결과 없음·실패·증거 없음·다른 버전·다른 환경 차단, 환경 목록 누락·부분·중복·에뮬레이션 차단과 전체 환경 양성 대조를 확인했다. 관련 4파일 51개 시험 통과.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T07:19:40Z"
+      },
+      "codeCommit": "88162a7aba48783579cf58132af197385d6defbb",
+      "planVersion": 2,
+      "environment": "Windows · Vitest 도메인/서버 렌더링 · 가상 환경 증거",
+      "environments": ["자동 시험"],
+      "note": "새 환경 시험 11개를 포함한다. 실제 기기·DB·실행 서버·외부 배포 검증은 하지 않았다. 이전 실패 이력을 보존하며 다른 항목의 통과를 승계하지 않는다."
     }
   ]
 }
