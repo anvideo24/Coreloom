@@ -26,7 +26,7 @@ describe("parseVerificationPlan — 실제 계획서", () => {
   const plan = parseVerificationPlan(readPlanMarkdown());
 
   it("계획 버전과 작성일을 읽는다", () => {
-    expect(plan.version).toBe(1);
+    expect(plan.version).toBe(2);
     expect(plan.date).toBe("2026-09-05");
   });
 
