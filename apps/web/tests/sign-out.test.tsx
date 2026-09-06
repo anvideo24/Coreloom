@@ -99,4 +99,23 @@ describe("나가는 길", () => {
     expect(screen.getByRole("button", { name: "로그아웃" })).toBeTruthy();
     expect(replace).not.toHaveBeenCalled();
   });
+
+  it("서버가 로그아웃을 확인한 뒤에만 승인함 탐색 기록을 지운다", async () => {
+    const key = "coreloom.approval-navigation.v1:founder-a";
+    window.sessionStorage.setItem(key, JSON.stringify({ query: "UX-SYNTHETIC", selectedKind: "expense" }));
+    window.sessionStorage.setItem("coreloom.other", "preserve");
+    signOut.mockResolvedValueOnce({ error: { message: "denied" } });
+    render(<SignOutButton />);
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    fireEvent.click(screen.getByRole("button", { name: "정말 나갈까요" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
+    expect(window.sessionStorage.getItem(key)).not.toBeNull();
+
+    signOut.mockResolvedValueOnce({ data: { success: true }, error: null });
+    fireEvent.click(screen.getByRole("button", { name: "로그아웃" }));
+    fireEvent.click(screen.getByRole("button", { name: "정말 나갈까요" }));
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/sign-in"));
+    expect(window.sessionStorage.getItem(key)).toBeNull();
+    expect(window.sessionStorage.getItem("coreloom.other")).toBe("preserve");
+  });
 });

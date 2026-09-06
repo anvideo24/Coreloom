@@ -1,13 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import {
   approvalKindLabels,
   type ApprovalInboxItem,
   type ApprovalKind,
 } from "@/lib/domain/approvals";
+import {
+  approvalNavigationStorageKey,
+  parseApprovalNavigation,
+  restoreApprovalNavigation,
+  serializeApprovalNavigation,
+} from "@/lib/domain/approval-navigation";
 import styles from "./approvals-page-client.module.css";
 
 type Summary = {
@@ -37,13 +43,34 @@ const approvalWhenLabels: Partial<Record<ApprovalKind, string>> = {
 
 export function ApprovalsPageClient({
   items,
+  scopeId,
   summary,
 }: {
   items: ApprovalInboxItem[];
+  scopeId: string;
+  summary: Summary;
+}) {
+  // 대표가 바뀌면 이전 대표의 React 상태까지 버린 새 탐색 맥락으로 시작한다.
+  return <ApprovalsPageClientContent items={items} key={scopeId} scopeId={scopeId} summary={summary} />;
+}
+
+function ApprovalsPageClientContent({
+  items,
+  scopeId,
+  summary,
+}: {
+  items: ApprovalInboxItem[];
+  scopeId: string;
   summary: Summary;
 }) {
   const [query, setQuery] = useState("");
   const [selectedKind, setSelectedKind] = useState<ApprovalKind | null>(null);
+  const [isRestored, setIsRestored] = useState(false);
+  const [inspectedItemId, setInspectedItemId] = useState<string | null>(null);
+  const [inspectedPosition, setInspectedPosition] = useState<number | null>(null);
+  const [scrollToItemId, setScrollToItemId] = useState<string | null>(null);
+  const initialItems = useRef(items);
+  const restoredItemRef = useRef<HTMLAnchorElement | null>(null);
   const kinds = Object.keys(approvalKindLabels) as ApprovalKind[];
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLocaleLowerCase("ko-KR");
@@ -55,6 +82,50 @@ export function ApprovalsPageClient({
     });
   }, [items, query, selectedKind]);
   const hasFilters = Boolean(selectedKind || query);
+
+  useEffect(() => {
+    try {
+      const saved = parseApprovalNavigation(window.sessionStorage.getItem(approvalNavigationStorageKey(scopeId)), scopeId);
+      if (saved) {
+        const restored = restoreApprovalNavigation(saved, initialItems.current);
+        setQuery(restored.query);
+        setSelectedKind(restored.selectedKind);
+        if (restored.inspectedPosition !== null) {
+          setInspectedItemId(saved.inspectedItemId ?? null);
+          setInspectedPosition(restored.inspectedPosition);
+          setScrollToItemId(saved.inspectedItemId ?? null);
+        }
+      }
+    } catch {
+      // 저장소가 막혔거나 고장 나도 승인함 조회는 그대로 쓴다.
+    } finally {
+      setIsRestored(true);
+    }
+  }, [scopeId]);
+
+  useEffect(() => {
+    if (!isRestored) return;
+    try {
+      window.sessionStorage.setItem(
+        approvalNavigationStorageKey(scopeId),
+        serializeApprovalNavigation({
+          scopeId,
+          query,
+          selectedKind,
+          ...(inspectedItemId ? { inspectedItemId } : {}),
+          ...(inspectedPosition !== null ? { inspectedPosition } : {}),
+        }),
+      );
+    } catch {
+      // 비공개 모드 등의 저장소 제한은 탐색 자체를 막지 않는다.
+    }
+  }, [inspectedItemId, inspectedPosition, isRestored, query, scopeId, selectedKind]);
+
+  useEffect(() => {
+    if (!scrollToItemId || !restoredItemRef.current) return;
+    restoredItemRef.current.scrollIntoView?.({ block: "center" });
+    setScrollToItemId(null);
+  }, [filteredItems, scrollToItemId]);
 
   function resetFilters() {
     setQuery("");
@@ -117,10 +188,34 @@ export function ApprovalsPageClient({
                 <p>검색하거나 고른 분류에 맞는 항목이 없습니다.</p>
                 <button onClick={resetFilters} type="button">필터 초기화</button>
               </div>
-            ) : filteredItems.map((item) => {
+            ) : filteredItems.map((item, position) => {
               const whenLabel = item.when ? approvalWhenLabels[item.kind] : undefined;
               return (
-                <Link aria-label={`${item.title} 상세 검토`} className={`quote-row ${styles.row}`} href={item.href} key={item.id}>
+                <Link
+                  aria-label={`${item.title} 상세 검토`}
+                  className={`quote-row ${styles.row}`}
+                  href={item.href}
+                  key={item.id}
+                  onClick={() => {
+                    try {
+                      window.sessionStorage.setItem(
+                        approvalNavigationStorageKey(scopeId),
+                        serializeApprovalNavigation({
+                          scopeId,
+                          query,
+                          selectedKind,
+                          inspectedItemId: item.id,
+                          inspectedPosition: position,
+                        }),
+                      );
+                    } catch {
+                      // 저장하지 못해도 기존 상세 이동은 막지 않는다.
+                    }
+                    setInspectedItemId(item.id);
+                    setInspectedPosition(position);
+                  }}
+                  ref={item.id === scrollToItemId ? restoredItemRef : undefined}
+                >
                   <div className={styles.rowMain}>
                     <div className={styles.rowHeading}>
                       <h3>{item.title}</h3>

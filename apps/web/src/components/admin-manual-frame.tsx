@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { ADMIN_MANUAL_HOME_HREF, type ManualBlock, type ManualInline } from "@/lib/domain/admin-manual";
 
@@ -20,10 +22,13 @@ function headingId(text: string, used: Set<string>) {
 
 function headingEntries(blocks: ManualBlock[]) {
   const usedIds = new Set<string>();
-  return blocks.flatMap((block) => {
-    if (block.type !== "heading") return [];
-    return [{ ...block, id: headingId(block.text, usedIds) }];
+  const entries: Array<ManualBlock & { type: "heading"; id: string }> = [];
+  const visit = (items: ManualBlock[]) => items.forEach((block) => {
+    if (block.type === "heading") entries.push({ ...block, id: headingId(block.text, usedIds) });
+    if (block.type === "historical") visit(block.blocks);
   });
+  visit(blocks);
+  return entries;
 }
 
 function InlineText({ inlines }: { inlines: ManualInline[] }) {
@@ -42,7 +47,10 @@ function InlineText({ inlines }: { inlines: ManualInline[] }) {
 export function ManualBlocks({ blocks }: { blocks: ManualBlock[] }) {
   const headings = headingEntries(blocks);
   let headingIndex = 0;
-  return blocks.map((block, index) => {
+  const renderBlocks = (items: ManualBlock[]) => items.map((block, index) => {
+    if (block.type === "historical") {
+      return <details className="manual-history" key={index}><summary>과거 구현 기록 (원문 보존)</summary><div className="manual-history-content">{renderBlocks(block.blocks)}</div></details>;
+    }
     if (block.type === "heading") {
       const id = headings[headingIndex++].id;
       if (block.level === 1) return <h2 id={id} key={index}>{block.text}</h2>;
@@ -58,6 +66,7 @@ export function ManualBlocks({ blocks }: { blocks: ManualBlock[] }) {
     if (block.type === "quote") return <blockquote key={index}><InlineText inlines={block.inlines} /></blockquote>;
     return <p key={index}><InlineText inlines={block.inlines} /></p>;
   });
+  return renderBlocks(blocks);
 }
 
 export function AdminManualFrame({
@@ -87,6 +96,29 @@ export function AdminManualFrame({
 }) {
   const headings = blocks ? headingEntries(blocks) : [];
   const hasToc = !home && headings.length > 0;
+
+  useEffect(() => {
+    const openHashTarget = () => {
+      const rawHash = window.location.hash.slice(1);
+      if (!rawHash) return;
+      let target: HTMLElement | null = null;
+      try {
+        target = document.getElementById(decodeURIComponent(rawHash));
+      } catch {
+        return;
+      }
+      let parent = target?.parentElement?.closest("details") as HTMLDetailsElement | null;
+      while (parent) {
+        parent.open = true;
+        parent = parent.parentElement?.closest("details") as HTMLDetailsElement | null;
+      }
+      target?.scrollIntoView?.({ block: "start" });
+    };
+    openHashTarget();
+    window.addEventListener("hashchange", openHashTarget);
+    return () => window.removeEventListener("hashchange", openHashTarget);
+  }, []);
+
   return (
     <main className="operations-shell">
       {home ? null : (

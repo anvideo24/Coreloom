@@ -6,6 +6,9 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createExpenseEntryAction } from "@/app/(private)/expenses/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
+import { DraftAwareForm } from "@/components/draft-aware-form";
+import { DraftDiscardButton } from "@/components/draft-discard-button";
+import { DraftSubmitButton } from "@/components/draft-submit-button";
 import { expenseEntryStatusLabels, type ExpenseEntryStatus } from "@/lib/domain/expenses";
 import { formatLedgerAccountLabel } from "@/lib/domain/ledger-accounts";
 import { UNCLASSIFIED_LABEL, ventureKindLabels, type VentureKind } from "@/lib/domain/revenue";
@@ -37,6 +40,7 @@ export function ExpensesPageClient({
   accounts,
   rows,
   summary,
+  draftScopeId,
 }: {
   ventures: Venture[];
   projects: Project[];
@@ -44,6 +48,7 @@ export function ExpensesPageClient({
   accounts: Account[];
   rows: ExpenseRow[];
   summary: Summary;
+  draftScopeId: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -116,8 +121,8 @@ export function ExpensesPageClient({
         )}
       </section>
 
-      <CreatePanel onClose={close} open={open} size="wide" title="비용 등록">
-        <form action={createExpenseEntryAction} className="quote-form">
+      <CreatePanel onClose={close} open={open} showHeader size="wide" title="비용 등록">
+        <DraftAwareForm action={createExpenseEntryAction} className="quote-form" formId="expense-create" scopeId={draftScopeId}>
           <p className="setup-code quote-form-full">연결</p>
           <p className="form-help quote-form-full">
             프로젝트와 사업을 동시에 고르지 마세요. 둘 다 비우면 미분류입니다. 사업은 매출 원장에서 먼저 등록합니다.
@@ -190,10 +195,11 @@ export function ExpensesPageClient({
             메모 (선택)
             <input name="note" />
           </label>
-          <button className="auth-submit" type="submit">
-            비용 저장
-          </button>
-        </form>
+          <div className="quote-form-full">
+            <DraftSubmitButton className="auth-submit">비용 저장</DraftSubmitButton>
+            <DraftDiscardButton />
+          </div>
+        </DraftAwareForm>
       </CreatePanel>
     </>
   );

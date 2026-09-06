@@ -6,6 +6,8 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createTaskAction } from "@/app/(private)/tasks/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
+import { DraftAwareForm } from "@/components/draft-aware-form";
+import { DraftDiscardButton } from "@/components/draft-discard-button";
 import { taskLinkLabel, taskStatusLabels, workKindLabels, workKinds, type TaskStatus, type WorkKind } from "@/lib/domain/tasks";
 
 type Project = { id: string; name: string; clientName: string };
@@ -35,12 +37,14 @@ export function TasksPageClient({
   agents,
   tasks,
   schedule,
+  draftScopeId,
 }: {
   projects: Project[];
   ventures: Venture[];
   agents: Agent[];
   tasks: TaskRow[];
   schedule: ScheduleGroup[];
+  draftScopeId: string;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -139,8 +143,8 @@ export function TasksPageClient({
         )}
       </section>
 
-      <CreatePanel onClose={close} open={open} size="wide" title="새 업무">
-        <form action={createTaskAction} className="quote-form">
+      <CreatePanel onClose={close} open={open} showHeader size="wide" title="새 업무">
+        <DraftAwareForm action={createTaskAction} className="quote-form" formId="task-create" scopeId={draftScopeId}>
           <p className="setup-code quote-form-full">연결</p>
           <label className="quote-form-full">
             업무 유형
@@ -232,14 +236,17 @@ export function TasksPageClient({
               ))}
             </select>
           </label>
-          <button
-            className="auth-submit"
-            disabled={(kind === "client" && projects.length === 0) || (kind === "internal" && ventures.length === 0)}
-            type="submit"
-          >
-            업무 저장
-          </button>
-        </form>
+          <div className="quote-form-full">
+            <button
+              className="auth-submit"
+              disabled={(kind === "client" && projects.length === 0) || (kind === "internal" && ventures.length === 0)}
+              type="submit"
+            >
+              업무 저장
+            </button>
+            <DraftDiscardButton />
+          </div>
+        </DraftAwareForm>
       </CreatePanel>
     </>
   );

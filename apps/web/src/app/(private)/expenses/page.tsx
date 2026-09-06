@@ -24,6 +24,8 @@ export default async function ExpensesPage() {
             code: account.code,
             name: account.name,
           }))}
+          draftScopeId={session.founder.id}
+          key={session.founder.id}
           projects={projects}
           rows={rows.map((row) => ({
             ...row,

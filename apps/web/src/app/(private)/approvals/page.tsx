@@ -17,7 +17,7 @@ export default async function ApprovalsPage() {
   return (
     <main className="operations-shell">
       <Suspense fallback={<p className="empty-state">승인함을 불러오는 중…</p>}>
-        <ApprovalsPageClient items={items} summary={summary} />
+        <ApprovalsPageClient items={items} scopeId={session.founder.id} summary={summary} />
       </Suspense>
     </main>
   );
