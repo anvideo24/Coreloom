@@ -6,8 +6,10 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { createTaskAction } from "@/app/(private)/tasks/actions";
 import { CreateIconButton } from "@/components/create-icon-button";
 import { CreatePanel } from "@/components/create-panel";
+import { TaskList } from "@/components/task-list";
 import { DraftAwareForm } from "@/components/draft-aware-form";
 import { DraftDiscardButton } from "@/components/draft-discard-button";
+import { DraftSubmitButton } from "@/components/draft-submit-button";
 import { taskLinkLabel, taskStatusLabels, workKindLabels, workKinds, type TaskStatus, type WorkKind } from "@/lib/domain/tasks";
 
 type Project = { id: string; name: string; clientName: string };
@@ -112,39 +114,16 @@ export function TasksPageClient({
         )}
       </section>
 
-      <section aria-label="업무 목록" className="quote-list">
-        <div className="list-heading">
-          <div>
-            <p className="setup-code">등록된 업무</p>
-            <h2>업무 이력</h2>
-          </div>
-          <span>{tasks.length}개</span>
-        </div>
-        {tasks.length === 0 ? (
-          <div className="empty-state quote-empty-inline">
-            <p>아직 등록된 업무가 없습니다.</p>
-            <button className="auth-submit" onClick={openCreate} type="button">
-              첫 업무 만들기
-            </button>
-          </div>
-        ) : (
-          tasks.map((task) => (
-            <a className="quote-row" href={`/tasks/${task.id}`} key={task.id}>
-              <div>
-                <p>
-                  {taskLinkLabel(task)} · 기한 {task.dueDate}
-                  {task.assignedAgentName ? ` · ${task.assignedAgentName}` : ""}
-                </p>
-                <h3>{task.title}</h3>
-              </div>
-              <strong>{taskStatusLabels[task.status]}</strong>
-            </a>
-          ))
-        )}
-      </section>
+      <TaskList tasks={tasks} onCreate={openCreate} />
 
       <CreatePanel onClose={close} open={open} showHeader size="wide" title="새 업무">
-        <DraftAwareForm action={createTaskAction} className="quote-form" formId="task-create" scopeId={draftScopeId}>
+        <DraftAwareForm
+          action={createTaskAction}
+          className="quote-form"
+          formId="task-create"
+          rejectedSubmissionRecovery={{ href: "/tasks", listLabel: "업무 목록 확인" }}
+          scopeId={draftScopeId}
+        >
           <p className="setup-code quote-form-full">연결</p>
           <label className="quote-form-full">
             업무 유형
@@ -237,13 +216,13 @@ export function TasksPageClient({
             </select>
           </label>
           <div className="quote-form-full">
-            <button
+            <DraftSubmitButton
               className="auth-submit"
               disabled={(kind === "client" && projects.length === 0) || (kind === "internal" && ventures.length === 0)}
-              type="submit"
+              pendingLabel="저장 중…"
             >
               업무 저장
-            </button>
+            </DraftSubmitButton>
             <DraftDiscardButton />
           </div>
         </DraftAwareForm>
