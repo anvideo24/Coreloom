@@ -242,6 +242,57 @@ describe("F02-01 PC 8조합 — 고객사 폼", () => {
     expectClientFormFilled();
   });
 
+  it("다품목 저장 실패 후 재열기·재제출에서 전체 제출값이 같고 성공하면 초안을 지운다", async () => {
+    const failingAction = vi.fn<(data: FormData) => Promise<void>>()
+      .mockRejectedValue(new Error("UX-SYNTHETIC-SAVE-FAILURE"));
+    const first = render(
+      <RouteSegmentErrorBoundary>{renderQuoteFormElement(failingAction)}</RouteSegmentErrorBoundary>,
+    );
+    fillQuoteForm();
+    fireEvent.click(screen.getByText("패키지 추가"));
+    fillPackage(quotePackageArticles(first.container)[1], {
+      title: "UX-SYNTHETIC-SECOND",
+      role: "PM",
+      monthlyRate: "200000",
+      months: "2",
+      headcount: "1.5",
+      utilizationPercent: "70",
+      quantity: "3",
+      amount: "876543",
+      customerDescription: "UX-SYNTHETIC-SECOND-DESCRIPTION",
+    });
+    fireEvent.change(screen.getByLabelText("목표 마진"), { target: { value: "45" } });
+    fireEvent.change(screen.getByLabelText("운영비"), { target: { value: "25" } });
+    fireEvent.click(screen.getByText("견적 저장"));
+    await screen.findByRole("alert");
+    expect(failingAction).toHaveBeenCalledTimes(1);
+    expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).not.toBeNull();
+    const failedPayload = Object.fromEntries(failingAction.mock.calls[0][0].entries());
+    first.unmount();
+
+    const successfulRetry = vi.fn<(data: FormData) => Promise<void>>().mockResolvedValue(undefined);
+    const restored = renderQuoteForm(successfulRetry, "internal");
+    await waitFor(() => {
+      expect(quotePackageArticles(restored.container)).toHaveLength(2);
+      expect((screen.getByLabelText("목표 마진") as HTMLInputElement).value).toBe("45");
+      expect((screen.getByLabelText("운영비") as HTMLInputElement).value).toBe("25");
+    });
+    fireEvent.click(screen.getByText("견적 저장"));
+    await waitFor(() => expect(successfulRetry).toHaveBeenCalledTimes(1));
+    const retryPayload = Object.fromEntries(successfulRetry.mock.calls[0][0].entries());
+    // Compare every field consumed by saveQuoteVersionAction, including the whole
+    // collection. Submission identity is measured separately: remount creates a
+    // new attempt today, so this test does not prove ambiguous-write deduplication.
+    const submittedFields = [
+      "quoteId", "clientId", "projectId", "clientContactId", "title", "note",
+      "packagesJson", "vatMode", "targetMarginPercent", "operatingCostPercent",
+      "issuedOn", "validUntil",
+    ];
+    for (const field of submittedFields) expect(retryPayload[field], field).toEqual(failedPayload[field]);
+    expect(retryPayload.submissionId).not.toBe(failedPayload.submissionId);
+    await waitFor(() => expect(sessionStorage.getItem(formDraftStorageKey(SCOPE, "quote-create"))).toBeNull());
+  });
+
   it("저장 실패→복구: action이 실패해도 초안이 남고 재열기에 복원된다", async () => {
     // 진짜 앱은 Next App Router 라우트 세그먼트 안이라, 리다이렉트가 아닌 액션 에러는
     // 그 세그먼트의 에러 화면으로 바뀐다(패널이 그대로 떠 있는 게 아니다). 그래서 "같은
