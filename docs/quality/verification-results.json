@@ -105,6 +105,20 @@
       "ref": "ad044ff",
       "recordedAt": "2026-09-05",
       "note": "마이그레이션 0033 적용됨. 실기기 8조합 측정만 남았다."
+    },
+    {
+      "featureId": "F04",
+      "stage": "on-main",
+      "ref": "782af86f8a0c30e570294145f10a32c397809543",
+      "recordedAt": "2026-09-06T06:38:01Z",
+      "note": "main 소스의 서버 응답 상태 표시와 자동 회귀 시험 대조. 읽기 전용 대화이며 실사용 완료를 뜻하지 않는다."
+    },
+    {
+      "featureId": "F05",
+      "stage": "on-main",
+      "ref": "782af86f8a0c30e570294145f10a32c397809543",
+      "recordedAt": "2026-09-06T06:38:01Z",
+      "note": "main 소스의 정확성 계산·조회/화면 연결 대조로 과거 진행 중 기록을 갱신. 실사용 완료를 뜻하지 않는다."
     }
   ],
   "results": [
@@ -904,6 +918,160 @@
       "environment": "Windows PC · Vitest/jsdom 실제 공통 컴포넌트 · 전체 73파일 487개 시험·타입·변경 TSX ESLint 통과",
       "measured": { "covered": 0, "total": 5 },
       "note": "AD-01~06 자동 시험/코드 대조와 AD-07~09 실기기/사람 미검증을 분리한다. 실제 페이지 서버 데이터·승인 제출·DB·브라우저·4K·Fold 시험은 하지 않았으며 추후 일괄 진행한다. 이전 결과는 보존하고 새 UI의 전체 통과는 유보한다. 외부 CI·main 병합은 별도다."
+    },
+    {
+      "checkId": "F02-04",
+      "outcome": "pass",
+      "value": "사용자·폼 키 분리와 잘못된 사용자 payload 거부, 로그아웃 성공 후 고객사·견적 초안 제거 및 실패 시 보존을 현재 코드에서 확인. 교차 노출 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/form-draft.test.ts; sign-out.test.tsx. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F03-04",
+      "outcome": "pass",
+      "value": "8개 서버 액션에서 무권한 16조건·명시 승인 미충족 32조건·결정된 기록 8조건·없는 기록 8조건·필수값 부족 4조건 모두 쓰기 0회. 정상 요청 8조건의 대상·세션 실행자·감사 기록 대조도 통과.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/approval-actions.test.ts; approval-gates.test.ts. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다. 결정된 행 대역의 순차 거부 시험으로 실제 SQL 원자성·동시성 보장은 포함하지 않는다."
+    },
+    {
+      "checkId": "F04-02",
+      "outcome": "pass",
+      "value": "거절·시간 초과·동일 요청 중복·서버 오류 4사례에서 잘못된 확정/완료 표시 0건. 현재 완료·실패·중지·미확인 4상태의 업무 기록 변경 없음 표시와 재열기 후 서버 상태 유지도 확인.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/agent-status.test.ts; agent-chat.test.ts; agent-chat-ui.test.tsx. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F04-04",
+      "outcome": "pass",
+      "value": "브라우저 연결 단절·상태 GET 재열기·명시적 중지·타 사용자·타 에이전트 5상황을 구분. 라우트의 단절 시 비중지, user-stop만 stopped 저장, 일반 abort는 failed 및 완료행 덮어쓰기 제외 조건 확인.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/agent-status.test.ts; agent-chat.test.ts; agent-chat-repository-status.test.ts; chat-runs.test.ts. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F05-01",
+      "outcome": "pass",
+      "value": "28/29/30/31일 월말 4사례 각각 100원 전액 포함. 12월 말일 100원·다음 해 1월 첫날 200원이 각 월에만 집계되어 경계 오차 0원. 현재 repository의 날짜·예정일 전달과 화면 합계 연결을 대조.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/dashboard.test.ts. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F05-02",
+      "outcome": "pass",
+      "value": "예정/입금 확인 상태 × 청구월 동일/상이 4조합과 교차 월 단독 사례에서 예정 금액 100/0/0/0원, 분류 오류 0건. 현재 repository는 billingDate·dueDate·status를 계산 함수에 전달.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/dashboard.test.ts. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F05-03",
+      "outcome": "pass",
+      "value": "같은 고객사 2프로젝트·동명 고객사·projectId 없는 기록 3사례에서 단계와 다음 행동 혼입 0건. 현재 repository의 견적·계약·청구·업무 projectId 전달 및 화면 카드 연결 대조.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/dashboard.test.ts. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F05-04",
+      "outcome": "pass",
+      "value": "빈 기록·정상·입금 연체·업무 지연 4상황의 계산값 empty/normal/watch/watch 일치. 현재 화면은 해당 값에 기록 없음/정상/주의와 서로 다른 근거를 연결하며 혼용 0건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/dashboard.test.ts. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F07-02",
+      "outcome": "pass",
+      "value": "실제 계획·결과 읽기 계층을 통과한 28개 검사 모두 PC 표 셀과 좁은 화면 카드 제목에 존재하며 누락 0개. 결과 없는 검사도 표시됨.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/verification-plan.test.ts; verification-integration.test.tsx. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F07-03",
+      "outcome": "fail",
+      "value": "음성 사례 5종 직접 재현: 결과 없음·실패·증거 없음·다른 계획 버전 4종은 통과로 세지 않지만, 실제 Fold 목표에 PC desktop only 환경 결과를 넣으면 pass로 집계됨. 다른 환경 통과 오집계 1건.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/verification-plan.test.ts; docs/quality/automatic-evidence-refresh-2026-09-06.md. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
+    },
+    {
+      "checkId": "F07-04",
+      "outcome": "pass",
+      "value": "통과 A→관련 변경으로 재검증→새 통과 B의 상태 전이와 이전 결과 2건의 최신순 보존 확인. 실제 HEAD 변경 없음과 없는 커밋 판정도 통과.",
+      "evidence": {
+        "kind": "automated",
+        "ref": "docs/quality/automatic-evidence-refresh-2026-09-06.md",
+        "checkedAt": "2026-09-06T06:38:01Z"
+      },
+      "codeCommit": "20ce5826ef66e0701b59308ce497cb76d693a5ad",
+      "planVersion": 1,
+      "environment": "Windows PC · Vitest Node/jsdom · 가상 자료·인증/DB/모델 대역 · 실제 서비스 호출 없음",
+      "note": "근거: apps/web/tests/verification-plan.test.ts; verification-integration.test.tsx. 자동 검사 범위의 판정이며 실제 기기·실제 DB·운영 반영은 별도다."
     }
   ]
 }
